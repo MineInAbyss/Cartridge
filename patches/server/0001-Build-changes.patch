@@ -1,11 +1,11 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: MiniDigger <admin@minidigger.me>
-Date: Sat, 12 Jun 2021 16:40:34 +0200
+From: Boy <sivertpaulsen2@gmail.com>
+Date: Sat, 15 Jun 2024 01:35:59 +0200
 Subject: [PATCH] Build changes
 
 
 diff --git a/build.gradle.kts b/build.gradle.kts
-index 87bb3fd9b97506f61734ae7f2e6860610ba794e7..7e2017f8fceeadc39f82c1559f3b78bf43e055d0 100644
+index 87bb3fd9b97506f61734ae7f2e6860610ba794e7..7444071b5b92266fc5b061c627565fa598369156 100644
 --- a/build.gradle.kts
 +++ b/build.gradle.kts
 @@ -12,7 +12,7 @@ configurations.named(log4jPlugins.compileClasspathConfigurationName) {
@@ -13,7 +13,7 @@ index 87bb3fd9b97506f61734ae7f2e6860610ba794e7..7e2017f8fceeadc39f82c1559f3b78bf
  
  dependencies {
 -    implementation(project(":paper-api"))
-+    implementation(project(":forktest-api")) // ForkTest - update api reference
++    implementation(project(":cartridge-api")) // Cartridge - update api reference
      // Paper start
      implementation("org.jline:jline-terminal-jansi:3.21.0")
      implementation("net.minecrell:terminalconsoleappender:1.3.0")
@@ -22,7 +22,7 @@ index 87bb3fd9b97506f61734ae7f2e6860610ba794e7..7e2017f8fceeadc39f82c1559f3b78bf
              "Main-Class" to "org.bukkit.craftbukkit.Main",
              "Implementation-Title" to "CraftBukkit",
 -            "Implementation-Version" to "git-Paper-$implementationVersion",
-+            "Implementation-Version" to "git-ForkTest-$implementationVersion", // ForkTest
++            "Implementation-Version" to "git-Cartridge-$implementationVersion", // Cartridge
              "Implementation-Vendor" to date, // Paper
              "Specification-Title" to "Bukkit",
              "Specification-Version" to project.version,
@@ -31,12 +31,12 @@ index 87bb3fd9b97506f61734ae7f2e6860610ba794e7..7e2017f8fceeadc39f82c1559f3b78bf
      block: JavaExec.() -> Unit
  ): TaskProvider<JavaExec> = register<JavaExec>(name) {
 -    group = "paper"
-+    group = "paperweight" // ForkTest
++    group = "paperweight" // Cartridge
      mainClass.set("org.bukkit.craftbukkit.Main")
      standardInput = System.`in`
      workingDir = rootProject.layout.projectDirectory
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 39303bb4e336732db0ab19dee0c1f8b609bbb134..55d308d092b2c7c0d02e46f0cb255aec59d28049 100644
+index 39303bb4e336732db0ab19dee0c1f8b609bbb134..92222f011902235918c07f79a4efc5ebe3c37f10 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
 @@ -1926,7 +1926,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
@@ -44,12 +44,12 @@ index 39303bb4e336732db0ab19dee0c1f8b609bbb134..55d308d092b2c7c0d02e46f0cb255aec
      @DontObfuscate
      public String getServerModName() {
 -        return "Paper"; // Paper
-+        return "ForkTest"; // ForkTest - ForkTest > // Paper - Paper > // Spigot - Spigot > // CraftBukkit - cb > vanilla!
++        return "Cartridge"; // Cartridge - Cartridge > // Paper - Paper > // Spigot - Spigot > // CraftBukkit - cb > vanilla!
      }
  
      public SystemReport fillSystemReport(SystemReport details) {
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-index da1aed63af837b193900bb85393611edbd56c363..6acf6e1acbcc21444d015bdd49901d078736498b 100644
+index da1aed63af837b193900bb85393611edbd56c363..51549089eabf65bcaf82f27f94d3b2cdda35636c 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 @@ -269,7 +269,7 @@ import javax.annotation.Nullable; // Paper
@@ -57,12 +57,12 @@ index da1aed63af837b193900bb85393611edbd56c363..6acf6e1acbcc21444d015bdd49901d07
  
  public final class CraftServer implements Server {
 -    private final String serverName = "Paper"; // Paper
-+    private final String serverName = "ForkTest"; // ForkTest // Paper
++    private final String serverName = "Cartridge"; // Cartridge // Paper
      private final String serverVersion;
      private final String bukkitVersion = Versioning.getBukkitVersion();
      private final Logger logger = Logger.getLogger("Minecraft");
 diff --git a/src/main/java/org/bukkit/craftbukkit/util/Versioning.java b/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
-index 774556a62eb240da42e84db4502e2ed43495be17..21f39bd0c33ef2635249298e6a247afba8b05742 100644
+index 774556a62eb240da42e84db4502e2ed43495be17..102a24f7829f3796f33d7566965f81dea4d51a60 100644
 --- a/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
 +++ b/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
 @@ -11,7 +11,7 @@ public final class Versioning {
@@ -70,7 +70,7 @@ index 774556a62eb240da42e84db4502e2ed43495be17..21f39bd0c33ef2635249298e6a247afb
          String result = "Unknown-Version";
  
 -        InputStream stream = Bukkit.class.getClassLoader().getResourceAsStream("META-INF/maven/io.papermc.paper/paper-api/pom.properties");
-+        InputStream stream = Bukkit.class.getClassLoader().getResourceAsStream("META-INF/maven/com.example.paperfork/forktest-api/pom.properties"); // ForkTest
++        InputStream stream = Bukkit.class.getClassLoader().getResourceAsStream("META-INF/maven/com.example.paperfork/cartridge-api/pom.properties"); // Cartridge
          Properties properties = new Properties();
  
          if (stream != null) {
