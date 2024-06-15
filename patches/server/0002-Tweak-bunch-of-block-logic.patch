@@ -5,7 +5,7 @@ Subject: [PATCH] Tweak bunch of block-logic
 
 
 diff --git a/src/main/java/net/minecraft/world/level/block/BedBlock.java b/src/main/java/net/minecraft/world/level/block/BedBlock.java
-index 85d598c3354ee62f0fd1b26e485e0084967c0380..4b1daf4cae5b8a132d0251f3938173d4fd2f3f97 100644
+index 85d598c3354ee62f0fd1b26e485e0084967c0380..eaf2925b7a50aac7cb82298ce8a422891187cda5 100644
 --- a/src/main/java/net/minecraft/world/level/block/BedBlock.java
 +++ b/src/main/java/net/minecraft/world/level/block/BedBlock.java
 @@ -165,7 +165,7 @@ public class BedBlock extends HorizontalDirectionalBlock implements EntityBlock
@@ -17,7 +17,7 @@ index 85d598c3354ee62f0fd1b26e485e0084967c0380..4b1daf4cae5b8a132d0251f3938173d4
      }
  
      private boolean kickVillagerOutOfBed(Level world, BlockPos pos) {
-@@ -181,17 +181,12 @@ public class BedBlock extends HorizontalDirectionalBlock implements EntityBlock
+@@ -181,7 +181,7 @@ public class BedBlock extends HorizontalDirectionalBlock implements EntityBlock
  
      @Override
      public void fallOn(Level world, BlockState state, BlockPos pos, Entity entity, float fallDistance) {
@@ -26,17 +26,6 @@ index 85d598c3354ee62f0fd1b26e485e0084967c0380..4b1daf4cae5b8a132d0251f3938173d4
      }
  
      @Override
-     public void updateEntityAfterFallOn(BlockGetter world, Entity entity) {
--        if (entity.isSuppressingBounce()) {
--            super.updateEntityAfterFallOn(world, entity);
--        } else {
--            this.bounceUp(entity);
--        }
--
-+        super.updateEntityAfterFallOn(world, entity); // Cartridge
-     }
- 
-     private void bounceUp(Entity entity) {
 diff --git a/src/main/java/net/minecraft/world/level/block/CoralBlock.java b/src/main/java/net/minecraft/world/level/block/CoralBlock.java
 index 81fe0dea8e6e23c4a78f07fc2f9c0d68cd683f11..241a5771f5efb49f2621cf222338b6cf45104b22 100644
 --- a/src/main/java/net/minecraft/world/level/block/CoralBlock.java
@@ -106,6 +95,42 @@ index 4c4aa2a63be84ff614a3dc0db2864266755545a2..28462b2ab64941ddbbac856251ca2bab
  
      @Override
      protected BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor world, BlockPos pos, BlockPos neighborPos) {
+diff --git a/src/main/java/net/minecraft/world/level/block/CoralWallFanBlock.java b/src/main/java/net/minecraft/world/level/block/CoralWallFanBlock.java
+index 924766117fcdf7285327e9aa1f89a630987855a8..e8376cb0ec2b79e7c94a11089ef1739def53165b 100644
+--- a/src/main/java/net/minecraft/world/level/block/CoralWallFanBlock.java
++++ b/src/main/java/net/minecraft/world/level/block/CoralWallFanBlock.java
+@@ -37,18 +37,19 @@ public class CoralWallFanBlock extends BaseCoralWallFanBlock {
+         this.tryScheduleDieTick(state, world, pos);
+     }
+ 
+-    @Override
+-    protected void tick(BlockState state, ServerLevel world, BlockPos pos, RandomSource random) {
+-        if (!scanForWater(state, world, pos)) {
+-            // CraftBukkit start
+-            if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(world, pos, this.deadBlock.defaultBlockState().setValue(CoralWallFanBlock.WATERLOGGED, false).setValue(CoralWallFanBlock.FACING, state.getValue(CoralWallFanBlock.FACING))).isCancelled()) {
+-                return;
+-            }
+-            // CraftBukkit end
+-            world.setBlock(pos, (BlockState) ((BlockState) this.deadBlock.defaultBlockState().setValue(CoralWallFanBlock.WATERLOGGED, false)).setValue(CoralWallFanBlock.FACING, (Direction) state.getValue(CoralWallFanBlock.FACING)), 2);
+-        }
+-
+-    }
++    // Cartridge - Disable CoralWallFanBlocks from fading outside of water
++//    @Override
++//    protected void tick(BlockState state, ServerLevel world, BlockPos pos, RandomSource random) {
++//        if (!scanForWater(state, world, pos)) {
++//            // CraftBukkit start
++//            if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(world, pos, this.deadBlock.defaultBlockState().setValue(CoralWallFanBlock.WATERLOGGED, false).setValue(CoralWallFanBlock.FACING, state.getValue(CoralWallFanBlock.FACING))).isCancelled()) {
++//                return;
++//            }
++//            // CraftBukkit end
++//            world.setBlock(pos, (BlockState) ((BlockState) this.deadBlock.defaultBlockState().setValue(CoralWallFanBlock.WATERLOGGED, false)).setValue(CoralWallFanBlock.FACING, (Direction) state.getValue(CoralWallFanBlock.FACING)), 2);
++//        }
++//
++//    }
+ 
+     @Override
+     protected BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor world, BlockPos pos, BlockPos neighborPos) {
 diff --git a/src/main/java/net/minecraft/world/level/block/FarmBlock.java b/src/main/java/net/minecraft/world/level/block/FarmBlock.java
 index d59e33e7326489c6d55d316d0130f22235f4c63c..1f4bae79a8f92cf0c55c5d60336778974dd679dd 100644
 --- a/src/main/java/net/minecraft/world/level/block/FarmBlock.java
@@ -129,6 +154,18 @@ index d59e33e7326489c6d55d316d0130f22235f4c63c..1f4bae79a8f92cf0c55c5d6033677897
  
      public static void turnToDirt(@Nullable Entity entity, BlockState state, Level world, BlockPos pos) {
          // CraftBukkit start
+diff --git a/src/main/java/net/minecraft/world/level/block/HayBlock.java b/src/main/java/net/minecraft/world/level/block/HayBlock.java
+index ef364aa171a48482a45bc18cfe730ec20c3f7be6..0aaff453eb36630472e6aff932b1cdaa59f566c3 100644
+--- a/src/main/java/net/minecraft/world/level/block/HayBlock.java
++++ b/src/main/java/net/minecraft/world/level/block/HayBlock.java
+@@ -23,6 +23,6 @@ public class HayBlock extends RotatedPillarBlock {
+ 
+     @Override
+     public void fallOn(Level world, BlockState state, BlockPos pos, Entity entity, float fallDistance) {
+-        entity.causeFallDamage(fallDistance, 0.2F, world.damageSources().fall());
++        entity.causeFallDamage(fallDistance, 1.0F, world.damageSources().fall()); // Cartridge
+     }
+ }
 diff --git a/src/main/java/net/minecraft/world/level/block/HoneyBlock.java b/src/main/java/net/minecraft/world/level/block/HoneyBlock.java
 index c6f7815b5fad3aad4635208aa2e5c6739e13cb45..403113eaa08963d764e71c08762b88c52c25de50 100644
 --- a/src/main/java/net/minecraft/world/level/block/HoneyBlock.java
@@ -151,85 +188,66 @@ index c6f7815b5fad3aad4635208aa2e5c6739e13cb45..403113eaa08963d764e71c08762b88c5
      }
  
      private void maybeDoSlideEffects(Level world, Entity entity) {
+diff --git a/src/main/java/net/minecraft/world/level/block/NoteBlock.java b/src/main/java/net/minecraft/world/level/block/NoteBlock.java
+index 1d82cfe7af0dc42f88901fb0c44896771fdf8a93..f3785ed6b32d5c820fef73cfc3a5facbc70c010a 100644
+--- a/src/main/java/net/minecraft/world/level/block/NoteBlock.java
++++ b/src/main/java/net/minecraft/world/level/block/NoteBlock.java
+@@ -66,32 +66,17 @@ public class NoteBlock extends Block {
+ 
+     @Override
+     public BlockState getStateForPlacement(BlockPlaceContext ctx) {
+-        if (io.papermc.paper.configuration.GlobalConfiguration.get().blockUpdates.disableNoteblockUpdates) return this.defaultBlockState(); // Paper - place without considering instrument
+-        return this.setInstrument(ctx.getLevel(), ctx.getClickedPos(), this.defaultBlockState());
++        return this.defaultBlockState(); // Cartridge - place without considering instrument
+     }
+ 
+     @Override
+     protected BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor world, BlockPos pos, BlockPos neighborPos) {
+-        if (io.papermc.paper.configuration.GlobalConfiguration.get().blockUpdates.disableNoteblockUpdates) return state; // Paper - prevent noteblock instrument from updating
+-        boolean flag = direction.getAxis() == Direction.Axis.Y;
+-
+-        return flag ? this.setInstrument(world, pos, state) : super.updateShape(state, direction, neighborState, world, pos, neighborPos);
++        return state; // Cartridge
+     }
+ 
+     @Override
+     protected void neighborChanged(BlockState state, Level world, BlockPos pos, Block sourceBlock, BlockPos sourcePos, boolean notify) {
+-        if (io.papermc.paper.configuration.GlobalConfiguration.get().blockUpdates.disableNoteblockUpdates) return; // Paper - prevent noteblock powered-state from updating
+-        boolean flag1 = world.hasNeighborSignal(pos);
+-
+-        if (flag1 != (Boolean) state.getValue(NoteBlock.POWERED)) {
+-            if (flag1) {
+-                this.playNote((Entity) null, state, world, pos);
+-                state = world.getBlockState(pos); // CraftBukkit - SPIGOT-5617: update in case changed in event
+-            }
+-
+-            world.setBlock(pos, (BlockState) state.setValue(NoteBlock.POWERED, flag1), 3);
+-        }
+-
++        if (io.papermc.paper.configuration.GlobalConfiguration.get().blockUpdates.disableNoteblockUpdates) return; // Cartridge - prevent noteblock powered-state from updating
+     }
+ 
+     private void playNote(@Nullable Entity entity, BlockState state, Level world, BlockPos pos) {
 diff --git a/src/main/java/net/minecraft/world/level/block/SlimeBlock.java b/src/main/java/net/minecraft/world/level/block/SlimeBlock.java
-new file mode 100644
-index 0000000000000000000000000000000000000000..bbba82471ca80162b7c098e79457a4af4a30effb
---- /dev/null
+index fa9d3839b12e7f0485c91ae9a2f600314f41b893..a7033b3d563c42df339b78986c8d542b91c59fe4 100644
+--- a/src/main/java/net/minecraft/world/level/block/SlimeBlock.java
 +++ b/src/main/java/net/minecraft/world/level/block/SlimeBlock.java
-@@ -0,0 +1,73 @@
-+package net.minecraft.world.level.block;
-+
-+import com.mojang.serialization.MapCodec;
-+import net.minecraft.core.BlockPos;
-+import net.minecraft.world.entity.Entity;
-+import net.minecraft.world.entity.LivingEntity;
-+import net.minecraft.world.level.BlockGetter;
-+import net.minecraft.world.level.Level;
-+import net.minecraft.world.level.block.state.BlockBehaviour;
-+import net.minecraft.world.level.block.state.BlockState;
-+import net.minecraft.world.phys.Vec3;
-+
-+public class SlimeBlock extends HalfTransparentBlock {
-+    public static final MapCodec<SlimeBlock> CODEC = simpleCodec(SlimeBlock::new);
-+
-+    @Override
-+    public MapCodec<SlimeBlock> codec() {
-+        return CODEC;
-+    }
-+
-+    public SlimeBlock(BlockBehaviour.Properties settings) {
-+        super(settings);
-+    }
-+
-+    @Override
-+    public void fallOn(Level world, BlockState state, BlockPos pos, Entity entity, float fallDistance) {
-+<<<<<<< Updated upstream
-+        if (entity.isSuppressingBounce()) {
-+            super.fallOn(world, state, pos, entity, fallDistance);
-+        } else {
-+            entity.causeFallDamage(fallDistance, 0.0F, world.damageSources().fall());
-+        }
-+=======
-+        entity.causeFallDamage(fallDistance, 1.0F, world.damageSources().fall()); // Cartridge
-+>>>>>>> Stashed changes
-+    }
-+
-+    @Override
-+    public void updateEntityAfterFallOn(BlockGetter world, Entity entity) {
-+<<<<<<< Updated upstream
-+        if (entity.isSuppressingBounce()) {
-+            super.updateEntityAfterFallOn(world, entity);
-+        } else {
-+            this.bounceUp(entity);
-+        }
-+=======
-+        super.updateEntityAfterFallOn(world, entity); // Cartridge
-+>>>>>>> Stashed changes
-+    }
-+
-+    private void bounceUp(Entity entity) {
-+        Vec3 vec3 = entity.getDeltaMovement();
-+        if (vec3.y < 0.0) {
-+            double d = entity instanceof LivingEntity ? 1.0 : 0.8;
-+            entity.setDeltaMovement(vec3.x, -vec3.y * d, vec3.z);
-+        }
-+    }
-+
-+    @Override
-+    public void stepOn(Level world, BlockPos pos, BlockState state, Entity entity) {
-+<<<<<<< Updated upstream
-+        double d = Math.abs(entity.getDeltaMovement().y);
-+        if (d < 0.1 && !entity.isSteppingCarefully()) {
-+            double e = 0.4 + d * 0.2;
-+            entity.setDeltaMovement(entity.getDeltaMovement().multiply(e, 1.0, e));
-+        }
-+
+@@ -27,7 +27,7 @@ public class SlimeBlock extends HalfTransparentBlock {
+         if (entity.isSuppressingBounce()) {
+             super.fallOn(world, state, pos, entity, fallDistance);
+         } else {
+-            entity.causeFallDamage(fallDistance, 0.0F, world.damageSources().fall());
++            entity.causeFallDamage(fallDistance, 1.0F, world.damageSources().fall()); // Cartridge
+         }
+     }
+ 
+@@ -57,5 +57,6 @@ public class SlimeBlock extends HalfTransparentBlock {
+         }
+ 
+         super.stepOn(world, pos, state, entity);
 +        super.stepOn(world, pos, state, entity);
-+=======
-+        super.stepOn(world, pos, state, entity); // Cartridge
-+>>>>>>> Stashed changes
-+    }
-+}
+     }
+ }
 diff --git a/src/main/java/net/minecraft/world/level/block/SweetBerryBushBlock.java b/src/main/java/net/minecraft/world/level/block/SweetBerryBushBlock.java
 index 6008c634c408c4eed563815da4d57b2eef69835c..51b2c3512c7619ca1fc91368e3b4d8a455cdbba7 100644
 --- a/src/main/java/net/minecraft/world/level/block/SweetBerryBushBlock.java
@@ -258,26 +276,176 @@ index 6008c634c408c4eed563815da4d57b2eef69835c..51b2c3512c7619ca1fc91368e3b4d8a4
  
          }
      }
-diff --git a/src/main/java/net/minecraft/world/level/block/TurtleEggBlock.java b/src/main/java/net/minecraft/world/level/block/TurtleEggBlock.java
-index a6f408e56fa6c9de82fd93555fe21e1b11ce1022..83e344825f30e4ad890256d214b46dc6cb0bc50b 100644
---- a/src/main/java/net/minecraft/world/level/block/TurtleEggBlock.java
-+++ b/src/main/java/net/minecraft/world/level/block/TurtleEggBlock.java
-@@ -65,15 +65,15 @@ public class TurtleEggBlock extends Block {
+diff --git a/src/main/java/net/minecraft/world/level/block/TripWireBlock.java b/src/main/java/net/minecraft/world/level/block/TripWireBlock.java
+index 6fe5be785423a35b6ff4e6206ca281b66845b979..8fd57e6228f876a0c81cd5f8e8ca89c83d55dfa4 100644
+--- a/src/main/java/net/minecraft/world/level/block/TripWireBlock.java
++++ b/src/main/java/net/minecraft/world/level/block/TripWireBlock.java
+@@ -67,96 +67,61 @@ public class TripWireBlock extends Block {
  
-         super.stepOn(world, pos, state, entity);
+     @Override
+     public BlockState getStateForPlacement(BlockPlaceContext ctx) {
+-        if (io.papermc.paper.configuration.GlobalConfiguration.get().blockUpdates.disableTripwireUpdates) return this.defaultBlockState(); // Paper - place tripwire without updating
+-        Level world = ctx.getLevel();
+-        BlockPos blockposition = ctx.getClickedPos();
+-
+-        return (BlockState) ((BlockState) ((BlockState) ((BlockState) this.defaultBlockState().setValue(TripWireBlock.NORTH, this.shouldConnectTo(world.getBlockState(blockposition.north()), Direction.NORTH))).setValue(TripWireBlock.EAST, this.shouldConnectTo(world.getBlockState(blockposition.east()), Direction.EAST))).setValue(TripWireBlock.SOUTH, this.shouldConnectTo(world.getBlockState(blockposition.south()), Direction.SOUTH))).setValue(TripWireBlock.WEST, this.shouldConnectTo(world.getBlockState(blockposition.west()), Direction.WEST));
++        return this.defaultBlockState(); // Cartridge - place tripwire without updating
      }
+ 
+     @Override
+     protected BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor world, BlockPos pos, BlockPos neighborPos) {
+-        if (io.papermc.paper.configuration.GlobalConfiguration.get().blockUpdates.disableTripwireUpdates) return state; // Paper - prevent tripwire from updating
+-        return direction.getAxis().isHorizontal() ? (BlockState) state.setValue((Property) TripWireBlock.PROPERTY_BY_DIRECTION.get(direction), this.shouldConnectTo(neighborState, direction)) : super.updateShape(state, direction, neighborState, world, pos, neighborPos);
++        return state; // Cartridge - prevent tripwire from updating
+     }
+ 
++    // Cartridge
+     @Override
+     protected void onPlace(BlockState state, Level world, BlockPos pos, BlockState oldState, boolean notify) {
+-        if (io.papermc.paper.configuration.GlobalConfiguration.get().blockUpdates.disableTripwireUpdates) return; // Paper - prevent adjacent tripwires from updating
+-        if (!oldState.is(state.getBlock())) {
+-            this.updateSource(world, pos, state);
+-        }
++//        if (io.papermc.paper.configuration.GlobalConfiguration.get().blockUpdates.disableTripwireUpdates) return; // Paper - prevent adjacent tripwires from updating
++//        if (!oldState.is(state.getBlock())) {
++//            this.updateSource(world, pos, state);
++//        }
+     }
+ 
++    // Cartridge
+     @Override
+     protected void onRemove(BlockState state, Level world, BlockPos pos, BlockState newState, boolean moved) {
+-        if (io.papermc.paper.configuration.GlobalConfiguration.get().blockUpdates.disableTripwireUpdates) return; // Paper - prevent adjacent tripwires from updating
+-        if (!moved && !state.is(newState.getBlock())) {
+-            this.updateSource(world, pos, (BlockState) state.setValue(TripWireBlock.POWERED, true));
+-        }
++//        if (io.papermc.paper.configuration.GlobalConfiguration.get().blockUpdates.disableTripwireUpdates) return; // Paper - prevent adjacent tripwires from updating
++//        if (!moved && !state.is(newState.getBlock())) {
++//            this.updateSource(world, pos, (BlockState) state.setValue(TripWireBlock.POWERED, true));
++//        }
+     }
+ 
+     @Override
+     public BlockState playerWillDestroy(Level world, BlockPos pos, BlockState state, Player player) {
+-        if (io.papermc.paper.configuration.GlobalConfiguration.get().blockUpdates.disableTripwireUpdates) return state; // Paper - prevent disarming tripwires
+-        if (!world.isClientSide && !player.getMainHandItem().isEmpty() && player.getMainHandItem().is(Items.SHEARS)) {
+-            world.setBlock(pos, (BlockState) state.setValue(TripWireBlock.DISARMED, true), 4);
+-            world.gameEvent((Entity) player, (Holder) GameEvent.SHEAR, pos);
+-        }
+-
+-        return super.playerWillDestroy(world, pos, state, player);
++        return state; // Cartridge - prevent disarming tripwires
+     }
+ 
+     private void updateSource(Level world, BlockPos pos, BlockState state) {
+-        if (io.papermc.paper.configuration.GlobalConfiguration.get().blockUpdates.disableTripwireUpdates) return; // Paper - prevent adjacent tripwires from updating
+-        Direction[] aenumdirection = new Direction[]{Direction.SOUTH, Direction.WEST};
+-        int i = aenumdirection.length;
+-        int j = 0;
+-
+-        while (j < i) {
+-            Direction enumdirection = aenumdirection[j];
+-            int k = 1;
+-
+-            while (true) {
+-                if (k < 42) {
+-                    BlockPos blockposition1 = pos.relative(enumdirection, k);
+-                    BlockState iblockdata1 = world.getBlockState(blockposition1);
+-
+-                    if (iblockdata1.is(this.hook)) {
+-                        if (iblockdata1.getValue(TripWireHookBlock.FACING) == enumdirection.getOpposite()) {
+-                            TripWireHookBlock.calculateState(world, blockposition1, iblockdata1, false, true, k, state);
+-                        }
+-                    } else if (iblockdata1.is((Block) this)) {
+-                        ++k;
+-                        continue;
+-                    }
+-                }
+-
+-                ++j;
+-                break;
+-            }
+-        }
+-
+-    }
 -
 -    @Override
-+    // Cartridge - Disable eggs from breaking
-+    /*@Override
-     public void fallOn(Level world, BlockState state, BlockPos pos, Entity entity, float fallDistance) {
-         if (!(entity instanceof Zombie)) {
-             this.destroyEgg(world, state, pos, entity, 3);
-         }
- 
-         super.fallOn(world, state, pos, entity, fallDistance);
+-    protected void entityInside(BlockState state, Level world, BlockPos pos, Entity entity) {
+-        if (io.papermc.paper.configuration.GlobalConfiguration.get().blockUpdates.disableTripwireUpdates) return; // Paper - prevent tripwires from detecting collision
+-        if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(world, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
+-        if (!world.isClientSide) {
+-            if (!(Boolean) state.getValue(TripWireBlock.POWERED)) {
+-                this.checkPressed(world, pos);
+-            }
+-        }
 -    }
-+    }*/
+-
+-    @Override
+-    protected void tick(BlockState state, ServerLevel world, BlockPos pos, RandomSource random) {
+-        if (io.papermc.paper.configuration.GlobalConfiguration.get().blockUpdates.disableTripwireUpdates) return; // Paper - prevent tripwire pressed check
+-        if ((Boolean) world.getBlockState(pos).getValue(TripWireBlock.POWERED)) {
+-            this.checkPressed(world, pos);
+-        }
+-    }
++        if (io.papermc.paper.configuration.GlobalConfiguration.get().blockUpdates.disableTripwireUpdates) return; // Cartridge - prevent adjacent tripwires from updating
++    }
++
++    // Cartridge - start
++//    @Override
++//    protected void entityInside(BlockState state, Level world, BlockPos pos, Entity entity) {
++//        if (io.papermc.paper.configuration.GlobalConfiguration.get().blockUpdates.disableTripwireUpdates) return; // Paper - prevent tripwires from detecting collision
++//        if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(world, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
++//        if (!world.isClientSide) {
++//            if (!(Boolean) state.getValue(TripWireBlock.POWERED)) {
++//                this.checkPressed(world, pos);
++//            }
++//        }
++//    }
++
++//    @Override
++//    protected void tick(BlockState state, ServerLevel world, BlockPos pos, RandomSource random) {
++//        if (io.papermc.paper.configuration.GlobalConfiguration.get().blockUpdates.disableTripwireUpdates) return; // Paper - prevent tripwire pressed check
++//        if ((Boolean) world.getBlockState(pos).getValue(TripWireBlock.POWERED)) {
++//            this.checkPressed(world, pos);
++//        }
++//    }
++    // Cartridge - end
+ 
+     private void checkPressed(Level world, BlockPos pos) {
+         BlockState iblockdata = world.getBlockState(pos);
+diff --git a/src/main/java/net/minecraft/world/level/block/TurtleEggBlock.java b/src/main/java/net/minecraft/world/level/block/TurtleEggBlock.java
+index a6f408e56fa6c9de82fd93555fe21e1b11ce1022..0c36cb6a2212180410e998522b5deecbbcdaeccc 100644
+--- a/src/main/java/net/minecraft/world/level/block/TurtleEggBlock.java
++++ b/src/main/java/net/minecraft/world/level/block/TurtleEggBlock.java
+@@ -66,14 +66,15 @@ public class TurtleEggBlock extends Block {
+         super.stepOn(world, pos, state, entity);
+     }
+ 
+-    @Override
+-    public void fallOn(Level world, BlockState state, BlockPos pos, Entity entity, float fallDistance) {
+-        if (!(entity instanceof Zombie)) {
+-            this.destroyEgg(world, state, pos, entity, 3);
+-        }
+-
+-        super.fallOn(world, state, pos, entity, fallDistance);
+-    }
++    // Cartridge - Disable eggs from breaking
++//    @Override
++//    public void fallOn(Level world, BlockState state, BlockPos pos, Entity entity, float fallDistance) {
++//        if (!(entity instanceof Zombie)) {
++//            this.destroyEgg(world, state, pos, entity, 3);
++//        }
++//
++//        super.fallOn(world, state, pos, entity, fallDistance);
++//    }
  
      private void destroyEgg(Level world, BlockState state, BlockPos pos, Entity entity, int inverseChance) {
          if (this.canDestroyEgg(world, entity)) {
+@@ -82,6 +83,7 @@ public class TurtleEggBlock extends Block {
+                 org.bukkit.event.Cancellable cancellable;
+                 if (entity instanceof Player) {
+                     cancellable = CraftEventFactory.callPlayerInteractEvent((Player) entity, org.bukkit.event.block.Action.PHYSICAL, pos, null, null, null);
++                    return;
+                 } else {
+                     cancellable = new EntityInteractEvent(entity.getBukkitEntity(), CraftBlock.at(world, pos));
+                     world.getCraftServer().getPluginManager().callEvent((EntityInteractEvent) cancellable);
