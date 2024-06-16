@@ -304,6 +304,19 @@ index 1aa5e57a4e6a4be60514d8808a2e6c973d93e798..003391faba5214ac381dde33ec0a0ffd
                          this.playSound(worldserver, this.position());
                      }
  
+diff --git a/src/main/java/net/minecraft/world/entity/vehicle/Boat.java b/src/main/java/net/minecraft/world/entity/vehicle/Boat.java
+index 907f751c859855484151fb5d607acee2f2a35076..5675618a47c6b67f7dcd036f3b7b2f0a9268619d 100644
+--- a/src/main/java/net/minecraft/world/entity/vehicle/Boat.java
++++ b/src/main/java/net/minecraft/world/entity/vehicle/Boat.java
+@@ -913,7 +913,7 @@ public class Boat extends VehicleEntity implements Leashable, VariantHolder<Boat
+             if (onGround) {
+                 if (this.fallDistance > 3.0F) {
+                     if (this.status != Boat.Status.ON_LAND) {
+-                        this.resetFallDistance();
++                        //this.resetFallDistance(); // Cartridge
+                         return;
+                     }
+ 
 diff --git a/src/main/java/net/minecraft/world/item/ChorusFruitItem.java b/src/main/java/net/minecraft/world/item/ChorusFruitItem.java
 index 9f59f63203807abc3802d3e2f060d90d0d754860..04210a913927d864e697775906422de7ecddb43d 100644
 --- a/src/main/java/net/minecraft/world/item/ChorusFruitItem.java
