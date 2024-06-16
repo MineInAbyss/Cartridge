@@ -1,0 +1,23 @@
+name: Publish
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths-ignore:
+      - '**.md'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: MineInAbyss/publish-action@develop
+        with:
+          build-tasks: applyPatches createMojmapBundlerJar
+          release-files: |
+            ${{ github.workspace }}/publish/*.jar
