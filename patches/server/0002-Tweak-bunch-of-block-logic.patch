@@ -488,3 +488,79 @@ index a6f408e56fa6c9de82fd93555fe21e1b11ce1022..0c36cb6a2212180410e998522b5deecb
                  } else {
                      cancellable = new EntityInteractEvent(entity.getBukkitEntity(), CraftBlock.at(world, pos));
                      world.getCraftServer().getPluginManager().callEvent((EntityInteractEvent) cancellable);
+diff --git a/src/main/java/net/minecraft/world/level/material/FlowingFluid.java b/src/main/java/net/minecraft/world/level/material/FlowingFluid.java
+index 1c0712295695727ee9c4d430d4157b8e17cbd71f..bd96726e26e0b7c59bcb8c7aa18239c56717de5f 100644
+--- a/src/main/java/net/minecraft/world/level/material/FlowingFluid.java
++++ b/src/main/java/net/minecraft/world/level/material/FlowingFluid.java
+@@ -469,38 +469,39 @@ public abstract class FlowingFluid extends Fluid {
+         return this.getTickDelay(world);
+     }
+ 
+-    @Override
+-    public void tick(Level world, BlockPos pos, FluidState state) {
+-        if (!state.isSource()) {
+-            FluidState fluid1 = this.getNewLiquid(world, pos, world.getBlockState(pos));
+-            int i = this.getSpreadDelay(world, pos, state, fluid1);
+-
+-            if (fluid1.isEmpty()) {
+-                state = fluid1;
+-                // CraftBukkit start
+-                FluidLevelChangeEvent event = CraftEventFactory.callFluidLevelChangeEvent(world, pos, Blocks.AIR.defaultBlockState());
+-                if (event.isCancelled()) {
+-                    return;
+-                }
+-                world.setBlock(pos, ((CraftBlockData) event.getNewData()).getState(), 3);
+-                // CraftBukkit end
+-            } else if (!fluid1.equals(state)) {
+-                state = fluid1;
+-                BlockState iblockdata = fluid1.createLegacyBlock();
+-                // CraftBukkit start
+-                FluidLevelChangeEvent event = CraftEventFactory.callFluidLevelChangeEvent(world, pos, iblockdata);
+-                if (event.isCancelled()) {
+-                    return;
+-                }
+-                world.setBlock(pos, ((CraftBlockData) event.getNewData()).getState(), 2);
+-                // CraftBukkit end
+-                world.scheduleTick(pos, fluid1.getType(), i);
+-                world.updateNeighborsAt(pos, iblockdata.getBlock());
+-            }
+-        }
+-
+-        this.spread(world, pos, state);
+-    }
++    // Cartridge - Disable liquid flow
++//    @Override
++//    public void tick(Level world, BlockPos pos, FluidState state) {
++//        if (!state.isSource()) {
++//            FluidState fluid1 = this.getNewLiquid(world, pos, world.getBlockState(pos));
++//            int i = this.getSpreadDelay(world, pos, state, fluid1);
++//
++//            if (fluid1.isEmpty()) {
++//                state = fluid1;
++//                // CraftBukkit start
++//                FluidLevelChangeEvent event = CraftEventFactory.callFluidLevelChangeEvent(world, pos, Blocks.AIR.defaultBlockState());
++//                if (event.isCancelled()) {
++//                    return;
++//                }
++//                world.setBlock(pos, ((CraftBlockData) event.getNewData()).getState(), 3);
++//                // CraftBukkit end
++//            } else if (!fluid1.equals(state)) {
++//                state = fluid1;
++//                BlockState iblockdata = fluid1.createLegacyBlock();
++//                // CraftBukkit start
++//                FluidLevelChangeEvent event = CraftEventFactory.callFluidLevelChangeEvent(world, pos, iblockdata);
++//                if (event.isCancelled()) {
++//                    return;
++//                }
++//                world.setBlock(pos, ((CraftBlockData) event.getNewData()).getState(), 2);
++//                // CraftBukkit end
++//                world.scheduleTick(pos, fluid1.getType(), i);
++//                world.updateNeighborsAt(pos, iblockdata.getBlock());
++//            }
++//        }
++//
++//        this.spread(world, pos, state);
++//    }
+ 
+     protected static int getLegacyLevel(FluidState state) {
+         return state.isSource() ? 0 : 8 - Math.min(state.getAmount(), 8) + ((Boolean) state.getValue(FlowingFluid.FALLING) ? 8 : 0);
