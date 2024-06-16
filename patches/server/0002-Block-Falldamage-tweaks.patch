@@ -283,6 +283,19 @@ index e980c8c356b30d25e2fc5a73b91ad2c6edd4fe05..da252c16c08c7b945c8aeabd0dd54e8a
      }
  
      @Override
+diff --git a/src/main/java/net/minecraft/world/item/MaceItem.java b/src/main/java/net/minecraft/world/item/MaceItem.java
+index e07d6f5589f5eaa95d9009b1b0af71c879b2dddb..ceca9e892186ed141355211cb801c64a2cf5fa77 100644
+--- a/src/main/java/net/minecraft/world/item/MaceItem.java
++++ b/src/main/java/net/minecraft/world/item/MaceItem.java
+@@ -75,7 +75,7 @@ public class MaceItem extends Item {
+                 serverPlayer.currentImpulseImpactPos = serverPlayer.position();
+             }
+ 
+-            serverPlayer.setIgnoreFallDamageFromCurrentImpulse(true);
++            serverPlayer.setIgnoreFallDamageFromCurrentImpulse(false);
+             serverPlayer.setDeltaMovement(serverPlayer.getDeltaMovement().with(Direction.Axis.Y, 0.01F));
+             serverPlayer.connection.send(new ClientboundSetEntityMotionPacket(serverPlayer));
+             if (target.onGround()) {
 diff --git a/src/main/java/net/minecraft/world/level/ClipContext.java b/src/main/java/net/minecraft/world/level/ClipContext.java
 index 3fa2964b979053ecbefc946c7fe76828de86d8f1..6d2bd16ae4ddafa35d30d52f376b3401fd3e23da 100644
 --- a/src/main/java/net/minecraft/world/level/ClipContext.java
