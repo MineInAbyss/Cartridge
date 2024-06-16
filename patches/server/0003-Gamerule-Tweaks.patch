@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Boy <sivertpaulsen2@gmail.com>
+Date: Sun, 16 Jun 2024 13:02:46 +0200
+Subject: [PATCH] Gamerule Tweaks
+
+
+diff --git a/src/main/java/net/minecraft/world/level/GameRules.java b/src/main/java/net/minecraft/world/level/GameRules.java
+index 89e327bc3a45879fe68887c7aadb077f31a770eb..a7b69eefcfbc806a301df333913cc05c2a026dd0 100644
+--- a/src/main/java/net/minecraft/world/level/GameRules.java
++++ b/src/main/java/net/minecraft/world/level/GameRules.java
+@@ -83,8 +83,8 @@ public class GameRules {
+     public static final GameRules.Key<GameRules.IntegerValue> RULE_MAX_COMMAND_FORK_COUNT = GameRules.register("maxCommandForkCount", GameRules.Category.MISC, GameRules.IntegerValue.create(65536));
+     public static final GameRules.Key<GameRules.IntegerValue> RULE_COMMAND_MODIFICATION_BLOCK_LIMIT = GameRules.register("commandModificationBlockLimit", GameRules.Category.MISC, GameRules.IntegerValue.create(32768));
+     public static final GameRules.Key<GameRules.BooleanValue> RULE_ANNOUNCE_ADVANCEMENTS = GameRules.register("announceAdvancements", GameRules.Category.CHAT, GameRules.BooleanValue.create(true));
+-    public static final GameRules.Key<GameRules.BooleanValue> RULE_DISABLE_RAIDS = GameRules.register("disableRaids", GameRules.Category.MOBS, GameRules.BooleanValue.create(false));
+-    public static final GameRules.Key<GameRules.BooleanValue> RULE_DOINSOMNIA = GameRules.register("doInsomnia", GameRules.Category.SPAWNING, GameRules.BooleanValue.create(true));
++    public static final GameRules.Key<GameRules.BooleanValue> RULE_DISABLE_RAIDS = GameRules.register("disableRaids", GameRules.Category.MOBS, GameRules.BooleanValue.create(true));
++    public static final GameRules.Key<GameRules.BooleanValue> RULE_DOINSOMNIA = GameRules.register("doInsomnia", GameRules.Category.SPAWNING, GameRules.BooleanValue.create(false));
+     public static final GameRules.Key<GameRules.BooleanValue> RULE_DO_IMMEDIATE_RESPAWN = GameRules.register("doImmediateRespawn", GameRules.Category.PLAYER, GameRules.BooleanValue.create(false, (minecraftserver, gamerules_gameruleboolean) -> {
+         Iterator iterator = minecraftserver.players().iterator(); // CraftBukkit - per-world
+ 
+@@ -101,9 +101,9 @@ public class GameRules {
+     public static final GameRules.Key<GameRules.BooleanValue> RULE_FALL_DAMAGE = GameRules.register("fallDamage", GameRules.Category.PLAYER, GameRules.BooleanValue.create(true));
+     public static final GameRules.Key<GameRules.BooleanValue> RULE_FIRE_DAMAGE = GameRules.register("fireDamage", GameRules.Category.PLAYER, GameRules.BooleanValue.create(true));
+     public static final GameRules.Key<GameRules.BooleanValue> RULE_FREEZE_DAMAGE = GameRules.register("freezeDamage", GameRules.Category.PLAYER, GameRules.BooleanValue.create(true));
+-    public static final GameRules.Key<GameRules.BooleanValue> RULE_DO_PATROL_SPAWNING = GameRules.register("doPatrolSpawning", GameRules.Category.SPAWNING, GameRules.BooleanValue.create(true));
+-    public static final GameRules.Key<GameRules.BooleanValue> RULE_DO_TRADER_SPAWNING = GameRules.register("doTraderSpawning", GameRules.Category.SPAWNING, GameRules.BooleanValue.create(true));
+-    public static final GameRules.Key<GameRules.BooleanValue> RULE_DO_WARDEN_SPAWNING = GameRules.register("doWardenSpawning", GameRules.Category.SPAWNING, GameRules.BooleanValue.create(true));
++    public static final GameRules.Key<GameRules.BooleanValue> RULE_DO_PATROL_SPAWNING = GameRules.register("doPatrolSpawning", GameRules.Category.SPAWNING, GameRules.BooleanValue.create(false));
++    public static final GameRules.Key<GameRules.BooleanValue> RULE_DO_TRADER_SPAWNING = GameRules.register("doTraderSpawning", GameRules.Category.SPAWNING, GameRules.BooleanValue.create(false));
++    public static final GameRules.Key<GameRules.BooleanValue> RULE_DO_WARDEN_SPAWNING = GameRules.register("doWardenSpawning", GameRules.Category.SPAWNING, GameRules.BooleanValue.create(false));
+     public static final GameRules.Key<GameRules.BooleanValue> RULE_FORGIVE_DEAD_PLAYERS = GameRules.register("forgiveDeadPlayers", GameRules.Category.MOBS, GameRules.BooleanValue.create(true));
+     public static final GameRules.Key<GameRules.BooleanValue> RULE_UNIVERSAL_ANGER = GameRules.register("universalAnger", GameRules.Category.MOBS, GameRules.BooleanValue.create(false));
+     public static final GameRules.Key<GameRules.IntegerValue> RULE_PLAYERS_SLEEPING_PERCENTAGE = GameRules.register("playersSleepingPercentage", GameRules.Category.PLAYER, GameRules.IntegerValue.create(100));
+@@ -114,7 +114,7 @@ public class GameRules {
+     public static final GameRules.Key<GameRules.BooleanValue> RULE_WATER_SOURCE_CONVERSION = GameRules.register("waterSourceConversion", GameRules.Category.UPDATES, GameRules.BooleanValue.create(true));
+     public static final GameRules.Key<GameRules.BooleanValue> RULE_LAVA_SOURCE_CONVERSION = GameRules.register("lavaSourceConversion", GameRules.Category.UPDATES, GameRules.BooleanValue.create(false));
+     public static final GameRules.Key<GameRules.BooleanValue> RULE_GLOBAL_SOUND_EVENTS = GameRules.register("globalSoundEvents", GameRules.Category.MISC, GameRules.BooleanValue.create(true));
+-    public static final GameRules.Key<GameRules.BooleanValue> RULE_DO_VINES_SPREAD = GameRules.register("doVinesSpread", GameRules.Category.UPDATES, GameRules.BooleanValue.create(true));
++    public static final GameRules.Key<GameRules.BooleanValue> RULE_DO_VINES_SPREAD = GameRules.register("doVinesSpread", GameRules.Category.UPDATES, GameRules.BooleanValue.create(false));
+     public static final GameRules.Key<GameRules.BooleanValue> RULE_ENDER_PEARLS_VANISH_ON_DEATH = GameRules.register("enderPearlsVanishOnDeath", GameRules.Category.PLAYER, GameRules.BooleanValue.create(true));
+     public static final GameRules.Key<GameRules.IntegerValue> RULE_SPAWN_CHUNK_RADIUS = GameRules.register("spawnChunkRadius", GameRules.Category.MISC, GameRules.IntegerValue.create(2, 0, 32, (minecraftserver, gamerules_gameruleint) -> {
+         ServerLevel worldserver = minecraftserver; // CraftBukkit - per-world

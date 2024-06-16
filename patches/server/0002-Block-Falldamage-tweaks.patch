@@ -4,6 +4,19 @@ Date: Sat, 15 Jun 2024 01:36:28 +0200
 Subject: [PATCH] Block & Falldamage tweaks
 
 
+diff --git a/src/main/java/net/minecraft/data/tags/VanillaBlockTagsProvider.java b/src/main/java/net/minecraft/data/tags/VanillaBlockTagsProvider.java
+index 118083ab8648ecc620c92a473044a42dfaeb0021..cb59947cc29f7943010977631a47f4cf9fb28de2 100644
+--- a/src/main/java/net/minecraft/data/tags/VanillaBlockTagsProvider.java
++++ b/src/main/java/net/minecraft/data/tags/VanillaBlockTagsProvider.java
+@@ -747,7 +747,7 @@ public class VanillaBlockTagsProvider extends IntrinsicHolderTagsProvider<Block>
+                 Blocks.CAVE_VINES,
+                 Blocks.CAVE_VINES_PLANT
+             );
+-        this.tag(BlockTags.FALL_DAMAGE_RESETTING).addTag(BlockTags.CLIMBABLE).add(Blocks.SWEET_BERRY_BUSH, Blocks.COBWEB);
++        this.tag(BlockTags.FALL_DAMAGE_RESETTING);
+         this.tag(BlockTags.PIGLIN_REPELLENTS)
+             .add(Blocks.SOUL_FIRE)
+             .add(Blocks.SOUL_TORCH)
 diff --git a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 index be2e97e4de911ad9570a9b4e9f3c5fafa93f6203..d9b787e0af69bf0eed31daa3f68617cbf7bb818e 100644
 --- a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
