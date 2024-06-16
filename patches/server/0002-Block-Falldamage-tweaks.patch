@@ -17,11 +17,63 @@ index 118083ab8648ecc620c92a473044a42dfaeb0021..cb59947cc29f7943010977631a47f4cf
          this.tag(BlockTags.PIGLIN_REPELLENTS)
              .add(Blocks.SOUL_FIRE)
              .add(Blocks.SOUL_TORCH)
+diff --git a/src/main/java/net/minecraft/server/level/ServerPlayer.java b/src/main/java/net/minecraft/server/level/ServerPlayer.java
+index 89ed20e9c629cf39a24c7a0ce5c4fee41fc64fd5..6b6cf8cc26c1a17e291c6b10192c0925451bb39c 100644
+--- a/src/main/java/net/minecraft/server/level/ServerPlayer.java
++++ b/src/main/java/net/minecraft/server/level/ServerPlayer.java
+@@ -1645,7 +1645,7 @@ public class ServerPlayer extends net.minecraft.world.entity.player.Player imple
+                 this.spawnExtraParticlesOnFall = false;
+             }
+ 
+-            super.checkFallDamage(yDifference, onGround, iblockdata, blockposition);
++            super.checkFallDamage(yDifference, onGround || hasLandedInLiquid(), iblockdata, blockposition);
+         }
+     }
+ 
 diff --git a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index be2e97e4de911ad9570a9b4e9f3c5fafa93f6203..d9b787e0af69bf0eed31daa3f68617cbf7bb818e 100644
+index be2e97e4de911ad9570a9b4e9f3c5fafa93f6203..2c105037bf68c27712c003fa4a1ab421d5d37bc2 100644
 --- a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-@@ -1470,7 +1470,7 @@ public class ServerGamePacketListenerImpl extends ServerCommonPacketListenerImpl
+@@ -1,5 +1,6 @@
+ package net.minecraft.server.network;
+ 
++import com.destroystokyo.paper.utils.PaperPluginLogger;
+ import com.google.common.collect.Lists;
+ import com.google.common.primitives.Floats;
+ import com.mojang.authlib.GameProfile;
+@@ -7,6 +8,7 @@ import com.mojang.brigadier.ParseResults;
+ import com.mojang.brigadier.StringReader;
+ import com.mojang.brigadier.suggestion.Suggestions;
+ import com.mojang.logging.LogUtils;
++import io.papermc.paper.adventure.providers.ComponentLoggerProviderImpl;
+ import it.unimi.dsi.fastutil.ints.Int2ObjectMap.Entry;
+ import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
+ import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+@@ -135,6 +137,7 @@ import net.minecraft.server.MinecraftServer;
+ import net.minecraft.server.level.ServerLevel;
+ import net.minecraft.server.level.ServerPlayer;
+ import net.minecraft.stats.ServerRecipeBook;
++import net.minecraft.tags.BlockTags;
+ import net.minecraft.util.FutureChain;
+ import net.minecraft.util.Mth;
+ import net.minecraft.util.SignatureValidator;
+@@ -582,9 +585,13 @@ public class ServerGamePacketListenerImpl extends ServerCommonPacketListenerImpl
+                 if (entity instanceof LivingEntity) {
+                     LivingEntity entityliving = (LivingEntity) entity;
+ 
+-                    if (entityliving.onClimbable()) {
+-                        entityliving.resetFallDistance();
++                    // Cartridge start
++                    if (entityliving.getInBlockState().is(BlockTags.CLIMBABLE)) {
++                        // If on climbable and the last climbable is not empty, they are currently climbing
++                        // If it is not present, they landed on the ladder, and we want to retain their falldistance
++                        if (entityliving.getLastClimbablePos().isPresent()) entityliving.resetFallDistance();
+                     }
++                    // Cartridge end
+                 }
+ 
+                 entity.move(MoverType.PLAYER, new Vec3(d6, d7, d8));
+@@ -1470,7 +1477,7 @@ public class ServerGamePacketListenerImpl extends ServerCommonPacketListenerImpl
                              if (teleportBack) {
                              // Paper end - Add fail move event
                                  this.internalTeleport(d3, d4, d5, f, f1, Collections.emptySet()); // CraftBukkit - SPIGOT-1807: Don't call teleport event, when the client thinks the player is falling, because the chunks are not loaded on the client yet.
@@ -71,7 +123,7 @@ index 14db8510af7465eb663501008ca35f8ec63bfe30..9243804d52caf04d5e331dc025b85cb7
      }
  
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index 25a7dfddb44a11f6e20c459141a61270c0c12d4c..a4ef2cff6678bf334c43944b9a8e4755d47c9e5a 100644
+index 25a7dfddb44a11f6e20c459141a61270c0c12d4c..2c5e2b411700391b4d40afe877ec3be2c7834f5b 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
 @@ -373,7 +373,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
@@ -83,16 +135,27 @@ index 25a7dfddb44a11f6e20c459141a61270c0c12d4c..a4ef2cff6678bf334c43944b9a8e4755
                  this.onChangedBlock(worldserver, landedPosition);
                  double d1 = this.getAttributeValue(Attributes.SAFE_FALL_DISTANCE);
  
-@@ -407,7 +407,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+@@ -407,10 +407,18 @@ public abstract class LivingEntity extends Entity implements Attackable {
              }
          }
  
 -        super.checkFallDamage(heightDifference, onGround, state, landedPosition);
-+        super.checkFallDamage(heightDifference, onGround || isInWater(), state, landedPosition); // Cartridge - Make water not negate falldamage
++        // Cartridge start
++        boolean onSurface = onGround;
++        boolean silentOnClimbable = this.getInBlockState().is(BlockTags.CLIMBABLE);
++        if (!onSurface) onSurface = hasLandedInLiquid();
++        if (!onSurface) onSurface = silentOnClimbable && lastClimbablePos.isEmpty();
++
++        super.checkFallDamage(heightDifference, onSurface, state, landedPosition);
++
          if (onGround) {
              this.lastClimbablePos = Optional.empty();
          }
-@@ -3453,7 +3453,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
++        // Cartridge end
+ 
+     }
+ 
+@@ -3453,7 +3461,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
          Vec3 vec3d1 = new Vec3((double) this.xxa, (double) this.yya, (double) this.zza);
  
          if (this.hasEffect(MobEffects.SLOW_FALLING) || this.hasEffect(MobEffects.LEVITATION)) {
@@ -101,7 +164,7 @@ index 25a7dfddb44a11f6e20c459141a61270c0c12d4c..a4ef2cff6678bf334c43944b9a8e4755
          }
  
          label104:
-@@ -3671,7 +3671,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+@@ -3671,7 +3679,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
          super.rideTick();
          this.oRun = this.run;
          this.run = 0.0F;
@@ -110,6 +173,19 @@ index 25a7dfddb44a11f6e20c459141a61270c0c12d4c..a4ef2cff6678bf334c43944b9a8e4755
      }
  
      @Override
+diff --git a/src/main/java/net/minecraft/world/level/ClipContext.java b/src/main/java/net/minecraft/world/level/ClipContext.java
+index 3fa2964b979053ecbefc946c7fe76828de86d8f1..6d2bd16ae4ddafa35d30d52f376b3401fd3e23da 100644
+--- a/src/main/java/net/minecraft/world/level/ClipContext.java
++++ b/src/main/java/net/minecraft/world/level/ClipContext.java
+@@ -52,7 +52,7 @@ public class ClipContext {
+     public static enum Block implements ClipContext.ShapeGetter {
+ 
+         COLLIDER(BlockBehaviour.BlockStateBase::getCollisionShape), OUTLINE(BlockBehaviour.BlockStateBase::getShape), VISUAL(BlockBehaviour.BlockStateBase::getVisualShape), FALLDAMAGE_RESETTING((iblockdata, iblockaccess, blockposition, voxelshapecollision) -> {
+-            return iblockdata.is(BlockTags.FALL_DAMAGE_RESETTING) ? Shapes.block() : Shapes.empty();
++            return Shapes.empty();
+         });
+ 
+         private final ClipContext.ShapeGetter shapeGetter;
 diff --git a/src/main/java/net/minecraft/world/level/block/BedBlock.java b/src/main/java/net/minecraft/world/level/block/BedBlock.java
 index 85d598c3354ee62f0fd1b26e485e0084967c0380..eaf2925b7a50aac7cb82298ce8a422891187cda5 100644
 --- a/src/main/java/net/minecraft/world/level/block/BedBlock.java
