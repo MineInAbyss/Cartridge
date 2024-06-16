@@ -4,10 +4,32 @@ Date: Sat, 15 Jun 2024 01:36:28 +0200
 Subject: [PATCH] Block & Falldamage tweaks
 
 
+diff --git a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
+index be2e97e4de911ad9570a9b4e9f3c5fafa93f6203..d9b787e0af69bf0eed31daa3f68617cbf7bb818e 100644
+--- a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
++++ b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
+@@ -1470,7 +1470,7 @@ public class ServerGamePacketListenerImpl extends ServerCommonPacketListenerImpl
+                             if (teleportBack) {
+                             // Paper end - Add fail move event
+                                 this.internalTeleport(d3, d4, d5, f, f1, Collections.emptySet()); // CraftBukkit - SPIGOT-1807: Don't call teleport event, when the client thinks the player is falling, because the chunks are not loaded on the client yet.
+-                                this.player.doCheckFallDamage(this.player.getX() - d3, this.player.getY() - d4, this.player.getZ() - d5, packet.isOnGround());
++                                this.player.doCheckFallDamage(this.player.getX() - d3, this.player.getY() - d4, this.player.getZ() - d5, packet.isOnGround() || this.player.isInWater()); // Cartridge - Make water not negate falldamage
+                             } else {
+                                 // CraftBukkit start - fire PlayerMoveEvent
+                                 // Reset to old location first
 diff --git a/src/main/java/net/minecraft/world/entity/Entity.java b/src/main/java/net/minecraft/world/entity/Entity.java
-index 14db8510af7465eb663501008ca35f8ec63bfe30..57c1b34fe7ca9581c68d6126c743d428cdf76f7a 100644
+index 14db8510af7465eb663501008ca35f8ec63bfe30..9243804d52caf04d5e331dc025b85cb766162659 100644
 --- a/src/main/java/net/minecraft/world/entity/Entity.java
 +++ b/src/main/java/net/minecraft/world/entity/Entity.java
+@@ -1072,7 +1072,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+                     BlockHitResult movingobjectpositionblock = this.level().clip(new ClipContext(this.position(), this.position().add(vec3d1), ClipContext.Block.FALLDAMAGE_RESETTING, ClipContext.Fluid.WATER, this));
+ 
+                     if (movingobjectpositionblock.getType() != HitResult.Type.MISS) {
+-                        this.resetFallDistance();
++                        //this.resetFallDistance(); // Cartridge - Make water not negate falldamage
+                     }
+                 }
+ 
 @@ -1729,7 +1729,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                  }
              }
@@ -17,6 +39,15 @@ index 14db8510af7465eb663501008ca35f8ec63bfe30..57c1b34fe7ca9581c68d6126c743d428
          }
      }
  
+@@ -1800,7 +1800,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+                 this.doWaterSplashEffect();
+             }
+ 
+-            this.resetFallDistance();
++            //this.resetFallDistance(); // Cartridge - Make water not negate falldamage
+             this.wasTouchingWater = true;
+             this.clearFire();
+         } else {
 @@ -3444,7 +3444,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
      }
  
@@ -27,9 +58,27 @@ index 14db8510af7465eb663501008ca35f8ec63bfe30..57c1b34fe7ca9581c68d6126c743d428
      }
  
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index 25a7dfddb44a11f6e20c459141a61270c0c12d4c..7ef00972dd8499b04c8a24d7e77fe0603bd0e3c0 100644
+index 25a7dfddb44a11f6e20c459141a61270c0c12d4c..a4ef2cff6678bf334c43944b9a8e4755d47c9e5a 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
+@@ -373,7 +373,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+         Level world = this.level();
+ 
+         if (world instanceof ServerLevel worldserver) {
+-            if (onGround && this.fallDistance > 0.0F) {
++            if ((onGround || isInWater()) && this.fallDistance > 0.0F) { // Cartridge - Make water not negate falldamage
+                 this.onChangedBlock(worldserver, landedPosition);
+                 double d1 = this.getAttributeValue(Attributes.SAFE_FALL_DISTANCE);
+ 
+@@ -407,7 +407,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+             }
+         }
+ 
+-        super.checkFallDamage(heightDifference, onGround, state, landedPosition);
++        super.checkFallDamage(heightDifference, onGround || isInWater(), state, landedPosition); // Cartridge - Make water not negate falldamage
+         if (onGround) {
+             this.lastClimbablePos = Optional.empty();
+         }
 @@ -3453,7 +3453,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
          Vec3 vec3d1 = new Vec3((double) this.xxa, (double) this.yya, (double) this.zza);
  
