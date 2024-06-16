@@ -17,11 +17,81 @@ index 118083ab8648ecc620c92a473044a42dfaeb0021..cb59947cc29f7943010977631a47f4cf
          this.tag(BlockTags.PIGLIN_REPELLENTS)
              .add(Blocks.SOUL_FIRE)
              .add(Blocks.SOUL_TORCH)
+diff --git a/src/main/java/net/minecraft/network/protocol/common/ClientboundUpdateTagsPacket.java b/src/main/java/net/minecraft/network/protocol/common/ClientboundUpdateTagsPacket.java
+index 0e0c9a54df98413b0ad4d195dd5ba21132cf4065..027d4e5dffb0d7f085b9a7792ad61b90cb37d5c2 100644
+--- a/src/main/java/net/minecraft/network/protocol/common/ClientboundUpdateTagsPacket.java
++++ b/src/main/java/net/minecraft/network/protocol/common/ClientboundUpdateTagsPacket.java
+@@ -1,13 +1,27 @@
+ package net.minecraft.network.protocol.common;
+ 
++import java.util.ArrayList;
++import java.util.List;
+ import java.util.Map;
++import java.util.Optional;
++
++import it.unimi.dsi.fastutil.ints.IntArrayList;
++import it.unimi.dsi.fastutil.ints.IntList;
+ import net.minecraft.core.Registry;
++import net.minecraft.core.registries.BuiltInRegistries;
++import net.minecraft.core.registries.Registries;
++import net.minecraft.nbt.Tag;
+ import net.minecraft.network.FriendlyByteBuf;
+ import net.minecraft.network.codec.StreamCodec;
+ import net.minecraft.network.protocol.Packet;
+ import net.minecraft.network.protocol.PacketType;
+ import net.minecraft.resources.ResourceKey;
++import net.minecraft.resources.ResourceLocation;
++import net.minecraft.server.level.ServerPlayer;
++import net.minecraft.tags.BlockTags;
+ import net.minecraft.tags.TagNetworkSerialization;
++import net.minecraft.world.level.block.Block;
++import org.jetbrains.annotations.Nullable;
+ 
+ public class ClientboundUpdateTagsPacket implements Packet<ClientCommonPacketListener> {
+     public static final StreamCodec<FriendlyByteBuf, ClientboundUpdateTagsPacket> STREAM_CODEC = Packet.codec(
+@@ -37,6 +51,26 @@ public class ClientboundUpdateTagsPacket implements Packet<ClientCommonPacketLis
+         listener.handleUpdateTags(this);
+     }
+ 
++    // Cartridge start
++    @Override
++    public void onPacketDispatch(@Nullable ServerPlayer player) {
++        // if null aka not play-phase return
++        if (player == null) {
++            return;
++        }
++        Map<ResourceLocation, IntList> regTags = Optional.ofNullable(tags.get(BuiltInRegistries.BLOCK.key())).map(n -> n.tags).orElse(null);
++        // If the packet does not contain the block-registry, return as tag was not modified
++        if (regTags == null) {
++            return;
++        }
++        IntList climbableIds = regTags.get(BlockTags.CLIMBABLE.location());
++        // If climbable is not in the packet, return
++        if (climbableIds == null) return;
++        // Set the client-side climbable state based on packet
++        player.hasClientSideClimbable = !climbableIds.isEmpty();
++    }
++    // Cartridge end
++
+     public Map<ResourceKey<? extends Registry<?>>, TagNetworkSerialization.NetworkPayload> getTags() {
+         return this.tags;
+     }
 diff --git a/src/main/java/net/minecraft/server/level/ServerPlayer.java b/src/main/java/net/minecraft/server/level/ServerPlayer.java
-index 89ed20e9c629cf39a24c7a0ce5c4fee41fc64fd5..6b6cf8cc26c1a17e291c6b10192c0925451bb39c 100644
+index 89ed20e9c629cf39a24c7a0ce5c4fee41fc64fd5..d325c4fcc70d189a77b57877607232b7496b7dfb 100644
 --- a/src/main/java/net/minecraft/server/level/ServerPlayer.java
 +++ b/src/main/java/net/minecraft/server/level/ServerPlayer.java
-@@ -1645,7 +1645,7 @@ public class ServerPlayer extends net.minecraft.world.entity.player.Player imple
+@@ -332,6 +332,10 @@ public class ServerPlayer extends net.minecraft.world.entity.player.Player imple
+     }
+     // Paper end - rewrite chunk system
+ 
++    // Cartridge start
++    public boolean hasClientSideClimbable = true;
++    // Cartridge end
++
+     public ServerPlayer(MinecraftServer server, ServerLevel world, GameProfile profile, ClientInformation clientOptions) {
+         super(world, world.getSharedSpawnPos(), world.getSharedSpawnAngle(), profile);
+         this.chatVisibility = ChatVisiblity.FULL;
+@@ -1645,7 +1649,7 @@ public class ServerPlayer extends net.minecraft.world.entity.player.Player imple
                  this.spawnExtraParticlesOnFall = false;
              }
  
@@ -31,7 +101,7 @@ index 89ed20e9c629cf39a24c7a0ce5c4fee41fc64fd5..6b6cf8cc26c1a17e291c6b10192c0925
      }
  
 diff --git a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index be2e97e4de911ad9570a9b4e9f3c5fafa93f6203..2c105037bf68c27712c003fa4a1ab421d5d37bc2 100644
+index 7796e191747be545e744564a2b0b65790f69114d..84f5b7ab31d6030b4d6f82253d113e028c57627d 100644
 --- a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 @@ -1,5 +1,6 @@
@@ -82,11 +152,33 @@ index be2e97e4de911ad9570a9b4e9f3c5fafa93f6203..2c105037bf68c27712c003fa4a1ab421
                              } else {
                                  // CraftBukkit start - fire PlayerMoveEvent
                                  // Reset to old location first
+diff --git a/src/main/java/net/minecraft/tags/TagNetworkSerialization.java b/src/main/java/net/minecraft/tags/TagNetworkSerialization.java
+index b6c1c9d6bef3dd234c9bddb628ac6620ad12b854..d4a8b1986cbd5191b9b3a8813278c9ff01df82f9 100644
+--- a/src/main/java/net/minecraft/tags/TagNetworkSerialization.java
++++ b/src/main/java/net/minecraft/tags/TagNetworkSerialization.java
+@@ -47,7 +47,7 @@ public class TagNetworkSerialization {
+         return new TagNetworkSerialization.NetworkPayload(map);
+     }
+ 
+-    static <T> void deserializeTagsFromNetwork(
++    public static <T> void deserializeTagsFromNetwork(
+         ResourceKey<? extends Registry<T>> registryKey,
+         Registry<T> registry,
+         TagNetworkSerialization.NetworkPayload serialized,
+@@ -61,7 +61,7 @@ public class TagNetworkSerialization {
+     }
+ 
+     public static final class NetworkPayload {
+-        final Map<ResourceLocation, IntList> tags;
++        public final Map<ResourceLocation, IntList> tags;
+ 
+         NetworkPayload(Map<ResourceLocation, IntList> contents) {
+             this.tags = contents;
 diff --git a/src/main/java/net/minecraft/world/entity/Entity.java b/src/main/java/net/minecraft/world/entity/Entity.java
-index 14db8510af7465eb663501008ca35f8ec63bfe30..9243804d52caf04d5e331dc025b85cb766162659 100644
+index 898651b7cfff15fe1afb690c247cdc3936d12fa6..ea633d68865649c433e933ecc57d644b5d695ef2 100644
 --- a/src/main/java/net/minecraft/world/entity/Entity.java
 +++ b/src/main/java/net/minecraft/world/entity/Entity.java
-@@ -1072,7 +1072,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1103,7 +1103,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                      BlockHitResult movingobjectpositionblock = this.level().clip(new ClipContext(this.position(), this.position().add(vec3d1), ClipContext.Block.FALLDAMAGE_RESETTING, ClipContext.Fluid.WATER, this));
  
                      if (movingobjectpositionblock.getType() != HitResult.Type.MISS) {
@@ -95,7 +187,7 @@ index 14db8510af7465eb663501008ca35f8ec63bfe30..9243804d52caf04d5e331dc025b85cb7
                      }
                  }
  
-@@ -1729,7 +1729,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1760,7 +1760,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                  }
              }
  
@@ -104,7 +196,7 @@ index 14db8510af7465eb663501008ca35f8ec63bfe30..9243804d52caf04d5e331dc025b85cb7
          }
      }
  
-@@ -1800,7 +1800,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1831,7 +1831,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                  this.doWaterSplashEffect();
              }
  
@@ -113,7 +205,7 @@ index 14db8510af7465eb663501008ca35f8ec63bfe30..9243804d52caf04d5e331dc025b85cb7
              this.wasTouchingWater = true;
              this.clearFire();
          } else {
-@@ -3444,7 +3444,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -3475,7 +3475,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
      }
  
      public void makeStuckInBlock(BlockState state, Vec3 multiplier) {
@@ -123,7 +215,7 @@ index 14db8510af7465eb663501008ca35f8ec63bfe30..9243804d52caf04d5e331dc025b85cb7
      }
  
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index 25a7dfddb44a11f6e20c459141a61270c0c12d4c..2c5e2b411700391b4d40afe877ec3be2c7834f5b 100644
+index e980c8c356b30d25e2fc5a73b91ad2c6edd4fe05..da252c16c08c7b945c8aeabd0dd54e8a292a79f6 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
 @@ -373,7 +373,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
@@ -142,9 +234,9 @@ index 25a7dfddb44a11f6e20c459141a61270c0c12d4c..2c5e2b411700391b4d40afe877ec3be2
 -        super.checkFallDamage(heightDifference, onGround, state, landedPosition);
 +        // Cartridge start
 +        boolean onSurface = onGround;
-+        boolean silentOnClimbable = this.getInBlockState().is(BlockTags.CLIMBABLE);
++        boolean silentOnClimbable = this.getInBlockState().is(BlockTags.CLIMBABLE) && getLastClimbablePos().isPresent();
 +        if (!onSurface) onSurface = hasLandedInLiquid();
-+        if (!onSurface) onSurface = silentOnClimbable && lastClimbablePos.isEmpty();
++        if (!onSurface) onSurface = silentOnClimbable && getLastClimbablePos().isEmpty();
 +
 +        super.checkFallDamage(heightDifference, onSurface, state, landedPosition);
 +
@@ -155,7 +247,25 @@ index 25a7dfddb44a11f6e20c459141a61270c0c12d4c..2c5e2b411700391b4d40afe877ec3be2
  
      }
  
-@@ -3453,7 +3461,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+@@ -2025,11 +2033,16 @@ public abstract class LivingEntity extends Entity implements Attackable {
+     // CraftBukkit end
+ 
+     public Optional<BlockPos> getLastClimbablePos() {
++        if (this instanceof ServerPlayer serverPlayer && !serverPlayer.hasClientSideClimbable) { // Cartridge
++            this.lastClimbablePos = Optional.empty();
++        }
+         return this.lastClimbablePos;
+     }
+ 
+     public boolean onClimbable() {
+-        if (this.isSpectator()) {
++        if (this instanceof ServerPlayer serverPlayer && !serverPlayer.hasClientSideClimbable) { // Cartridge
++            return false;
++        } else if (this.isSpectator()) {
+             return false;
+         } else {
+             BlockPos blockposition = this.blockPosition();
+@@ -3453,7 +3466,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
          Vec3 vec3d1 = new Vec3((double) this.xxa, (double) this.yya, (double) this.zza);
  
          if (this.hasEffect(MobEffects.SLOW_FALLING) || this.hasEffect(MobEffects.LEVITATION)) {
@@ -164,7 +274,7 @@ index 25a7dfddb44a11f6e20c459141a61270c0c12d4c..2c5e2b411700391b4d40afe877ec3be2
          }
  
          label104:
-@@ -3671,7 +3679,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+@@ -3671,7 +3684,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
          super.rideTick();
          this.oRun = this.run;
          this.run = 0.0F;
@@ -173,6 +283,19 @@ index 25a7dfddb44a11f6e20c459141a61270c0c12d4c..2c5e2b411700391b4d40afe877ec3be2
      }
  
      @Override
+diff --git a/src/main/java/net/minecraft/world/item/MaceItem.java b/src/main/java/net/minecraft/world/item/MaceItem.java
+index e07d6f5589f5eaa95d9009b1b0af71c879b2dddb..ceca9e892186ed141355211cb801c64a2cf5fa77 100644
+--- a/src/main/java/net/minecraft/world/item/MaceItem.java
++++ b/src/main/java/net/minecraft/world/item/MaceItem.java
+@@ -75,7 +75,7 @@ public class MaceItem extends Item {
+                 serverPlayer.currentImpulseImpactPos = serverPlayer.position();
+             }
+ 
+-            serverPlayer.setIgnoreFallDamageFromCurrentImpulse(true);
++            serverPlayer.setIgnoreFallDamageFromCurrentImpulse(false);
+             serverPlayer.setDeltaMovement(serverPlayer.getDeltaMovement().with(Direction.Axis.Y, 0.01F));
+             serverPlayer.connection.send(new ClientboundSetEntityMotionPacket(serverPlayer));
+             if (target.onGround()) {
 diff --git a/src/main/java/net/minecraft/world/level/ClipContext.java b/src/main/java/net/minecraft/world/level/ClipContext.java
 index 3fa2964b979053ecbefc946c7fe76828de86d8f1..6d2bd16ae4ddafa35d30d52f376b3401fd3e23da 100644
 --- a/src/main/java/net/minecraft/world/level/ClipContext.java
