@@ -4,6 +4,19 @@ Date: Sat, 15 Jun 2024 01:36:28 +0200
 Subject: [PATCH] Tweak bunch of block-logic
 
 
+diff --git a/src/main/java/net/minecraft/world/entity/Entity.java b/src/main/java/net/minecraft/world/entity/Entity.java
+index 14db8510af7465eb663501008ca35f8ec63bfe30..ca0d46fc7918594dd98ab34fcfb3cd2bac33fac5 100644
+--- a/src/main/java/net/minecraft/world/entity/Entity.java
++++ b/src/main/java/net/minecraft/world/entity/Entity.java
+@@ -3444,7 +3444,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+     }
+ 
+     public void makeStuckInBlock(BlockState state, Vec3 multiplier) {
+-        this.resetFallDistance();
++        //this.resetFallDistance(); // Cartridge
+         this.stuckSpeedMultiplier = multiplier;
+     }
+ 
 diff --git a/src/main/java/net/minecraft/world/level/block/BedBlock.java b/src/main/java/net/minecraft/world/level/block/BedBlock.java
 index 85d598c3354ee62f0fd1b26e485e0084967c0380..eaf2925b7a50aac7cb82298ce8a422891187cda5 100644
 --- a/src/main/java/net/minecraft/world/level/block/BedBlock.java
@@ -188,6 +201,32 @@ index c6f7815b5fad3aad4635208aa2e5c6739e13cb45..403113eaa08963d764e71c08762b88c5
      }
  
      private void maybeDoSlideEffects(Level world, Entity entity) {
+diff --git a/src/main/java/net/minecraft/world/level/block/IceBlock.java b/src/main/java/net/minecraft/world/level/block/IceBlock.java
+index ac775afb265430ac202cfa3900a036d11a308b1e..b58b6b274d1b8798e999a46de5cc715cee1956d2 100644
+--- a/src/main/java/net/minecraft/world/level/block/IceBlock.java
++++ b/src/main/java/net/minecraft/world/level/block/IceBlock.java
+@@ -55,13 +55,14 @@ public class IceBlock extends HalfTransparentBlock {
+ 
+     }
+ 
+-    @Override
+-    protected void randomTick(BlockState state, ServerLevel world, BlockPos pos, RandomSource random) {
+-        if (world.getBrightness(LightLayer.BLOCK, pos) > 11 - state.getLightBlock(world, pos)) {
+-            this.melt(state, world, pos);
+-        }
+-
+-    }
++    // Cartridge - prevent ice from melting
++//    @Override
++//    protected void randomTick(BlockState state, ServerLevel world, BlockPos pos, RandomSource random) {
++//        if (world.getBrightness(LightLayer.BLOCK, pos) > 11 - state.getLightBlock(world, pos)) {
++//            this.melt(state, world, pos);
++//        }
++//
++//    }
+ 
+     protected void melt(BlockState state, Level world, BlockPos pos) {
+         // CraftBukkit start
 diff --git a/src/main/java/net/minecraft/world/level/block/NoteBlock.java b/src/main/java/net/minecraft/world/level/block/NoteBlock.java
 index 1d82cfe7af0dc42f88901fb0c44896771fdf8a93..f3785ed6b32d5c820fef73cfc3a5facbc70c010a 100644
 --- a/src/main/java/net/minecraft/world/level/block/NoteBlock.java
