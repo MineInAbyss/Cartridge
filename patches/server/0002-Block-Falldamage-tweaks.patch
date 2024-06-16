@@ -283,8 +283,42 @@ index e980c8c356b30d25e2fc5a73b91ad2c6edd4fe05..da252c16c08c7b945c8aeabd0dd54e8a
      }
  
      @Override
+diff --git a/src/main/java/net/minecraft/world/entity/projectile/ThrownEnderpearl.java b/src/main/java/net/minecraft/world/entity/projectile/ThrownEnderpearl.java
+index 1aa5e57a4e6a4be60514d8808a2e6c973d93e798..003391faba5214ac381dde33ec0a0ffd16646c90 100644
+--- a/src/main/java/net/minecraft/world/entity/projectile/ThrownEnderpearl.java
++++ b/src/main/java/net/minecraft/world/entity/projectile/ThrownEnderpearl.java
+@@ -87,14 +87,14 @@ public class ThrownEnderpearl extends ThrowableItemProjectile {
+                             }
+ 
+                             // entity.changeDimension(new DimensionTransition(worldserver, this.position(), entity.getDeltaMovement(), entity.getYRot(), entity.getXRot(), DimensionTransition.DO_NOTHING)); // CraftBukkit - moved up
+-                            entity.resetFallDistance();
++                            //entity.resetFallDistance(); // Cartridge
+                             entityplayer.resetCurrentImpulseContext();
+                             entity.hurt(this.damageSources().fall().customEventDamager(this), 5.0F); // CraftBukkit // Paper - fix DamageSource API
+                             this.playSound(worldserver, this.position());
+                         }
+                     } else {
+                         entity.changeDimension(new DimensionTransition(worldserver, this.position(), entity.getDeltaMovement(), entity.getYRot(), entity.getXRot(), DimensionTransition.DO_NOTHING));
+-                        entity.resetFallDistance();
++                        //entity.resetFallDistance(); // Cartridge
+                         this.playSound(worldserver, this.position());
+                     }
+ 
+diff --git a/src/main/java/net/minecraft/world/item/ChorusFruitItem.java b/src/main/java/net/minecraft/world/item/ChorusFruitItem.java
+index 9f59f63203807abc3802d3e2f060d90d0d754860..04210a913927d864e697775906422de7ecddb43d 100644
+--- a/src/main/java/net/minecraft/world/item/ChorusFruitItem.java
++++ b/src/main/java/net/minecraft/world/item/ChorusFruitItem.java
+@@ -59,7 +59,7 @@ public class ChorusFruitItem extends Item {
+                     }
+ 
+                     world.playSound((Player) null, user.getX(), user.getY(), user.getZ(), soundeffect, soundcategory);
+-                    user.resetFallDistance();
++                    //user.resetFallDistance(); // Cartridge
+                     break;
+                 }
+             }
 diff --git a/src/main/java/net/minecraft/world/item/MaceItem.java b/src/main/java/net/minecraft/world/item/MaceItem.java
-index e07d6f5589f5eaa95d9009b1b0af71c879b2dddb..ceca9e892186ed141355211cb801c64a2cf5fa77 100644
+index e07d6f5589f5eaa95d9009b1b0af71c879b2dddb..8513538ffaefdaa37a7d555de739397b8f765787 100644
 --- a/src/main/java/net/minecraft/world/item/MaceItem.java
 +++ b/src/main/java/net/minecraft/world/item/MaceItem.java
 @@ -75,7 +75,7 @@ public class MaceItem extends Item {
@@ -296,6 +330,15 @@ index e07d6f5589f5eaa95d9009b1b0af71c879b2dddb..ceca9e892186ed141355211cb801c64a
              serverPlayer.setDeltaMovement(serverPlayer.getDeltaMovement().with(Direction.Axis.Y, 0.01F));
              serverPlayer.connection.send(new ClientboundSetEntityMotionPacket(serverPlayer));
              if (target.onGround()) {
+@@ -100,7 +100,7 @@ public class MaceItem extends Item {
+     public void postHurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
+         stack.hurtAndBreak(1, attacker, EquipmentSlot.MAINHAND);
+         if (canSmashAttack(attacker)) {
+-            attacker.resetFallDistance();
++            //attacker.resetFallDistance(); // Cartridge
+         }
+     }
+ 
 diff --git a/src/main/java/net/minecraft/world/level/ClipContext.java b/src/main/java/net/minecraft/world/level/ClipContext.java
 index 3fa2964b979053ecbefc946c7fe76828de86d8f1..6d2bd16ae4ddafa35d30d52f376b3401fd3e23da 100644
 --- a/src/main/java/net/minecraft/world/level/ClipContext.java
