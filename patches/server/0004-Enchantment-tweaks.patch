@@ -38,3 +38,16 @@ index 07223046761cb2186d75de8edc03a91d2e8e8b2f..99ee75309bb14e11a188adba1f4e9522
  import net.minecraft.tags.EnchantmentTags;
  import net.minecraft.util.RandomSource;
  import net.minecraft.world.Container;
+diff --git a/src/main/resources/data/minecraft/enchantment/feather_falling.json b/src/main/resources/data/minecraft/enchantment/feather_falling.json
+index ff0e5cff695c48e529b74987ae909f89bb0f7829..3e4a1d50de6e8e5a5d71d602c9977a678400ae10 100644
+--- a/src/main/resources/data/minecraft/enchantment/feather_falling.json
++++ b/src/main/resources/data/minecraft/enchantment/feather_falling.json
+@@ -11,7 +11,7 @@
+           "value": {
+             "type": "minecraft:linear",
+             "base": 3.0,
+-            "per_level_above_first": 3.0
++            "per_level_above_first": 1.5
+           }
+         },
+         "requirements": {
