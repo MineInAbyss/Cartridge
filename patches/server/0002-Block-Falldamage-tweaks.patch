@@ -111,7 +111,7 @@ index 89ed20e9c629cf39a24c7a0ce5c4fee41fc64fd5..b151b3a118cea779d3671b2b5be6476c
  
      @Override
 diff --git a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index 7796e191747be545e744564a2b0b65790f69114d..84f5b7ab31d6030b4d6f82253d113e028c57627d 100644
+index 7796e191747be545e744564a2b0b65790f69114d..ba716582a5bf61b18bf7c2d51205f20779614585 100644
 --- a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 @@ -1,5 +1,6 @@
@@ -153,7 +153,15 @@ index 7796e191747be545e744564a2b0b65790f69114d..84f5b7ab31d6030b4d6f82253d113e02
                  }
  
                  entity.move(MoverType.PLAYER, new Vec3(d6, d7, d8));
-@@ -1470,7 +1477,7 @@ public class ServerGamePacketListenerImpl extends ServerCommonPacketListenerImpl
+@@ -681,6 +688,7 @@ public class ServerGamePacketListenerImpl extends ServerCommonPacketListenerImpl
+ 
+                 this.player.setKnownMovement(vec3d);
+                 this.player.checkMovementStatistics(vec3d.x, vec3d.y, vec3d.z);
++                this.player.fallDistance = entity.fallDistance;
+                 this.clientVehicleIsFloating = d11 >= -0.03125D && !flag1 && !this.server.isFlightAllowed() && !entity.isNoGravity() && this.noBlocksAround(entity);
+                 this.vehicleLastGoodX = entity.getX();
+                 this.vehicleLastGoodY = entity.getY();
+@@ -1470,7 +1478,7 @@ public class ServerGamePacketListenerImpl extends ServerCommonPacketListenerImpl
                              if (teleportBack) {
                              // Paper end - Add fail move event
                                  this.internalTeleport(d3, d4, d5, f, f1, Collections.emptySet()); // CraftBukkit - SPIGOT-1807: Don't call teleport event, when the client thinks the player is falling, because the chunks are not loaded on the client yet.
