@@ -1,3 +1,6 @@
+import io.papermc.paperweight.util.convertToPath
+import paper.libs.org.eclipse.core.runtime.Path
+
 plugins {
     java
     `maven-publish`
@@ -47,6 +50,16 @@ subprojects {
     repositories {
         mavenCentral()
         maven(paperMavenPublicUrl)
+    }
+}
+
+tasks {
+    createMojmapBundlerJar.get().doLast {
+        val destPath = Path(project.findProperty("plugin_path") as? String).toPath().parent ?: return@doLast
+        copy {
+            from(createMojmapBundlerJar.get())
+            into(destPath.toString())
+        }
     }
 }
 
