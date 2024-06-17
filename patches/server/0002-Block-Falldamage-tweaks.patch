@@ -111,7 +111,7 @@ index 89ed20e9c629cf39a24c7a0ce5c4fee41fc64fd5..b151b3a118cea779d3671b2b5be6476c
  
      @Override
 diff --git a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index 7796e191747be545e744564a2b0b65790f69114d..ba716582a5bf61b18bf7c2d51205f20779614585 100644
+index 7796e191747be545e744564a2b0b65790f69114d..3bb8e524c0bca2f8082f4a364d079360060787ae 100644
 --- a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 @@ -1,5 +1,6 @@
@@ -153,14 +153,14 @@ index 7796e191747be545e744564a2b0b65790f69114d..ba716582a5bf61b18bf7c2d51205f207
                  }
  
                  entity.move(MoverType.PLAYER, new Vec3(d6, d7, d8));
-@@ -681,6 +688,7 @@ public class ServerGamePacketListenerImpl extends ServerCommonPacketListenerImpl
- 
-                 this.player.setKnownMovement(vec3d);
-                 this.player.checkMovementStatistics(vec3d.x, vec3d.y, vec3d.z);
-+                this.player.fallDistance = entity.fallDistance;
-                 this.clientVehicleIsFloating = d11 >= -0.03125D && !flag1 && !this.server.isFlightAllowed() && !entity.isNoGravity() && this.noBlocksAround(entity);
+@@ -685,6 +692,7 @@ public class ServerGamePacketListenerImpl extends ServerCommonPacketListenerImpl
                  this.vehicleLastGoodX = entity.getX();
                  this.vehicleLastGoodY = entity.getY();
+                 this.vehicleLastGoodZ = entity.getZ();
++                this.player.fallDistance = entity.fallDistance; // Cartridge
+             }
+ 
+         }
 @@ -1470,7 +1478,7 @@ public class ServerGamePacketListenerImpl extends ServerCommonPacketListenerImpl
                              if (teleportBack) {
                              // Paper end - Add fail move event
@@ -193,10 +193,26 @@ index b6c1c9d6bef3dd234c9bddb628ac6620ad12b854..d4a8b1986cbd5191b9b3a8813278c9ff
          NetworkPayload(Map<ResourceLocation, IntList> contents) {
              this.tags = contents;
 diff --git a/src/main/java/net/minecraft/world/entity/Entity.java b/src/main/java/net/minecraft/world/entity/Entity.java
-index 898651b7cfff15fe1afb690c247cdc3936d12fa6..ea633d68865649c433e933ecc57d644b5d695ef2 100644
+index 898651b7cfff15fe1afb690c247cdc3936d12fa6..e2fe39fd5bbe6f723f9e343dd790431caf39500a 100644
 --- a/src/main/java/net/minecraft/world/entity/Entity.java
 +++ b/src/main/java/net/minecraft/world/entity/Entity.java
-@@ -1103,7 +1103,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -43,6 +43,7 @@ import net.minecraft.core.RegistryAccess;
+ import net.minecraft.core.SectionPos;
+ import net.minecraft.core.particles.BlockParticleOption;
+ import net.minecraft.core.particles.ParticleTypes;
++import net.minecraft.core.registries.BuiltInRegistries;
+ import net.minecraft.nbt.CompoundTag;
+ import net.minecraft.nbt.DoubleTag;
+ import net.minecraft.nbt.FloatTag;
+@@ -83,6 +84,7 @@ import net.minecraft.world.InteractionResult;
+ import net.minecraft.world.Nameable;
+ import net.minecraft.world.damagesource.DamageSource;
+ import net.minecraft.world.damagesource.DamageSources;
++import net.minecraft.world.entity.ai.attributes.Attributes;
+ import net.minecraft.world.entity.item.ItemEntity;
+ import net.minecraft.world.entity.player.Player;
+ import net.minecraft.world.entity.projectile.Projectile;
+@@ -1103,7 +1105,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                      BlockHitResult movingobjectpositionblock = this.level().clip(new ClipContext(this.position(), this.position().add(vec3d1), ClipContext.Block.FALLDAMAGE_RESETTING, ClipContext.Fluid.WATER, this));
  
                      if (movingobjectpositionblock.getType() != HitResult.Type.MISS) {
@@ -205,7 +221,7 @@ index 898651b7cfff15fe1afb690c247cdc3936d12fa6..ea633d68865649c433e933ecc57d644b
                      }
                  }
  
-@@ -1760,7 +1760,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1760,7 +1762,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                  }
              }
  
@@ -214,7 +230,7 @@ index 898651b7cfff15fe1afb690c247cdc3936d12fa6..ea633d68865649c433e933ecc57d644b
          }
      }
  
-@@ -1831,7 +1831,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1831,7 +1833,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                  this.doWaterSplashEffect();
              }
  
@@ -223,7 +239,21 @@ index 898651b7cfff15fe1afb690c247cdc3936d12fa6..ea633d68865649c433e933ecc57d644b
              this.wasTouchingWater = true;
              this.clearFire();
          } else {
-@@ -3475,7 +3475,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -2910,9 +2912,12 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+         }
+     }
+ 
++    // Cartridge start - Prevent entering vehicle when falling
+     protected boolean canRide(Entity entity) {
+-        return !this.isShiftKeyDown() && this.boardingCooldown <= 0;
++        boolean isSafeFallDistance = (!(this instanceof net.minecraft.world.entity.LivingEntity livingEntity) || this.fallDistance < livingEntity.getAttributeValue(Attributes.SAFE_FALL_DISTANCE));
++        return isSafeFallDistance && !this.isShiftKeyDown() && this.boardingCooldown <= 0;
+     }
++    // Cartridge end - Prevent entering vehicle when falling
+ 
+     public void ejectPassengers() {
+         for (int i = this.passengers.size() - 1; i >= 0; --i) {
+@@ -3475,7 +3480,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
      }
  
      public void makeStuckInBlock(BlockState state, Vec3 multiplier) {
