@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Boy <sivertpaulsen2@gmail.com>
+Date: Mon, 17 Jun 2024 12:54:41 +0200
+Subject: [PATCH] Enchantment tweaks
+
+
+diff --git a/src/main/java/net/minecraft/data/tags/VanillaEnchantmentTagsProvider.java b/src/main/java/net/minecraft/data/tags/VanillaEnchantmentTagsProvider.java
+index bf112d49c13b126464401014ebbec0afd65c5034..6ce88860056d6abefc8f4e0b54d553577c618435 100644
+--- a/src/main/java/net/minecraft/data/tags/VanillaEnchantmentTagsProvider.java
++++ b/src/main/java/net/minecraft/data/tags/VanillaEnchantmentTagsProvider.java
+@@ -84,7 +84,7 @@ public class VanillaEnchantmentTagsProvider extends EnchantmentTagsProvider {
+             .add(
+                 Enchantments.PROTECTION,
+                 Enchantments.FIRE_PROTECTION,
+-                Enchantments.FEATHER_FALLING,
++                //Enchantments.FEATHER_FALLING, // Cartridge - Remove Feather Falling
+                 Enchantments.BLAST_PROTECTION,
+                 Enchantments.PROJECTILE_PROTECTION,
+                 Enchantments.RESPIRATION,
+diff --git a/src/main/java/net/minecraft/world/inventory/EnchantmentMenu.java b/src/main/java/net/minecraft/world/inventory/EnchantmentMenu.java
+index 07223046761cb2186d75de8edc03a91d2e8e8b2f..99ee75309bb14e11a188adba1f4e952219d95f06 100644
+--- a/src/main/java/net/minecraft/world/inventory/EnchantmentMenu.java
++++ b/src/main/java/net/minecraft/world/inventory/EnchantmentMenu.java
+@@ -4,6 +4,8 @@ import com.mojang.datafixers.util.Pair;
+ import java.util.Iterator;
+ import java.util.List;
+ import java.util.Optional;
++
++import io.papermc.paper.registry.keys.tags.EnchantmentTagKeys;
+ import net.minecraft.Util;
+ import net.minecraft.advancements.CriteriaTriggers;
+ import net.minecraft.core.BlockPos;
+@@ -17,6 +19,7 @@ import net.minecraft.server.level.ServerPlayer;
+ import net.minecraft.sounds.SoundEvents;
+ import net.minecraft.sounds.SoundSource;
+ import net.minecraft.stats.Stats;
++import net.minecraft.tags.BlockTags;
+ import net.minecraft.tags.EnchantmentTags;
+ import net.minecraft.util.RandomSource;
+ import net.minecraft.world.Container;
