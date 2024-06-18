@@ -30,6 +30,20 @@ index f05ccb7973028c9853de57406a514113b4257079..59db78f559404777ba6e711a0b2c267d
  
      MapID.Builder mapId();
  
+diff --git a/src/main/java/io/papermc/paper/component/item/JukeboxPlayable.java b/src/main/java/io/papermc/paper/component/item/JukeboxPlayable.java
+index 85ebf9c5e372ffc15b556c48f52baba540da1afa..5607a8e59d245cdb967bcd1a12e274667c1413ff 100644
+--- a/src/main/java/io/papermc/paper/component/item/JukeboxPlayable.java
++++ b/src/main/java/io/papermc/paper/component/item/JukeboxPlayable.java
+@@ -17,6 +17,9 @@ public interface JukeboxPlayable extends ShownInTooltip<JukeboxPlayable> {
+         return ComponentTypesBridge.bridge().jukeboxPlayable();
+     }
+ 
++    @Contract(pure = true)
++    @NonNull JukeboxSong jukeboxSong();
++
+ 
+     @ApiStatus.NonExtendable
+     interface Builder extends ShownInTooltip.Builder<JukeboxPlayable.Builder>, ComponentBuilder<JukeboxPlayable> {
 diff --git a/src/main/java/io/papermc/paper/component/item/MapItemColor.java b/src/main/java/io/papermc/paper/component/item/MapItemColor.java
 index 4c606e1d4856a912dc407b6047cb9e024e822cb3..025e2edd791db72b87f4e43bdda6647cfe6b3d7e 100644
 --- a/src/main/java/io/papermc/paper/component/item/MapItemColor.java
