@@ -193,7 +193,7 @@ index b6c1c9d6bef3dd234c9bddb628ac6620ad12b854..d4a8b1986cbd5191b9b3a8813278c9ff
          NetworkPayload(Map<ResourceLocation, IntList> contents) {
              this.tags = contents;
 diff --git a/src/main/java/net/minecraft/world/entity/Entity.java b/src/main/java/net/minecraft/world/entity/Entity.java
-index 898651b7cfff15fe1afb690c247cdc3936d12fa6..e2fe39fd5bbe6f723f9e343dd790431caf39500a 100644
+index 437956b18d5bffd93c46e0be34cf413e9c704e5a..e9228394adea44f1f48108750f1895d3457e28e9 100644
 --- a/src/main/java/net/minecraft/world/entity/Entity.java
 +++ b/src/main/java/net/minecraft/world/entity/Entity.java
 @@ -43,6 +43,7 @@ import net.minecraft.core.RegistryAccess;
@@ -253,7 +253,7 @@ index 898651b7cfff15fe1afb690c247cdc3936d12fa6..e2fe39fd5bbe6f723f9e343dd790431c
  
      public void ejectPassengers() {
          for (int i = this.passengers.size() - 1; i >= 0; --i) {
-@@ -3475,7 +3480,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -3464,7 +3469,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
      }
  
      public void makeStuckInBlock(BlockState state, Vec3 multiplier) {
