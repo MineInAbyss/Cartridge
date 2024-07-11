@@ -77,7 +77,7 @@ index 0e0c9a54df98413b0ad4d195dd5ba21132cf4065..027d4e5dffb0d7f085b9a7792ad61b90
          return this.tags;
      }
 diff --git a/src/main/java/net/minecraft/server/level/ServerPlayer.java b/src/main/java/net/minecraft/server/level/ServerPlayer.java
-index 89ed20e9c629cf39a24c7a0ce5c4fee41fc64fd5..b151b3a118cea779d3671b2b5be6476c09a4dabf 100644
+index 9d1e68c09fa7093cf0f6fa636f90cb15a44cbb38..dd9170d0cc162521545a94847df91abf030ff878 100644
 --- a/src/main/java/net/minecraft/server/level/ServerPlayer.java
 +++ b/src/main/java/net/minecraft/server/level/ServerPlayer.java
 @@ -332,6 +332,10 @@ public class ServerPlayer extends net.minecraft.world.entity.player.Player imple
@@ -91,7 +91,7 @@ index 89ed20e9c629cf39a24c7a0ce5c4fee41fc64fd5..b151b3a118cea779d3671b2b5be6476c
      public ServerPlayer(MinecraftServer server, ServerLevel world, GameProfile profile, ClientInformation clientOptions) {
          super(world, world.getSharedSpawnPos(), world.getSharedSpawnAngle(), profile);
          this.chatVisibility = ChatVisiblity.FULL;
-@@ -1645,7 +1649,7 @@ public class ServerPlayer extends net.minecraft.world.entity.player.Player imple
+@@ -1647,7 +1651,7 @@ public class ServerPlayer extends net.minecraft.world.entity.player.Player imple
                  this.spawnExtraParticlesOnFall = false;
              }
  
@@ -100,7 +100,7 @@ index 89ed20e9c629cf39a24c7a0ce5c4fee41fc64fd5..b151b3a118cea779d3671b2b5be6476c
          }
      }
  
-@@ -1654,7 +1658,8 @@ public class ServerPlayer extends net.minecraft.world.entity.player.Player imple
+@@ -1656,7 +1660,8 @@ public class ServerPlayer extends net.minecraft.world.entity.player.Player imple
          super.onExplosionHit(entity);
          this.currentImpulseImpactPos = this.position();
          this.currentExplosionCause = entity;
@@ -193,7 +193,7 @@ index b6c1c9d6bef3dd234c9bddb628ac6620ad12b854..d4a8b1986cbd5191b9b3a8813278c9ff
          NetworkPayload(Map<ResourceLocation, IntList> contents) {
              this.tags = contents;
 diff --git a/src/main/java/net/minecraft/world/entity/Entity.java b/src/main/java/net/minecraft/world/entity/Entity.java
-index 898651b7cfff15fe1afb690c247cdc3936d12fa6..e2fe39fd5bbe6f723f9e343dd790431caf39500a 100644
+index 83f3ffdd8fa901b3de580d2359cdb5ead0d762cb..e3b171c9cefb21f7efd004e5cf93cce2df7e338c 100644
 --- a/src/main/java/net/minecraft/world/entity/Entity.java
 +++ b/src/main/java/net/minecraft/world/entity/Entity.java
 @@ -43,6 +43,7 @@ import net.minecraft.core.RegistryAccess;
@@ -212,7 +212,7 @@ index 898651b7cfff15fe1afb690c247cdc3936d12fa6..e2fe39fd5bbe6f723f9e343dd790431c
  import net.minecraft.world.entity.item.ItemEntity;
  import net.minecraft.world.entity.player.Player;
  import net.minecraft.world.entity.projectile.Projectile;
-@@ -1103,7 +1105,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1104,7 +1106,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                      BlockHitResult movingobjectpositionblock = this.level().clip(new ClipContext(this.position(), this.position().add(vec3d1), ClipContext.Block.FALLDAMAGE_RESETTING, ClipContext.Fluid.WATER, this));
  
                      if (movingobjectpositionblock.getType() != HitResult.Type.MISS) {
@@ -221,7 +221,7 @@ index 898651b7cfff15fe1afb690c247cdc3936d12fa6..e2fe39fd5bbe6f723f9e343dd790431c
                      }
                  }
  
-@@ -1760,7 +1762,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1761,7 +1763,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                  }
              }
  
@@ -230,7 +230,7 @@ index 898651b7cfff15fe1afb690c247cdc3936d12fa6..e2fe39fd5bbe6f723f9e343dd790431c
          }
      }
  
-@@ -1831,7 +1833,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1832,7 +1834,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                  this.doWaterSplashEffect();
              }
  
@@ -253,7 +253,7 @@ index 898651b7cfff15fe1afb690c247cdc3936d12fa6..e2fe39fd5bbe6f723f9e343dd790431c
  
      public void ejectPassengers() {
          for (int i = this.passengers.size() - 1; i >= 0; --i) {
-@@ -3475,7 +3480,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -3464,7 +3469,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
      }
  
      public void makeStuckInBlock(BlockState state, Vec3 multiplier) {
@@ -263,7 +263,7 @@ index 898651b7cfff15fe1afb690c247cdc3936d12fa6..e2fe39fd5bbe6f723f9e343dd790431c
      }
  
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index e980c8c356b30d25e2fc5a73b91ad2c6edd4fe05..b60c727a169cd3f041f73348818c7a5fa0cc9a4a 100644
+index 909accac7538e1c0c0c51deb2ee0605697c059d0..9abb71376207c6adad02a5e5748bbd6a77787981 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
 @@ -1,12 +1,9 @@
@@ -449,7 +449,7 @@ index e980c8c356b30d25e2fc5a73b91ad2c6edd4fe05..b60c727a169cd3f041f73348818c7a5f
  
      }
  
-@@ -2025,11 +1973,16 @@ public abstract class LivingEntity extends Entity implements Attackable {
+@@ -2062,11 +2010,16 @@ public abstract class LivingEntity extends Entity implements Attackable {
      // CraftBukkit end
  
      public Optional<BlockPos> getLastClimbablePos() {
@@ -467,7 +467,7 @@ index e980c8c356b30d25e2fc5a73b91ad2c6edd4fe05..b60c727a169cd3f041f73348818c7a5f
              return false;
          } else {
              BlockPos blockposition = this.blockPosition();
-@@ -3453,7 +3406,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+@@ -3508,7 +3461,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
          Vec3 vec3d1 = new Vec3((double) this.xxa, (double) this.yya, (double) this.zza);
  
          if (this.hasEffect(MobEffects.SLOW_FALLING) || this.hasEffect(MobEffects.LEVITATION)) {
@@ -476,7 +476,7 @@ index e980c8c356b30d25e2fc5a73b91ad2c6edd4fe05..b60c727a169cd3f041f73348818c7a5f
          }
  
          label104:
-@@ -3671,7 +3624,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+@@ -3726,7 +3679,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
          super.rideTick();
          this.oRun = this.run;
          this.run = 0.0F;
@@ -521,7 +521,7 @@ index 1aa5e57a4e6a4be60514d8808a2e6c973d93e798..7ef4a753d6d2716d6b4754d0f9932e35
                      }
  
 diff --git a/src/main/java/net/minecraft/world/entity/vehicle/Boat.java b/src/main/java/net/minecraft/world/entity/vehicle/Boat.java
-index 907f751c859855484151fb5d607acee2f2a35076..5675618a47c6b67f7dcd036f3b7b2f0a9268619d 100644
+index f1955afc8e367f80ead85bd5ad3b8d66c255565a..5ed320e42963dc6d87d701b0e8b02936f504440a 100644
 --- a/src/main/java/net/minecraft/world/entity/vehicle/Boat.java
 +++ b/src/main/java/net/minecraft/world/entity/vehicle/Boat.java
 @@ -913,7 +913,7 @@ public class Boat extends VehicleEntity implements Leashable, VariantHolder<Boat
