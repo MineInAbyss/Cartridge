@@ -10,3 +10,4 @@
 #     minecraft net/minecraft/world/level/entity/LevelEntityGetter.java
 
 mc_data tags/enchantment/in_enchanting_table.json
+mc_data tags/block/fall_damage_resetting.json

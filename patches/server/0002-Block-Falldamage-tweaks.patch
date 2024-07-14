@@ -111,7 +111,7 @@ index 9d1e68c09fa7093cf0f6fa636f90cb15a44cbb38..dd9170d0cc162521545a94847df91abf
  
      @Override
 diff --git a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index 7796e191747be545e744564a2b0b65790f69114d..3bb8e524c0bca2f8082f4a364d079360060787ae 100644
+index 7796e191747be545e744564a2b0b65790f69114d..a3a853b07e32d8899985c1caf28986a1638c77f6 100644
 --- a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 @@ -1,5 +1,6 @@
@@ -170,6 +170,15 @@ index 7796e191747be545e744564a2b0b65790f69114d..3bb8e524c0bca2f8082f4a364d079360
                              } else {
                                  // CraftBukkit start - fire PlayerMoveEvent
                                  // Reset to old location first
+@@ -1549,7 +1557,7 @@ public class ServerGamePacketListenerImpl extends ServerCommonPacketListenerImpl
+                                 this.player.doCheckFallDamage(this.player.getX() - d3, this.player.getY() - d4, this.player.getZ() - d5, packet.isOnGround());
+                                 this.player.setKnownMovement(vec3d);
+                                 if (flag1) {
+-                                    this.player.resetFallDistance();
++                                    //this.player.resetFallDistance();
+                                 }
+ 
+                                 if (packet.isOnGround() || this.player.hasLandedInLiquid() || this.player.onClimbable() || this.player.isSpectator() || flag || flag4) {
 diff --git a/src/main/java/net/minecraft/tags/TagNetworkSerialization.java b/src/main/java/net/minecraft/tags/TagNetworkSerialization.java
 index b6c1c9d6bef3dd234c9bddb628ac6620ad12b854..d4a8b1986cbd5191b9b3a8813278c9ff01df82f9 100644
 --- a/src/main/java/net/minecraft/tags/TagNetworkSerialization.java
@@ -193,7 +202,7 @@ index b6c1c9d6bef3dd234c9bddb628ac6620ad12b854..d4a8b1986cbd5191b9b3a8813278c9ff
          NetworkPayload(Map<ResourceLocation, IntList> contents) {
              this.tags = contents;
 diff --git a/src/main/java/net/minecraft/world/entity/Entity.java b/src/main/java/net/minecraft/world/entity/Entity.java
-index 83f3ffdd8fa901b3de580d2359cdb5ead0d762cb..e3b171c9cefb21f7efd004e5cf93cce2df7e338c 100644
+index 83f3ffdd8fa901b3de580d2359cdb5ead0d762cb..c8686c88672b17b89e6297227c903b5e6e96482d 100644
 --- a/src/main/java/net/minecraft/world/entity/Entity.java
 +++ b/src/main/java/net/minecraft/world/entity/Entity.java
 @@ -43,6 +43,7 @@ import net.minecraft.core.RegistryAccess;
@@ -221,6 +230,15 @@ index 83f3ffdd8fa901b3de580d2359cdb5ead0d762cb..e3b171c9cefb21f7efd004e5cf93cce2
                      }
                  }
  
+@@ -1728,7 +1730,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+     }
+ 
+     protected void checkFallDamage(double heightDifference, boolean onGround, BlockState state, BlockPos landedPosition) {
+-        if (onGround) {
++        if (onGround || (this instanceof ServerPlayer serverPlayer && serverPlayer.getLastClimbablePos().isEmpty() && state.is(BlockTags.CLIMBABLE))) {
+             if (this.fallDistance > 0.0F) {
+                 state.getBlock().fallOn(this.level(), state, landedPosition, this, this.fallDistance);
+                 this.level().gameEvent((Holder) GameEvent.HIT_GROUND, this.position, GameEvent.Context.of(this, (BlockState) this.mainSupportingBlockPos.map((blockposition1) -> {
 @@ -1761,7 +1763,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                  }
              }
@@ -263,7 +281,7 @@ index 83f3ffdd8fa901b3de580d2359cdb5ead0d762cb..e3b171c9cefb21f7efd004e5cf93cce2
      }
  
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index 909accac7538e1c0c0c51deb2ee0605697c059d0..9abb71376207c6adad02a5e5748bbd6a77787981 100644
+index 909accac7538e1c0c0c51deb2ee0605697c059d0..a1bf944121eaa6259f363b5b6f252419b6cb9bf9 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
 @@ -1,12 +1,9 @@
@@ -449,13 +467,15 @@ index 909accac7538e1c0c0c51deb2ee0605697c059d0..9abb71376207c6adad02a5e5748bbd6a
  
      }
  
-@@ -2062,11 +2010,16 @@ public abstract class LivingEntity extends Entity implements Attackable {
+@@ -2062,11 +2010,18 @@ public abstract class LivingEntity extends Entity implements Attackable {
      // CraftBukkit end
  
      public Optional<BlockPos> getLastClimbablePos() {
-+        if (this instanceof ServerPlayer serverPlayer && !serverPlayer.hasClientSideClimbable) { // Cartridge
++        // Cartridge start - correctly set lastClimbablePos
++        if (this instanceof ServerPlayer serverPlayer && !serverPlayer.hasClientSideClimbable) {
 +            this.lastClimbablePos = Optional.empty();
 +        }
++        // Cartridge end - correctly set lastClimbablePos
          return this.lastClimbablePos;
      }
  
@@ -467,7 +487,7 @@ index 909accac7538e1c0c0c51deb2ee0605697c059d0..9abb71376207c6adad02a5e5748bbd6a
              return false;
          } else {
              BlockPos blockposition = this.blockPosition();
-@@ -3508,7 +3461,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+@@ -3508,7 +3463,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
          Vec3 vec3d1 = new Vec3((double) this.xxa, (double) this.yya, (double) this.zza);
  
          if (this.hasEffect(MobEffects.SLOW_FALLING) || this.hasEffect(MobEffects.LEVITATION)) {
@@ -476,7 +496,7 @@ index 909accac7538e1c0c0c51deb2ee0605697c059d0..9abb71376207c6adad02a5e5748bbd6a
          }
  
          label104:
-@@ -3726,7 +3679,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+@@ -3726,7 +3681,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
          super.rideTick();
          this.oRun = this.run;
          this.run = 0.0F;
@@ -839,6 +859,18 @@ index 1d82cfe7af0dc42f88901fb0c44896771fdf8a93..f3785ed6b32d5c820fef73cfc3a5facb
      }
  
      private void playNote(@Nullable Entity entity, BlockState state, Level world, BlockPos pos) {
+diff --git a/src/main/java/net/minecraft/world/level/block/PowderSnowBlock.java b/src/main/java/net/minecraft/world/level/block/PowderSnowBlock.java
+index a6e6545402904141ffc6218a0158b0e9c67217c8..ab055bbe74c63062454167d29e45a2ae48f10a15 100644
+--- a/src/main/java/net/minecraft/world/level/block/PowderSnowBlock.java
++++ b/src/main/java/net/minecraft/world/level/block/PowderSnowBlock.java
+@@ -94,6 +94,7 @@ public class PowderSnowBlock extends Block implements BucketPickup {
+ 
+     @Override
+     public void fallOn(Level world, BlockState state, BlockPos pos, Entity entity, float fallDistance) {
++        entity.causeFallDamage(fallDistance, 1.0F, entity.damageSources().fall());
+         if ((double) fallDistance >= 4.0D && entity instanceof LivingEntity entityliving) {
+             LivingEntity.Fallsounds entityliving_a = entityliving.getFallSounds();
+             SoundEvent soundeffect = (double) fallDistance < 7.0D ? entityliving_a.small() : entityliving_a.big();
 diff --git a/src/main/java/net/minecraft/world/level/block/SlimeBlock.java b/src/main/java/net/minecraft/world/level/block/SlimeBlock.java
 index fa9d3839b12e7f0485c91ae9a2f600314f41b893..a7033b3d563c42df339b78986c8d542b91c59fe4 100644
 --- a/src/main/java/net/minecraft/world/level/block/SlimeBlock.java
@@ -1136,3 +1168,15 @@ index 1c0712295695727ee9c4d430d4157b8e17cbd71f..bd96726e26e0b7c59bcb8c7aa18239c5
  
      protected static int getLegacyLevel(FluidState state) {
          return state.isSource() ? 0 : 8 - Math.min(state.getAmount(), 8) + ((Boolean) state.getValue(FlowingFluid.FALLING) ? 8 : 0);
+diff --git a/src/main/resources/data/minecraft/tags/block/fall_damage_resetting.json b/src/main/resources/data/minecraft/tags/block/fall_damage_resetting.json
+index a2882b9f161cf441c3ffc44bf89fa544725146b5..83c265b0fc31717d9e983b1ff29f09ff1902b0c3 100644
+--- a/src/main/resources/data/minecraft/tags/block/fall_damage_resetting.json
++++ b/src/main/resources/data/minecraft/tags/block/fall_damage_resetting.json
+@@ -1,7 +1,4 @@
+ {
+   "values": [
+-    "#minecraft:climbable",
+-    "minecraft:sweet_berry_bush",
+-    "minecraft:cobweb"
+   ]
+ }
