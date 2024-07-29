@@ -77,10 +77,10 @@ index 0e0c9a54df98413b0ad4d195dd5ba21132cf4065..027d4e5dffb0d7f085b9a7792ad61b90
          return this.tags;
      }
 diff --git a/src/main/java/net/minecraft/server/level/ServerPlayer.java b/src/main/java/net/minecraft/server/level/ServerPlayer.java
-index 9d1e68c09fa7093cf0f6fa636f90cb15a44cbb38..dd9170d0cc162521545a94847df91abf030ff878 100644
+index 5980b70e2d7273239245237189b2debcbccfbac3..ecb4312a4100fb1fd777f3a80b09593c14efb422 100644
 --- a/src/main/java/net/minecraft/server/level/ServerPlayer.java
 +++ b/src/main/java/net/minecraft/server/level/ServerPlayer.java
-@@ -332,6 +332,10 @@ public class ServerPlayer extends net.minecraft.world.entity.player.Player imple
+@@ -333,6 +333,10 @@ public class ServerPlayer extends net.minecraft.world.entity.player.Player imple
      }
      // Paper end - rewrite chunk system
  
@@ -91,7 +91,7 @@ index 9d1e68c09fa7093cf0f6fa636f90cb15a44cbb38..dd9170d0cc162521545a94847df91abf
      public ServerPlayer(MinecraftServer server, ServerLevel world, GameProfile profile, ClientInformation clientOptions) {
          super(world, world.getSharedSpawnPos(), world.getSharedSpawnAngle(), profile);
          this.chatVisibility = ChatVisiblity.FULL;
-@@ -1647,7 +1651,7 @@ public class ServerPlayer extends net.minecraft.world.entity.player.Player imple
+@@ -1646,7 +1650,7 @@ public class ServerPlayer extends net.minecraft.world.entity.player.Player imple
                  this.spawnExtraParticlesOnFall = false;
              }
  
@@ -100,7 +100,7 @@ index 9d1e68c09fa7093cf0f6fa636f90cb15a44cbb38..dd9170d0cc162521545a94847df91abf
          }
      }
  
-@@ -1656,7 +1660,8 @@ public class ServerPlayer extends net.minecraft.world.entity.player.Player imple
+@@ -1655,7 +1659,8 @@ public class ServerPlayer extends net.minecraft.world.entity.player.Player imple
          super.onExplosionHit(entity);
          this.currentImpulseImpactPos = this.position();
          this.currentExplosionCause = entity;
@@ -111,7 +111,7 @@ index 9d1e68c09fa7093cf0f6fa636f90cb15a44cbb38..dd9170d0cc162521545a94847df91abf
  
      @Override
 diff --git a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index 7796e191747be545e744564a2b0b65790f69114d..a3a853b07e32d8899985c1caf28986a1638c77f6 100644
+index 624b80c796e9c95040d71d1595d11f98e2899cf3..7ef0a52e78dc4c4e279222d1c4a6408bd1de9f5d 100644
 --- a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 @@ -1,5 +1,6 @@
@@ -144,7 +144,7 @@ index 7796e191747be545e744564a2b0b65790f69114d..a3a853b07e32d8899985c1caf28986a1
 -                    if (entityliving.onClimbable()) {
 -                        entityliving.resetFallDistance();
 +                    // Cartridge start
-+                    if (entityliving.getInBlockState().is(BlockTags.CLIMBABLE)) {
++                    if (entityliving.getInBlockState().is(BlockTags.CLIMBABLE) && (!(entityliving instanceof ServerPlayer serverPlayer) || serverPlayer.hasClientSideClimbable)) {
 +                        // If on climbable and the last climbable is not empty, they are currently climbing
 +                        // If it is not present, they landed on the ladder, and we want to retain their falldistance
 +                        if (entityliving.getLastClimbablePos().isPresent()) entityliving.resetFallDistance();
@@ -202,7 +202,7 @@ index b6c1c9d6bef3dd234c9bddb628ac6620ad12b854..d4a8b1986cbd5191b9b3a8813278c9ff
          NetworkPayload(Map<ResourceLocation, IntList> contents) {
              this.tags = contents;
 diff --git a/src/main/java/net/minecraft/world/entity/Entity.java b/src/main/java/net/minecraft/world/entity/Entity.java
-index 83f3ffdd8fa901b3de580d2359cdb5ead0d762cb..c8686c88672b17b89e6297227c903b5e6e96482d 100644
+index 490ee48346395fcbaf2eb0151e9248f18974fea6..73bac0c73ff66ce17bd38db6e37d5731efe2b3e2 100644
 --- a/src/main/java/net/minecraft/world/entity/Entity.java
 +++ b/src/main/java/net/minecraft/world/entity/Entity.java
 @@ -43,6 +43,7 @@ import net.minecraft.core.RegistryAccess;
@@ -221,7 +221,7 @@ index 83f3ffdd8fa901b3de580d2359cdb5ead0d762cb..c8686c88672b17b89e6297227c903b5e
  import net.minecraft.world.entity.item.ItemEntity;
  import net.minecraft.world.entity.player.Player;
  import net.minecraft.world.entity.projectile.Projectile;
-@@ -1104,7 +1106,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1159,7 +1161,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                      BlockHitResult movingobjectpositionblock = this.level().clip(new ClipContext(this.position(), this.position().add(vec3d1), ClipContext.Block.FALLDAMAGE_RESETTING, ClipContext.Fluid.WATER, this));
  
                      if (movingobjectpositionblock.getType() != HitResult.Type.MISS) {
@@ -230,16 +230,25 @@ index 83f3ffdd8fa901b3de580d2359cdb5ead0d762cb..c8686c88672b17b89e6297227c903b5e
                      }
                  }
  
-@@ -1728,7 +1730,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1302,7 +1304,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+     }
+ 
+     private boolean isStateClimbable(BlockState state) {
+-        return state.is(BlockTags.CLIMBABLE) || state.is(Blocks.POWDER_SNOW);
++        return (state.is(BlockTags.CLIMBABLE) && (!(this instanceof ServerPlayer serverPlayer) || serverPlayer.hasClientSideClimbable)) || state.is(Blocks.POWDER_SNOW);
+     }
+ 
+     private boolean vibrationAndSoundEffectsFromBlock(BlockPos pos, BlockState state, boolean playSound, boolean emitEvent, Vec3 movement) {
+@@ -1831,7 +1833,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
      }
  
      protected void checkFallDamage(double heightDifference, boolean onGround, BlockState state, BlockPos landedPosition) {
 -        if (onGround) {
-+        if (onGround || (this instanceof ServerPlayer serverPlayer && serverPlayer.getLastClimbablePos().isEmpty() && state.is(BlockTags.CLIMBABLE))) {
++        if (onGround || (state.is(BlockTags.CLIMBABLE) && this instanceof ServerPlayer serverPlayer && serverPlayer.hasClientSideClimbable)) {
              if (this.fallDistance > 0.0F) {
                  state.getBlock().fallOn(this.level(), state, landedPosition, this, this.fallDistance);
                  this.level().gameEvent((Holder) GameEvent.HIT_GROUND, this.position, GameEvent.Context.of(this, (BlockState) this.mainSupportingBlockPos.map((blockposition1) -> {
-@@ -1761,7 +1763,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1864,7 +1866,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                  }
              }
  
@@ -248,7 +257,7 @@ index 83f3ffdd8fa901b3de580d2359cdb5ead0d762cb..c8686c88672b17b89e6297227c903b5e
          }
      }
  
-@@ -1832,7 +1834,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1935,7 +1937,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                  this.doWaterSplashEffect();
              }
  
@@ -257,7 +266,7 @@ index 83f3ffdd8fa901b3de580d2359cdb5ead0d762cb..c8686c88672b17b89e6297227c903b5e
              this.wasTouchingWater = true;
              this.clearFire();
          } else {
-@@ -2910,9 +2912,12 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -3070,9 +3072,12 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
          }
      }
  
@@ -271,7 +280,7 @@ index 83f3ffdd8fa901b3de580d2359cdb5ead0d762cb..c8686c88672b17b89e6297227c903b5e
  
      public void ejectPassengers() {
          for (int i = this.passengers.size() - 1; i >= 0; --i) {
-@@ -3464,7 +3469,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -3624,7 +3629,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
      }
  
      public void makeStuckInBlock(BlockState state, Vec3 multiplier) {
@@ -281,7 +290,7 @@ index 83f3ffdd8fa901b3de580d2359cdb5ead0d762cb..c8686c88672b17b89e6297227c903b5e
      }
  
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index 909accac7538e1c0c0c51deb2ee0605697c059d0..a1bf944121eaa6259f363b5b6f252419b6cb9bf9 100644
+index fe435d4a387bb28be6831cec0c8bb0a7c8b603a4..060286f7156e6231e9a6b0b644b8b6ac449c28ae 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
 @@ -1,12 +1,9 @@
@@ -597,7 +606,7 @@ index e07d6f5589f5eaa95d9009b1b0af71c879b2dddb..8db60a614035ea4512b7d7537662de8e
      }
  
 diff --git a/src/main/java/net/minecraft/world/level/ClipContext.java b/src/main/java/net/minecraft/world/level/ClipContext.java
-index 3fa2964b979053ecbefc946c7fe76828de86d8f1..6d2bd16ae4ddafa35d30d52f376b3401fd3e23da 100644
+index 28bf0518f7d17099d7e4990defbeda6757b4477c..5f0a99a9a500610132a30a628c768f2d1a3588b4 100644
 --- a/src/main/java/net/minecraft/world/level/ClipContext.java
 +++ b/src/main/java/net/minecraft/world/level/ClipContext.java
 @@ -52,7 +52,7 @@ public class ClipContext {
