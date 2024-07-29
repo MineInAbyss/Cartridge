@@ -202,7 +202,7 @@ index b6c1c9d6bef3dd234c9bddb628ac6620ad12b854..d4a8b1986cbd5191b9b3a8813278c9ff
          NetworkPayload(Map<ResourceLocation, IntList> contents) {
              this.tags = contents;
 diff --git a/src/main/java/net/minecraft/world/entity/Entity.java b/src/main/java/net/minecraft/world/entity/Entity.java
-index 490ee48346395fcbaf2eb0151e9248f18974fea6..73bac0c73ff66ce17bd38db6e37d5731efe2b3e2 100644
+index 490ee48346395fcbaf2eb0151e9248f18974fea6..3b702c1101eda3d27c6071e175a58866b0f5876c 100644
 --- a/src/main/java/net/minecraft/world/entity/Entity.java
 +++ b/src/main/java/net/minecraft/world/entity/Entity.java
 @@ -43,6 +43,7 @@ import net.minecraft.core.RegistryAccess;
@@ -221,6 +221,15 @@ index 490ee48346395fcbaf2eb0151e9248f18974fea6..73bac0c73ff66ce17bd38db6e37d5731
  import net.minecraft.world.entity.item.ItemEntity;
  import net.minecraft.world.entity.player.Player;
  import net.minecraft.world.entity.projectile.Projectile;
+@@ -906,7 +908,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+ 
+         if (this.isInLava()) {
+             this.lavaHurt();
+-            this.fallDistance *= 0.5F;
++            //this.fallDistance *= 0.5F; // Cartridge
+             // CraftBukkit start
+         } else {
+             this.lastLavaContact = null;
 @@ -1159,7 +1161,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                      BlockHitResult movingobjectpositionblock = this.level().clip(new ClipContext(this.position(), this.position().add(vec3d1), ClipContext.Block.FALLDAMAGE_RESETTING, ClipContext.Fluid.WATER, this));
  
