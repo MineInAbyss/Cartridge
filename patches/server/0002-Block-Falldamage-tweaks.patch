@@ -77,7 +77,7 @@ index 0e0c9a54df98413b0ad4d195dd5ba21132cf4065..027d4e5dffb0d7f085b9a7792ad61b90
          return this.tags;
      }
 diff --git a/src/main/java/net/minecraft/server/level/ServerPlayer.java b/src/main/java/net/minecraft/server/level/ServerPlayer.java
-index 5980b70e2d7273239245237189b2debcbccfbac3..ecb4312a4100fb1fd777f3a80b09593c14efb422 100644
+index 6c280abdef5f80b668d6090f9d35283a33e21e0c..12af7622aa0ee336412f0a46503685859d1c128a 100644
 --- a/src/main/java/net/minecraft/server/level/ServerPlayer.java
 +++ b/src/main/java/net/minecraft/server/level/ServerPlayer.java
 @@ -333,6 +333,10 @@ public class ServerPlayer extends net.minecraft.world.entity.player.Player imple
@@ -91,7 +91,7 @@ index 5980b70e2d7273239245237189b2debcbccfbac3..ecb4312a4100fb1fd777f3a80b09593c
      public ServerPlayer(MinecraftServer server, ServerLevel world, GameProfile profile, ClientInformation clientOptions) {
          super(world, world.getSharedSpawnPos(), world.getSharedSpawnAngle(), profile);
          this.chatVisibility = ChatVisiblity.FULL;
-@@ -1646,7 +1650,7 @@ public class ServerPlayer extends net.minecraft.world.entity.player.Player imple
+@@ -1645,7 +1649,7 @@ public class ServerPlayer extends net.minecraft.world.entity.player.Player imple
                  this.spawnExtraParticlesOnFall = false;
              }
  
@@ -100,7 +100,7 @@ index 5980b70e2d7273239245237189b2debcbccfbac3..ecb4312a4100fb1fd777f3a80b09593c
          }
      }
  
-@@ -1655,7 +1659,8 @@ public class ServerPlayer extends net.minecraft.world.entity.player.Player imple
+@@ -1654,7 +1658,8 @@ public class ServerPlayer extends net.minecraft.world.entity.player.Player imple
          super.onExplosionHit(entity);
          this.currentImpulseImpactPos = this.position();
          this.currentExplosionCause = entity;
@@ -111,7 +111,7 @@ index 5980b70e2d7273239245237189b2debcbccfbac3..ecb4312a4100fb1fd777f3a80b09593c
  
      @Override
 diff --git a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index 624b80c796e9c95040d71d1595d11f98e2899cf3..7ef0a52e78dc4c4e279222d1c4a6408bd1de9f5d 100644
+index b13057c0792067cc6b0abdf0d64a9be2cc9389a4..c734f19837ed67faefcfd23c7e1170ef0241dd8d 100644
 --- a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 @@ -1,5 +1,6 @@
@@ -153,7 +153,7 @@ index 624b80c796e9c95040d71d1595d11f98e2899cf3..7ef0a52e78dc4c4e279222d1c4a6408b
                  }
  
                  entity.move(MoverType.PLAYER, new Vec3(d6, d7, d8));
-@@ -685,6 +692,7 @@ public class ServerGamePacketListenerImpl extends ServerCommonPacketListenerImpl
+@@ -694,6 +701,7 @@ public class ServerGamePacketListenerImpl extends ServerCommonPacketListenerImpl
                  this.vehicleLastGoodX = entity.getX();
                  this.vehicleLastGoodY = entity.getY();
                  this.vehicleLastGoodZ = entity.getZ();
@@ -161,7 +161,7 @@ index 624b80c796e9c95040d71d1595d11f98e2899cf3..7ef0a52e78dc4c4e279222d1c4a6408b
              }
  
          }
-@@ -1470,7 +1478,7 @@ public class ServerGamePacketListenerImpl extends ServerCommonPacketListenerImpl
+@@ -1514,7 +1522,7 @@ public class ServerGamePacketListenerImpl extends ServerCommonPacketListenerImpl
                              if (teleportBack) {
                              // Paper end - Add fail move event
                                  this.internalTeleport(d3, d4, d5, f, f1, Collections.emptySet()); // CraftBukkit - SPIGOT-1807: Don't call teleport event, when the client thinks the player is falling, because the chunks are not loaded on the client yet.
@@ -170,7 +170,7 @@ index 624b80c796e9c95040d71d1595d11f98e2899cf3..7ef0a52e78dc4c4e279222d1c4a6408b
                              } else {
                                  // CraftBukkit start - fire PlayerMoveEvent
                                  // Reset to old location first
-@@ -1549,7 +1557,7 @@ public class ServerGamePacketListenerImpl extends ServerCommonPacketListenerImpl
+@@ -1593,7 +1601,7 @@ public class ServerGamePacketListenerImpl extends ServerCommonPacketListenerImpl
                                  this.player.doCheckFallDamage(this.player.getX() - d3, this.player.getY() - d4, this.player.getZ() - d5, packet.isOnGround());
                                  this.player.setKnownMovement(vec3d);
                                  if (flag1) {
@@ -202,10 +202,18 @@ index b6c1c9d6bef3dd234c9bddb628ac6620ad12b854..d4a8b1986cbd5191b9b3a8813278c9ff
          NetworkPayload(Map<ResourceLocation, IntList> contents) {
              this.tags = contents;
 diff --git a/src/main/java/net/minecraft/world/entity/Entity.java b/src/main/java/net/minecraft/world/entity/Entity.java
-index 490ee48346395fcbaf2eb0151e9248f18974fea6..3b702c1101eda3d27c6071e175a58866b0f5876c 100644
+index 490ee48346395fcbaf2eb0151e9248f18974fea6..0e413fbc382491be55cb50010ccb771ccfd500ef 100644
 --- a/src/main/java/net/minecraft/world/entity/Entity.java
 +++ b/src/main/java/net/minecraft/world/entity/Entity.java
-@@ -43,6 +43,7 @@ import net.minecraft.core.RegistryAccess;
+@@ -6,6 +6,7 @@ import com.google.common.collect.Lists;
+ import com.google.common.collect.Sets;
+ import com.google.common.collect.UnmodifiableIterator;
+ import com.mojang.logging.LogUtils;
++import io.papermc.paper.adventure.PaperAdventure;
+ import it.unimi.dsi.fastutil.doubles.DoubleList;
+ import it.unimi.dsi.fastutil.doubles.DoubleListIterator;
+ import it.unimi.dsi.fastutil.floats.FloatArraySet;
+@@ -43,6 +44,7 @@ import net.minecraft.core.RegistryAccess;
  import net.minecraft.core.SectionPos;
  import net.minecraft.core.particles.BlockParticleOption;
  import net.minecraft.core.particles.ParticleTypes;
@@ -213,7 +221,7 @@ index 490ee48346395fcbaf2eb0151e9248f18974fea6..3b702c1101eda3d27c6071e175a58866
  import net.minecraft.nbt.CompoundTag;
  import net.minecraft.nbt.DoubleTag;
  import net.minecraft.nbt.FloatTag;
-@@ -83,6 +84,7 @@ import net.minecraft.world.InteractionResult;
+@@ -83,6 +85,7 @@ import net.minecraft.world.InteractionResult;
  import net.minecraft.world.Nameable;
  import net.minecraft.world.damagesource.DamageSource;
  import net.minecraft.world.damagesource.DamageSources;
@@ -221,7 +229,7 @@ index 490ee48346395fcbaf2eb0151e9248f18974fea6..3b702c1101eda3d27c6071e175a58866
  import net.minecraft.world.entity.item.ItemEntity;
  import net.minecraft.world.entity.player.Player;
  import net.minecraft.world.entity.projectile.Projectile;
-@@ -906,7 +908,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -906,7 +909,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
  
          if (this.isInLava()) {
              this.lavaHurt();
@@ -230,7 +238,7 @@ index 490ee48346395fcbaf2eb0151e9248f18974fea6..3b702c1101eda3d27c6071e175a58866
              // CraftBukkit start
          } else {
              this.lastLavaContact = null;
-@@ -1159,7 +1161,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1159,7 +1162,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                      BlockHitResult movingobjectpositionblock = this.level().clip(new ClipContext(this.position(), this.position().add(vec3d1), ClipContext.Block.FALLDAMAGE_RESETTING, ClipContext.Fluid.WATER, this));
  
                      if (movingobjectpositionblock.getType() != HitResult.Type.MISS) {
@@ -239,7 +247,7 @@ index 490ee48346395fcbaf2eb0151e9248f18974fea6..3b702c1101eda3d27c6071e175a58866
                      }
                  }
  
-@@ -1302,7 +1304,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1302,7 +1305,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
      }
  
      private boolean isStateClimbable(BlockState state) {
@@ -248,7 +256,7 @@ index 490ee48346395fcbaf2eb0151e9248f18974fea6..3b702c1101eda3d27c6071e175a58866
      }
  
      private boolean vibrationAndSoundEffectsFromBlock(BlockPos pos, BlockState state, boolean playSound, boolean emitEvent, Vec3 movement) {
-@@ -1831,7 +1833,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1831,7 +1834,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
      }
  
      protected void checkFallDamage(double heightDifference, boolean onGround, BlockState state, BlockPos landedPosition) {
@@ -257,7 +265,7 @@ index 490ee48346395fcbaf2eb0151e9248f18974fea6..3b702c1101eda3d27c6071e175a58866
              if (this.fallDistance > 0.0F) {
                  state.getBlock().fallOn(this.level(), state, landedPosition, this, this.fallDistance);
                  this.level().gameEvent((Holder) GameEvent.HIT_GROUND, this.position, GameEvent.Context.of(this, (BlockState) this.mainSupportingBlockPos.map((blockposition1) -> {
-@@ -1864,7 +1866,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1864,7 +1867,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                  }
              }
  
@@ -266,7 +274,7 @@ index 490ee48346395fcbaf2eb0151e9248f18974fea6..3b702c1101eda3d27c6071e175a58866
          }
      }
  
-@@ -1935,7 +1937,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1935,7 +1938,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                  this.doWaterSplashEffect();
              }
  
@@ -275,7 +283,15 @@ index 490ee48346395fcbaf2eb0151e9248f18974fea6..3b702c1101eda3d27c6071e175a58866
              this.wasTouchingWater = true;
              this.clearFire();
          } else {
-@@ -3070,9 +3072,12 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -3057,6 +3060,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+                     this.stopRiding();
+                 }
+ 
++                this.causeFallDamage(this.fallDistance, 1.0f, this.damageSources().fall());
+                 this.setPose(net.minecraft.world.entity.Pose.STANDING);
+                 this.vehicle = entity;
+                 this.vehicle.addPassenger(this);
+@@ -3070,9 +3074,12 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
          }
      }
  
@@ -289,7 +305,7 @@ index 490ee48346395fcbaf2eb0151e9248f18974fea6..3b702c1101eda3d27c6071e175a58866
  
      public void ejectPassengers() {
          for (int i = this.passengers.size() - 1; i >= 0; --i) {
-@@ -3624,7 +3629,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -3624,7 +3631,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
      }
  
      public void makeStuckInBlock(BlockState state, Vec3 multiplier) {
@@ -299,7 +315,7 @@ index 490ee48346395fcbaf2eb0151e9248f18974fea6..3b702c1101eda3d27c6071e175a58866
      }
  
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index fe435d4a387bb28be6831cec0c8bb0a7c8b603a4..060286f7156e6231e9a6b0b644b8b6ac449c28ae 100644
+index ccd9dff20a60f019e0c320acfb526b8bf3e5f806..f072a3078ff8ae32a9a8353229c4ea1930fe81fa 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
 @@ -1,12 +1,9 @@
