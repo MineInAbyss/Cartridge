@@ -1,4 +1,4 @@
-import io.papermc.paperweight.util.convertToPath
+import io.papermc.paperweight.util.Git
 import paper.libs.org.eclipse.core.runtime.Path
 
 plugins {
@@ -10,6 +10,7 @@ plugins {
 }
 
 val paperMavenPublicUrl = "https://repo.papermc.io/repository/maven-public/"
+val leafMavenPublicUrl = "https://maven.nostal.ink/repository/maven-snapshots/"
 
 repositories {
     mavenCentral()
@@ -50,6 +51,7 @@ subprojects {
     repositories {
         mavenCentral()
         maven(paperMavenPublicUrl)
+        maven("https://ci.pluginwiki.us/plugin/repository/everything/") // Leaf Config - ConfigurationMaster-API
     }
 }
 
@@ -69,8 +71,14 @@ paperweight {
     remapRepo = paperMavenPublicUrl
     decompileRepo = paperMavenPublicUrl
 
-    usePaperUpstream(providers.gradleProperty("paperRef")) {
-        withPaperPatcher {
+    useStandardUpstream("Leaf") {
+        url.set(github("Winds-Studio", "Leaf"))
+        ref.set(providers.gradleProperty("leafCommit"))
+
+        withStandardPatcher {
+            apiSourceDirPath.set("Leaf-API")
+            serverSourceDirPath.set("Leaf-Server")
+
             apiPatchDir = layout.projectDirectory.dir("patches/api")
             apiOutputDir = layout.projectDirectory.dir("cartridge-api")
 
@@ -96,6 +104,7 @@ tasks.generateDevelopmentBundle {
     libraryRepositories = listOf(
         "https://repo.maven.apache.org/maven2/",
         paperMavenPublicUrl,
+        leafMavenPublicUrl
         // "https://my.repo/", // This should be a repo hosting your API (in this example, 'com.mineinabyss.cartridge:cartridge-api')
     )
 }
