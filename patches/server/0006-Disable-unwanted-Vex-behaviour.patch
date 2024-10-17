@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Boy <sivertpaulsen2@gmail.com>
+Date: Thu, 17 Oct 2024 15:17:29 +0200
+Subject: [PATCH] Disable unwanted Vex behaviour
+
+
+diff --git a/src/main/java/net/minecraft/world/entity/monster/Vex.java b/src/main/java/net/minecraft/world/entity/monster/Vex.java
+index f413815e65ffc4addb4ac75b96d5d0333507466b..bf66a488bba19315200091ae94ea2258ee247f6d 100644
+--- a/src/main/java/net/minecraft/world/entity/monster/Vex.java
++++ b/src/main/java/net/minecraft/world/entity/monster/Vex.java
+@@ -133,9 +133,9 @@ public class Vex extends Monster implements TraceableEntity {
+ 
+     @Override
+     public void tick() {
+-        this.noPhysics = getRider() == null || !this.isControllable(); // Purpur
++        //this.noPhysics = getRider() == null || !this.isControllable(); // Purpur
++        this.noPhysics = false; // Cartridge - disable unwanted vex logic
+         super.tick();
+-        this.noPhysics = false;
+         this.setNoGravity(true);
+         if (this.hasLimitedLife && --this.limitedLifeTicks <= 0) {
+             this.limitedLifeTicks = 20;
+@@ -288,8 +288,10 @@ public class Vex extends Monster implements TraceableEntity {
+ 
+     @Override
+     protected void populateDefaultEquipmentSlots(RandomSource random, DifficultyInstance localDifficulty) {
+-        this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
+-        this.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
++        // Cartridge start - disable unwanted vex logic
++        //this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
++        //this.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
++        // Cartridge end - disable unwanted vex logic
+     }
+ 
+     private class VexMoveControl extends org.purpurmc.purpur.controller.FlyingMoveControllerWASD { // Purpur
