@@ -1,12 +1,10 @@
-import io.papermc.paperweight.util.Git
 import paper.libs.org.eclipse.core.runtime.Path
 
 plugins {
     java
     `maven-publish`
-
-    // In general, keep this version in sync with upstream. Sometimes a newer version than upstream might work, but an older version is extremely likely to break.
-    id("io.papermc.paperweight.patcher") version "1.7.3"
+    // Keeep in sync with upstream
+    id("io.papermc.paperweight.patcher") version "1.7.6-SNAPSHOT"
 }
 
 val paperMavenPublicUrl = "https://repo.papermc.io/repository/maven-public/"
@@ -17,12 +15,14 @@ repositories {
     maven(paperMavenPublicUrl) {
         content { onlyForConfigurations(configurations.paperclip.name) }
     }
+    maven(leafMavenPublicUrl) // Quantumleaper
 }
 
+// Keep in sync with upstream
 dependencies {
-    remapper("net.fabricmc:tiny-remapper:0.10.3:fat") // Must be kept in sync with upstream
-    decompiler("org.vineflower:vineflower:1.10.1") // Must be kept in sync with upstream
-    paperclip("io.papermc:paperclip:3.0.3") // You probably want this to be kept in sync with upstream
+    remapper("net.fabricmc:tiny-remapper:0.10.4:fat")
+    decompiler("org.vineflower:vineflower:1.10.1")
+    paperclip("cn.dreeam:quantumleaper:1.0.0-SNAPSHOT")
 }
 
 allprojects {
