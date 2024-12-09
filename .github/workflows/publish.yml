@@ -21,7 +21,7 @@ jobs:
         
       - uses: MineInAbyss/publish-action@develop
         with:
-          pre-build: "gradle applyPatches"
+          pre-build: "./gradlew applyPatches"
           build-tasks: "createMojmapBundlerJar"
           release-files: |
             ${{ github.workspace }}/build/libs/*.jar
