@@ -5,7 +5,7 @@ Subject: [PATCH] Buildscript-and-branding-changes
 
 
 diff --git a/build.gradle.kts b/build.gradle.kts
-index 57f309dc5259a4ca935c12c99e835734cf2480c7..605a7d80f41de1714d83f6b246e6b5d365bc4e41 100644
+index 572af93c43a66e6ae17b4aee219a87c5168e3dfa..e17f07d073c811072d90f922bdbb5e2cc229c2c2 100644
 --- a/build.gradle.kts
 +++ b/build.gradle.kts
 @@ -13,7 +13,7 @@ configurations.named(log4jPlugins.compileClasspathConfigurationName) {
@@ -17,7 +17,7 @@ index 57f309dc5259a4ca935c12c99e835734cf2480c7..605a7d80f41de1714d83f6b246e6b5d3
  
      // Leaf start - Leaf Config
      implementation("com.github.thatsmusic99:ConfigurationMaster-API:v2.0.0-rc.2") {
-@@ -122,14 +122,14 @@ tasks.jar {
+@@ -124,14 +124,14 @@ tasks.jar {
          val gitBranch = git("rev-parse", "--abbrev-ref", "HEAD").getText().trim() // Paper
          attributes(
              "Main-Class" to "org.bukkit.craftbukkit.Main",

@@ -1,41 +1,28 @@
 # Cartridge - A Paper fork, using paperweight
 
-This is an example project, showcasing how to setup a fork of Paper (or any other fork using paperweight), using paperweight.
+Mine in Abyss' feature fork of [Leaf](https://github.com/Winds-Studio/Leaf/), a PaperMC fork optimized for performance. We add feature that are hard to code using plugins, namely:
 
-The files of most interest are
-- build.gradle.kts
-- settings.gradle.kts
-- gradle.properties
+- Forcing falldamage in water, slime blocks, etc...
+- Disabling some vanilla features like allay AI which slow down our flying mobs
 
-When updating upstream, be sure to keep the dependencies noted in `build.gradle.kts` in sync with upstream.
-It's also a good idea to use the same version of the Gradle wrapper as upstream.
+## Usage guide
 
-## Tasks
+### Building
 
+- `gradle applyPatches` to apply the latest tracked patches to your local project
+- `gradle createMojmapPaperclipJar` to build and test your server jar
+- `gradle rebuildPatches` to update patches after your local changes
+
+### Updating
+
+- Update `leafCommit` in `gradle.properties` to the latest commit hash
+- Run `applyPatches`
+  - If errors occur, read the failed patch, right click it in IntelliJ and click `Apply Patch`
+  - Often IntelliJ will resolve conflicts itself, and the rest you can manually do using its nice UI
+  - Once done, do not commit, instead:
+```bash
+cd cartridge-server
+git add .
+git am --continue
 ```
-Paperweight tasks
------------------
-applyApiPatches
-applyPatches
-applyServerPatches
-cleanCache - Delete the project setup cache and task outputs.
-createMojmapBundlerJar - Build a runnable bundler jar
-createMojmapPaperclipJar - Build a runnable paperclip jar
-createReobfBundlerJar - Build a runnable bundler jar
-createReobfPaperclipJar - Build a runnable paperclip jar
-generateDevelopmentBundle
-rebuildApiPatches
-rebuildPatches
-rebuildServerPatches
-reobfJar - Re-obfuscate the built jar to obf mappings
-runDev - Spin up a non-relocated Mojang-mapped test server
-runReobf - Spin up a test server from the reobfJar output jar
-runShadow - Spin up a test server from the shadowJar archiveFile
-```
-
-## Branches
-
-Each branch of this project represents an example:
-
- - [`main` is the standard example](https://github.com/PaperMC/paperweight-examples/tree/main)
- - [`submodules` shows how paperweight can be applied on a fork using the more traditional git submodule system](https://github.com/PaperMC/paperweight-examples/tree/submodules)
+  - Repeat for any other failing patches
