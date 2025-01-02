@@ -206,7 +206,7 @@ index b6c1c9d6bef3dd234c9bddb628ac6620ad12b854..d4a8b1986cbd5191b9b3a8813278c9ff
          NetworkPayload(Map<ResourceLocation, IntList> contents) {
              this.tags = contents;
 diff --git a/src/main/java/net/minecraft/world/entity/Entity.java b/src/main/java/net/minecraft/world/entity/Entity.java
-index 3c467580195355fb1a04568e628f601365fdbfe0..1a1b682663c8b15a9261d3a196a60525f7a6f456 100644
+index 3c467580195355fb1a04568e628f601365fdbfe0..0618d746cdc90ec2012c0c5ea790eeb168a70856 100644
 --- a/src/main/java/net/minecraft/world/entity/Entity.java
 +++ b/src/main/java/net/minecraft/world/entity/Entity.java
 @@ -6,6 +6,7 @@ import com.google.common.collect.Lists;
@@ -278,16 +278,19 @@ index 3c467580195355fb1a04568e628f601365fdbfe0..1a1b682663c8b15a9261d3a196a60525
          }
      }
  
-@@ -2148,7 +2151,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -2148,7 +2151,10 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                  this.doWaterSplashEffect();
              }
  
 -            this.resetFallDistance();
-+            //this.resetFallDistance(); // Cartridge - Make water not negate falldamage
++            // Cartridge start - Make water not negate falldamage
++            //this.resetFallDistance();
++            if (!(this instanceof ServerPlayer)) this.resetFallDistance();
++            // Cartridge end
              this.wasTouchingWater = true;
              this.clearFire();
          } else {
-@@ -3301,6 +3304,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -3301,6 +3307,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                      this.stopRiding();
                  }
  
@@ -295,7 +298,7 @@ index 3c467580195355fb1a04568e628f601365fdbfe0..1a1b682663c8b15a9261d3a196a60525
                  this.setPose(net.minecraft.world.entity.Pose.STANDING);
                  this.vehicle = entity;
                  this.vehicle.addPassenger(this);
-@@ -3314,9 +3318,12 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -3314,9 +3321,12 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
          }
      }
  
@@ -309,7 +312,7 @@ index 3c467580195355fb1a04568e628f601365fdbfe0..1a1b682663c8b15a9261d3a196a60525
  
      public void ejectPassengers() {
          for (int i = this.passengers.size() - 1; i >= 0; --i) {
-@@ -3884,7 +3891,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -3884,7 +3894,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
      }
  
      public void makeStuckInBlock(BlockState state, Vec3 multiplier) {
