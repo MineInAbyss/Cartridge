@@ -77,7 +77,7 @@ index 0e0c9a54df98413b0ad4d195dd5ba21132cf4065..027d4e5dffb0d7f085b9a7792ad61b90
          return this.tags;
      }
 diff --git a/src/main/java/net/minecraft/server/level/ServerPlayer.java b/src/main/java/net/minecraft/server/level/ServerPlayer.java
-index 28723ab8bd72ff0db5e21c68f44f0a8d96b37653..f704550071c1c59276524e9210aa0a3cf4eafe2c 100644
+index 28723ab8bd72ff0db5e21c68f44f0a8d96b37653..42a2e0cbb1a51a64852052b463509d8f5afc3b78 100644
 --- a/src/main/java/net/minecraft/server/level/ServerPlayer.java
 +++ b/src/main/java/net/minecraft/server/level/ServerPlayer.java
 @@ -339,6 +339,10 @@ public class ServerPlayer extends net.minecraft.world.entity.player.Player imple
@@ -96,10 +96,10 @@ index 28723ab8bd72ff0db5e21c68f44f0a8d96b37653..f704550071c1c59276524e9210aa0a3c
              }
  
 +            if (hasLandedInLiquid()) {
-+                if (fallDistance < getMaxFallDistance() && level().getBlockStates(this.getBoundingBox().move(0,-2,0)).allMatch(b -> b.liquid() || b.isSolid())) onGround = true;
-+                else if (fallDistance < getMaxFallDistance() || getBlockStateOn().liquid()) onGround = false;
-+                if (getBlockStateOn().liquid() && (isEyeInFluid(FluidTags.WATER))) onGround = true;
-+                if (getBlockStateOn().isSolid()) onGround = true;
++                if (fallDistance < getMaxFallDistance() && level().getBlockStates(this.getBoundingBox().move(0,-2,0)).allMatch(b -> !b.getFluidState().isEmpty() || b.isSolid())) onGround = true;
++                else if (fallDistance < getMaxFallDistance() || !iblockdata.getFluidState().isEmpty()) onGround = false;
++                if (onGround && !iblockdata.getFluidState().isEmpty() && (isEyeInFluid(FluidTags.WATER))) onGround = false;
++                if (iblockdata.isSolid() && iblockdata.getFluidState().isEmpty()) onGround = true;
 +            }
              super.checkFallDamage(yDifference, onGround, iblockdata, blockposition);
          }
@@ -322,7 +322,7 @@ index 3c467580195355fb1a04568e628f601365fdbfe0..0618d746cdc90ec2012c0c5ea790eeb1
      }
  
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index 47e031130ca30cbe3bb9917cb9a43612ec73b538..e4666ca6c272c2a2213d7e0ab821b5ff17f32642 100644
+index 47e031130ca30cbe3bb9917cb9a43612ec73b538..3ffa15668780edb4412f01946d0fb9af372e01df 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
 @@ -1,12 +1,9 @@
@@ -431,7 +431,26 @@ index 47e031130ca30cbe3bb9917cb9a43612ec73b538..e4666ca6c272c2a2213d7e0ab821b5ff
                  this.onChangedBlock(worldserver, landedPosition);
                  double d1 = this.getAttributeValue(Attributes.SAFE_FALL_DISTANCE);
  
-@@ -418,10 +390,14 @@ public abstract class LivingEntity extends Entity implements Attackable, net.caf
+@@ -407,21 +379,29 @@ public abstract class LivingEntity extends Entity implements Attackable, net.caf
+                     double d8 = Math.min((double) (0.2F + f / 15.0F), 2.5D);
+                     int i = (int) (150.0D * d8);
+ 
++                    // Cartridge start - only show block-particles when on ground
+                     // CraftBukkit start - visiblity api
+-                    if (this instanceof ServerPlayer) {
+-                        ((ServerLevel) this.level()).sendParticles((ServerPlayer) this, new BlockParticleOption(ParticleTypes.BLOCK, state), d2, d3, d4, i, 0.0D, 0.0D, 0.0D, 0.15000000596046448D, false);
+-                    } else {
+-                        ((ServerLevel) this.level()).sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, state), d2, d3, d4, i, 0.0D, 0.0D, 0.0D, 0.15000000596046448D);
++                    if (onGround) {
++                        if (this instanceof ServerPlayer) {
++                            ((ServerLevel) this.level()).sendParticles((ServerPlayer) this, new BlockParticleOption(ParticleTypes.BLOCK, state), d2, d3, d4, i, 0.0D, 0.0D, 0.0D, 0.15000000596046448D, false);
++                        } else {
++                            ((ServerLevel) this.level()).sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, state), d2, d3, d4, i, 0.0D, 0.0D, 0.0D, 0.15000000596046448D);
++                        }
+                     }
+                     // CraftBukkit end
++                    // Cartridge end
+                 }
              }
          }
  
@@ -447,7 +466,7 @@ index 47e031130ca30cbe3bb9917cb9a43612ec73b538..e4666ca6c272c2a2213d7e0ab821b5ff
  
      }
  
-@@ -2168,6 +2144,11 @@ public abstract class LivingEntity extends Entity implements Attackable, net.caf
+@@ -2168,6 +2148,11 @@ public abstract class LivingEntity extends Entity implements Attackable, net.caf
      // CraftBukkit end
  
      public Optional<BlockPos> getLastClimbablePos() {
@@ -459,7 +478,7 @@ index 47e031130ca30cbe3bb9917cb9a43612ec73b538..e4666ca6c272c2a2213d7e0ab821b5ff
          return this.lastClimbablePos;
      }
  
-@@ -2200,7 +2181,9 @@ public abstract class LivingEntity extends Entity implements Attackable, net.caf
+@@ -2200,7 +2185,9 @@ public abstract class LivingEntity extends Entity implements Attackable, net.caf
  
      public Boolean onClimbable(boolean loadChunk) {
          // Gale end - don't load chunks to activate climbing entities
@@ -470,7 +489,7 @@ index 47e031130ca30cbe3bb9917cb9a43612ec73b538..e4666ca6c272c2a2213d7e0ab821b5ff
              return false;
          } else {
              BlockPos blockposition = this.blockPosition();
-@@ -3460,7 +3443,7 @@ public abstract class LivingEntity extends Entity implements Attackable, net.caf
+@@ -3460,7 +3447,7 @@ public abstract class LivingEntity extends Entity implements Attackable, net.caf
              Iterator iterator = map.entrySet().iterator();
  
              while (iterator.hasNext()) {
@@ -479,7 +498,7 @@ index 47e031130ca30cbe3bb9917cb9a43612ec73b538..e4666ca6c272c2a2213d7e0ab821b5ff
                  EquipmentSlot enumitemslot1 = (EquipmentSlot) entry.getKey();
                  ItemStack itemstack3 = (ItemStack) entry.getValue();
  
-@@ -3648,7 +3631,7 @@ public abstract class LivingEntity extends Entity implements Attackable, net.caf
+@@ -3648,7 +3635,7 @@ public abstract class LivingEntity extends Entity implements Attackable, net.caf
          Vec3 vec3d1 = new Vec3((double) this.xxa, (double) this.yya, (double) this.zza);
  
          if (this.hasEffect(MobEffects.SLOW_FALLING) || this.hasEffect(MobEffects.LEVITATION)) {
@@ -488,7 +507,7 @@ index 47e031130ca30cbe3bb9917cb9a43612ec73b538..e4666ca6c272c2a2213d7e0ab821b5ff
          }
  
          label104:
-@@ -3916,7 +3899,7 @@ public abstract class LivingEntity extends Entity implements Attackable, net.caf
+@@ -3916,7 +3903,7 @@ public abstract class LivingEntity extends Entity implements Attackable, net.caf
          super.rideTick();
          this.oRun = this.run;
          this.run = 0.0F;
