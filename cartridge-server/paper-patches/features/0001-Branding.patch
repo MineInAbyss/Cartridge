@@ -1,0 +1,69 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Boy0000 <sivertpaulsen2@gmail.com>
+Date: Wed, 23 Jul 2025 13:33:58 +0200
+Subject: [PATCH] Branding
+
+
+diff --git a/src/main/java/io/papermc/paper/ServerBuildInfoImpl.java b/src/main/java/io/papermc/paper/ServerBuildInfoImpl.java
+index afaff6dcfe2044c465693dd0971d07644470ba8a..871325cd9f8d5a77fe49ed6441ebe83ebcddc968 100644
+--- a/src/main/java/io/papermc/paper/ServerBuildInfoImpl.java
++++ b/src/main/java/io/papermc/paper/ServerBuildInfoImpl.java
+@@ -36,6 +36,9 @@ public record ServerBuildInfoImpl(
+     private static final String BRAND_PUFFERFISH_NAME = "Pufferfish";
+     private static final String BRAND_PURPUR_NAME = "Purpur";
+     private static final String BRAND_LEAF_NAME = "Leaf";
++    // Cartridge start - Rebrand
++    private static final String BRAND_CARTRIDGE_NAME = "Cartridge";
++    // Cartridge end - Rebrand
+     // Leaf end - Rebrand & Fix Pufferfish and Purpur patches
+ 
+     private static final String BUILD_DEV = "DEV";
+@@ -48,9 +51,9 @@ public record ServerBuildInfoImpl(
+         this(
+             getManifestAttribute(manifest, ATTRIBUTE_BRAND_ID)
+                 .map(Key::key)
+-                .orElse(BRAND_LEAF_ID), // Gale - branding changes // Leaf - Rebrand
++                .orElse(BRAND_CARTRIDGE_ID), // Gale - branding changes // Leaf - Rebrand // Cartridge - Rebrand
+             getManifestAttribute(manifest, ATTRIBUTE_BRAND_NAME)
+-                .orElse(BRAND_LEAF_NAME), // Gale - branding changes // Leaf - Rebrand
++                .orElse(BRAND_CARTRIDGE_NAME), // Gale - branding changes // Leaf - Rebrand // Cartridge - Rebrand
+             SharedConstants.getCurrentVersion().id(),
+             SharedConstants.getCurrentVersion().name(),
+             getManifestAttribute(manifest, ATTRIBUTE_BUILD_NUMBER)
+@@ -72,7 +75,8 @@ public record ServerBuildInfoImpl(
+             || brandId.equals(BRAND_PAPER_ID)
+             || brandId.equals(BRAND_GALE_ID) // Gale - branding changes
+             || brandId.equals(BRAND_PUFFERFISH_ID)
+-            || brandId.equals(BRAND_PURPUR_ID);
++            || brandId.equals(BRAND_PURPUR_ID)
++            || brandId.equals(BRAND_LEAF_ID); // Cartridge - Rebrand
+             // Leaf end - Rebrand & Fix Pufferfish and Purpur patches
+     }
+ 
+diff --git a/src/main/java/org/bukkit/craftbukkit/util/Versioning.java b/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
+index c3d45e60e262b8e34d76f0425f6bef79f034e8ab..96cd02cb03b81f96c61565cacd4c838fdcbd7a1c 100644
+--- a/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
++++ b/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
+@@ -9,21 +9,6 @@ import org.bukkit.Bukkit;
+ 
+ public final class Versioning {
+     public static String getBukkitVersion() {
+-        String result = "Unknown-Version";
+-
+-        InputStream stream = Bukkit.class.getClassLoader().getResourceAsStream("META-INF/maven/cn.dreeam.leaf/leaf-api/pom.properties"); // Gale - branding changes // Leaf - Rebrand
+-        Properties properties = new Properties();
+-
+-        if (stream != null) {
+-            try {
+-                properties.load(stream);
+-
+-                result = properties.getProperty("version");
+-            } catch (IOException ex) {
+-                Logger.getLogger(Versioning.class.getName()).log(Level.SEVERE, "Could not get Bukkit version!", ex);
+-            }
+-        }
+-
+-        return result;
++        return "1.21.8-R0.1-SNAPSHOT"; // Cartridge - Rebrand
+     }
+ }

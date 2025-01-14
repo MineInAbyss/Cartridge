@@ -2,39 +2,40 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 
 plugins {
-    java // TODO java launcher tasks
-    id("io.papermc.paperweight.patcher") version "2.0.0-beta.13"
+    id("io.papermc.paperweight.patcher") version "2.0.0-beta.18"
 }
 
 paperweight {
-    upstreams.paper {
-        ref = providers.gradleProperty("paperRef")
+    upstreams.register("leaf") {
+        repo = github("Winds-Studio", "Leaf")
+        ref = providers.gradleProperty("leafRef")
 
         patchFile {
-            path = "paper-server/build.gradle.kts"
-            outputFile = file("fork-server/build.gradle.kts")
-            patchFile = file("fork-server/build.gradle.kts.patch")
+            path = "leaf-server/build.gradle.kts"
+            outputFile = file("cartridge-server/build.gradle.kts")
+            patchFile = file("cartridge-server/build.gradle.kts.patch")
         }
         patchFile {
-            path = "paper-api/build.gradle.kts"
-            outputFile = file("fork-api/build.gradle.kts")
-            patchFile = file("fork-api/build.gradle.kts.patch")
+            path = "leaf-api/build.gradle.kts"
+            outputFile = file("cartridge-api/build.gradle.kts")
+            patchFile = file("cartridge-api/build.gradle.kts.patch")
         }
-        patchDir("paperApi") {
+        patchRepo("paperApi") {
             upstreamPath = "paper-api"
-            excludes = setOf("build.gradle.kts")
-            patchesDir = file("fork-api/paper-patches")
+            patchesDir = file("cartridge-api/paper-patches")
             outputDir = file("paper-api")
         }
-        patchDir("paperApiGenerator") {
-            upstreamPath = "paper-api-generator"
-            patchesDir = file("fork-api-generator/paper-patches")
-            outputDir = file("paper-api-generator")
+        patchDir("leafApi") {
+            upstreamPath = "leaf-api"
+            excludes = listOf("build.gradle.kts", "build.gradle.kts.patch", "paper-patches")
+            patchesDir = file("cartridge-api/leaf-patches")
+            outputDir = file("leaf-api")
         }
     }
 }
 
 val paperMavenPublicUrl = "https://repo.papermc.io/repository/maven-public/"
+val leafMavenPublicUrl = "https://maven.leafmc.one/snapshots/"
 
 subprojects {
     apply(plugin = "java-library")
@@ -49,39 +50,30 @@ subprojects {
     repositories {
         mavenCentral()
         maven(paperMavenPublicUrl)
+        maven(leafMavenPublicUrl)
     }
 
     tasks.withType<AbstractArchiveTask>().configureEach {
         isPreserveFileTimestamps = false
         isReproducibleFileOrder = true
     }
-    tasks.withType<JavaCompile> {
+    tasks.withType<JavaCompile>().configureEach {
         options.encoding = Charsets.UTF_8.name()
         options.release = 21
         options.isFork = true
+        options.forkOptions.memoryMaximumSize = "6g"
     }
-    tasks.withType<Javadoc> {
+    tasks.withType<Javadoc>().configureEach {
         options.encoding = Charsets.UTF_8.name()
     }
-    tasks.withType<ProcessResources> {
+    tasks.withType<ProcessResources>().configureEach {
         filteringCharset = Charsets.UTF_8.name()
     }
-    tasks.withType<Test> {
+    tasks.withType<Test>().configureEach {
         testLogging {
             showStackTraces = true
             exceptionFormat = TestExceptionFormat.FULL
             events(TestLogEvent.STANDARD_OUT)
-        }
-    }
-
-    extensions.configure<PublishingExtension> {
-        repositories {
-            /*
-            maven("https://repo.papermc.io/repository/maven-snapshots/") {
-                name = "paperSnapshots"
-                credentials(PasswordCredentials::class)
-            }
-             */
         }
     }
 }

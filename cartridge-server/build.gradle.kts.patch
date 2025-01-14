@@ -1,0 +1,78 @@
+--- a/leaf-server/build.gradle.kts
++++ b/leaf-server/build.gradle.kts
+@@ -37,7 +_,30 @@
+         }
+     }
+ 
+-    activeFork = leaf
++    // Cartridge start - project setup
++    val cartridge = forks.register("cartridge") {
++        forks = leaf
++        upstream.patchRepo("paperServer") {
++            upstreamRepo = leaf.patchedRepo("paperServer")
++            patchesDir = rootDirectory.dir("cartridge-server/paper-patches")
++            outputDir = rootDirectory.dir("paper-server")
++        }
++        upstream.patchDir("leafServer") {
++            upstreamPath = "leaf-server"
++            excludes = setOf(
++                "src/minecraft",
++                "paper-patches",
++                "minecraft-patches",
++                "build.gradle.kts",
++                "build.gradle.kts.patch"
++            )
++            patchesDir = rootDirectory.dir("cartridge-server/leaf-patches")
++            outputDir = rootDirectory.dir("leaf-server")
++        }
++    }
++
++    activeFork = cartridge
++    // Cartridge end - project setup
+     // Leaf end - project setup
+ 
+     spigot {
+@@ -127,10 +_,14 @@
+     main {
+         java { srcDir("../paper-server/src/main/java") }
+         resources { srcDir("../paper-server/src/main/resources") }
++        java { srcDir("../leaf-server/src/main/java") } // Cartridge - project setup
++        resources { srcDir("../leaf-server/src/main/resources") } // Cartridge - project setup
+     }
+     test {
+         java { srcDir("../paper-server/src/test/java") }
+         resources { srcDir("../paper-server/src/test/resources") }
++        java { srcDir("../leaf-server/src/test/java") } // Cartridge - project setup
++        resources { srcDir("../leaf-server/src/test/resources") } // Cartridge - project setup
+     }
+ }
+ 
+@@ -159,7 +_,7 @@
+ }
+ 
+ dependencies {
+-    implementation(project(":leaf-api")) // Leaf - project setup
++    implementation(project(":cartridge-api")) // Leaf - project setup // Cartridge - project setup
+ 
+     // Leaf start - Libraries
+     implementation("com.github.thatsmusic99:ConfigurationMaster-API:v2.0.0-rc.3") { // Leaf config
+@@ -270,14 +_,14 @@
+         val gitBranch = git.exec(providers, "rev-parse", "--abbrev-ref", "HEAD").get().trim()
+         attributes(
+             "Main-Class" to "org.bukkit.craftbukkit.Main",
+-            "Implementation-Title" to "Leaf", // Leaf - Rebrand
++            "Implementation-Title" to "Cartridge", // Leaf - Rebrand // Cartridge - Rebrand
+             "Implementation-Version" to implementationVersion,
+             "Implementation-Vendor" to date,
+-            "Specification-Title" to "Leaf", // Leaf - Rebrand
++            "Specification-Title" to "Cartridge", // Leaf - Rebrand // Cartridge - Rebrand
+             "Specification-Version" to project.version,
+-            "Specification-Vendor" to "Winds Studio", // Leaf - Rebrand
+-            "Brand-Id" to "winds-studio:leaf", // Leaf - Rebrand
+-            "Brand-Name" to "Leaf", // Leaf - Rebrand
++            "Specification-Vendor" to "Pascalpex", // Leaf - Rebrand // Cartridge - Rebrand
++            "Brand-Id" to "mineinabyss:cartridge", // Leaf - Rebrand // Cartridge - Rebrand
++            "Brand-Name" to "Cartridge", // Leaf - Rebrand // Cartridge - Rebrand
+             "Build-Number" to (build ?: ""),
+             "Build-Time" to buildTime.toString(),
+             "Git-Branch" to gitBranch,
