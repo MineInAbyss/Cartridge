@@ -18,7 +18,7 @@ index bf112d49c13b126464401014ebbec0afd65c5034..6ce88860056d6abefc8f4e0b54d55357
                  Enchantments.PROJECTILE_PROTECTION,
                  Enchantments.RESPIRATION,
 diff --git a/src/main/java/net/minecraft/world/inventory/EnchantmentMenu.java b/src/main/java/net/minecraft/world/inventory/EnchantmentMenu.java
-index 07223046761cb2186d75de8edc03a91d2e8e8b2f..99ee75309bb14e11a188adba1f4e952219d95f06 100644
+index e59a38d051179753fa9b29e8d746e25e162cac3e..748a34b0cbb2bb44d28c4aa79609f59db217f549 100644
 --- a/src/main/java/net/minecraft/world/inventory/EnchantmentMenu.java
 +++ b/src/main/java/net/minecraft/world/inventory/EnchantmentMenu.java
 @@ -4,6 +4,8 @@ import com.mojang.datafixers.util.Pair;
