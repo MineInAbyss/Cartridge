@@ -77,7 +77,7 @@ index 0e0c9a54df98413b0ad4d195dd5ba21132cf4065..027d4e5dffb0d7f085b9a7792ad61b90
          return this.tags;
      }
 diff --git a/src/main/java/net/minecraft/server/level/ServerPlayer.java b/src/main/java/net/minecraft/server/level/ServerPlayer.java
-index 28723ab8bd72ff0db5e21c68f44f0a8d96b37653..7dd9193788744e2d551e8577d6944aa6cf1676f5 100644
+index 28723ab8bd72ff0db5e21c68f44f0a8d96b37653..3b6a038d424a7ca657c397b4ae293165eec684b8 100644
 --- a/src/main/java/net/minecraft/server/level/ServerPlayer.java
 +++ b/src/main/java/net/minecraft/server/level/ServerPlayer.java
 @@ -339,6 +339,10 @@ public class ServerPlayer extends net.minecraft.world.entity.player.Player imple
@@ -91,7 +91,7 @@ index 28723ab8bd72ff0db5e21c68f44f0a8d96b37653..7dd9193788744e2d551e8577d6944aa6
      public ServerPlayer(MinecraftServer server, ServerLevel world, GameProfile profile, ClientInformation clientOptions) {
          super(world, world.getSharedSpawnPos(), world.getSharedSpawnAngle(), profile);
          this.chatVisibility = ChatVisiblity.FULL;
-@@ -1690,6 +1694,14 @@ public class ServerPlayer extends net.minecraft.world.entity.player.Player imple
+@@ -1690,6 +1694,17 @@ public class ServerPlayer extends net.minecraft.world.entity.player.Player imple
                  this.spawnExtraParticlesOnFall = false;
              }
  
@@ -101,12 +101,15 @@ index 28723ab8bd72ff0db5e21c68f44f0a8d96b37653..7dd9193788744e2d551e8577d6944aa6
 +                if (onGround && !iblockdata.getFluidState().isEmpty() && (isEyeInFluid(FluidTags.WATER))) onGround = false;
 +                if (iblockdata.isSolid() && iblockdata.getFluidState().isEmpty()) onGround = true;
 +
-+            } else if (fallDistance >= getMaxFallDistance() && !iblockdata.getFluidState().isEmpty()) resetFallDistance();
++            } else if (fallDistance >= getMaxFallDistance() && !iblockdata.getFluidState().isEmpty()) {
++                if (this.getDeltaMovement().y() > 9.999999747378752E-6D) resetFallDistance();
++                onGround = true;
++            }
 +
              super.checkFallDamage(yDifference, onGround, iblockdata, blockposition);
          }
      }
-@@ -1699,7 +1711,8 @@ public class ServerPlayer extends net.minecraft.world.entity.player.Player imple
+@@ -1699,7 +1714,8 @@ public class ServerPlayer extends net.minecraft.world.entity.player.Player imple
          super.onExplosionHit(entity);
          this.currentImpulseImpactPos = this.position();
          this.currentExplosionCause = entity;
