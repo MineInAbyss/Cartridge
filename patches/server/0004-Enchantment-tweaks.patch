@@ -51,15 +51,3 @@ index ff0e5cff695c48e529b74987ae909f89bb0f7829..3e4a1d50de6e8e5a5d71d602c9977a67
            }
          },
          "requirements": {
-diff --git a/src/main/resources/data/minecraft/tags/enchantment/in_enchanting_table.json b/src/main/resources/data/minecraft/tags/enchantment/in_enchanting_table.json
-index 2c8ec7f3a56038ee660c225f7b8876108f786ef6..cb79774ae3c28d90b24d7e664d62559db3fe842e 100644
---- a/src/main/resources/data/minecraft/tags/enchantment/in_enchanting_table.json
-+++ b/src/main/resources/data/minecraft/tags/enchantment/in_enchanting_table.json
-@@ -1,5 +1,6 @@
- {
-   "values": [
--    "#minecraft:non_treasure"
-+    "#minecraft:non_treasure",
-+    "minecraft:mending"
-   ]
- }
