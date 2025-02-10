@@ -135,7 +135,7 @@ index 28723ab8bd72ff0db5e21c68f44f0a8d96b37653..4117317aa2c968e039f2809ebe93c038
  
      @Override
 diff --git a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index e0962547709d6951cc98da94f028bd4d5b7b25dd..bb366a839c6dfe063abe7dc17ab0358830cb8cd2 100644
+index e0962547709d6951cc98da94f028bd4d5b7b25dd..2cf2406b73bdf2b8875d81f789ec148c3b857c97 100644
 --- a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 @@ -1,5 +1,6 @@
@@ -182,7 +182,7 @@ index e0962547709d6951cc98da94f028bd4d5b7b25dd..bb366a839c6dfe063abe7dc17ab03588
                  this.vehicleLastGoodX = entity.getX();
                  this.vehicleLastGoodY = entity.getY();
                  this.vehicleLastGoodZ = entity.getZ();
-+                this.player.fallDistance = entity.fallDistance; // Cartridge
++                if (entity.fallDistance > this.player.getMaxFallDistance()) this.player.fallDistance = entity.fallDistance; // Cartridge
              }
  
          }
