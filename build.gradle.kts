@@ -79,7 +79,7 @@ paperweight {
         }
         patchRepo("paperApi") {
             upstreamPath = "paper-api"
-            patchesDir = file("fork-api/paper-patches")
+            patchesDir = file("cartridge-api/paper-patches")
             outputDir = file("paper-api")
         }
         patchDir("leafApi") {

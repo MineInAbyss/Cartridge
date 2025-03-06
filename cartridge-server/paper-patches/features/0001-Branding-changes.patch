@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jason Penilla <11360596+jpenilla@users.noreply.github.com>
+Date: Sun, 15 Dec 2024 00:07:29 -0700
+Subject: [PATCH] Branding changes
+
+
+diff --git a/src/main/java/com/destroystokyo/paper/block/CraftBlockSoundGroup.java b/src/main/java/com/destroystokyo/paper/block/CraftBlockSoundGroup.java
+index 054ee606e7c36712e474e2b7093b436e043e6262..9d395898511ed5b408dacfb9c796baacb18b9430 100644
+--- a/src/main/java/com/destroystokyo/paper/block/CraftBlockSoundGroup.java
++++ b/src/main/java/com/destroystokyo/paper/block/CraftBlockSoundGroup.java
+@@ -20,6 +20,7 @@ public class CraftBlockSoundGroup implements BlockSoundGroup {
+     @Override
+     public Sound getStepSound() {
+         // file patch
++        // feature patch
+         return CraftSound.minecraftToBukkit(soundEffectType.getStepSound());
+     }
+ 
+diff --git a/src/main/java/io/papermc/paper/ServerBuildInfoImpl.java b/src/main/java/io/papermc/paper/ServerBuildInfoImpl.java
+index aa80daab4917e22bc3849eb9b0915b1c705091af..3763c44ba512b051d55a3be33d6740d089c65636 100644
+--- a/src/main/java/io/papermc/paper/ServerBuildInfoImpl.java
++++ b/src/main/java/io/papermc/paper/ServerBuildInfoImpl.java
+@@ -35,6 +35,7 @@ public record ServerBuildInfoImpl(
+     private static final String BRAND_PUFFERFISH_NAME = "Pufferfish"; // Leaf
+     private static final String BRAND_PURPUR_NAME = "Purpur"; // Leaf - Purpur - Rebrand
+     private static final String BRAND_LEAF_NAME = "Leaf"; // Leaf
++    private static final String BRAND_CARTRIDGE_NAME = "Cartridge";
+ 
+     private static final String BUILD_DEV = "DEV";
+ 
+@@ -46,9 +47,9 @@ public record ServerBuildInfoImpl(
+         this(
+             getManifestAttribute(manifest, ATTRIBUTE_BRAND_ID)
+                 .map(Key::key)
+-                .orElse(BRAND_LEAF_ID), // Gale - branding changes // Leaf
++                .orElse(BRAND_CARTRIDGE_ID), // Gale - branding changes // Leaf // Cartridge
+             getManifestAttribute(manifest, ATTRIBUTE_BRAND_NAME)
+-                .orElse(BRAND_LEAF_NAME), // Gale - branding changes // Leaf
++                .orElse(BRAND_CARTRIDGE_NAME), // Gale - branding changes // Leaf
+             SharedConstants.getCurrentVersion().getId(),
+             SharedConstants.getCurrentVersion().getName(),
+             getManifestAttribute(manifest, ATTRIBUTE_BUILD_NUMBER)
+diff --git a/src/main/java/org/bukkit/craftbukkit/util/Versioning.java b/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
+index e220f5601f6b92b7b280ce8ebe64117d30192b0e..99c0d20db60cc6b47e9634454ef9efea255f513d 100644
+--- a/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
++++ b/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
+@@ -11,7 +11,7 @@ public final class Versioning {
+     public static String getBukkitVersion() {
+         String result = "Unknown-Version";
+ 
+-        InputStream stream = Bukkit.class.getClassLoader().getResourceAsStream("META-INF/maven/cn.dreeam.leaf/leaf-api/pom.properties"); // Gale - branding changes // Leaf
++        InputStream stream = Bukkit.class.getClassLoader().getResourceAsStream("META-INF/maven/com.mineinabyss.cartridge/cartridge-api/pom.properties"); // Gale - branding changes // Leaf // Cartridge
+         Properties properties = new Properties();
+ 
+         if (stream != null) {

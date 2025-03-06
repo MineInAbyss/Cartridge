@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Boy <sivertpaulsen2@gmail.com>
+Date: Thu, 6 Mar 2025 20:04:33 +0100
+Subject: [PATCH] Branding changes
+
+
+diff --git a/src/main/java/io/papermc/paper/ServerBuildInfo.java b/src/main/java/io/papermc/paper/ServerBuildInfo.java
+index 2240bb704dd9fa62836efa1b3d6ec4d7744d9b1d..dfa8b4c6b3fedcd27994f78bc3861071c08f0307 100644
+--- a/src/main/java/io/papermc/paper/ServerBuildInfo.java
++++ b/src/main/java/io/papermc/paper/ServerBuildInfo.java
+@@ -44,6 +44,13 @@ public interface ServerBuildInfo {
+     Key BRAND_LEAF_ID = Key.key("winds-studio", "leaf");
+     // Leaf end
+ 
++    // Cartridge start
++    /**
++     * The brand id for Cartridge.
++     */
++    Key BRAND_CARTRIDGE_ID = Key.key("mineinabyss", "cartridge");
++    // Cartridge end
++
+     /**
+      * Gets the {@code ServerBuildInfo}.
+      *
