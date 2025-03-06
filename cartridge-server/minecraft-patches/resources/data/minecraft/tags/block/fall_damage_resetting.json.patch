@@ -1,0 +1,11 @@
+--- a/data/minecraft/tags/block/fall_damage_resetting.json
++++ b/data/minecraft/tags/block/fall_damage_resetting.json
+@@ -1,7 +_,3 @@
+ {
+-  "values": [
+-    "#minecraft:climbable",
+-    "minecraft:sweet_berry_bush",
+-    "minecraft:cobweb"
+-  ]
++  "values": []
+ }
