@@ -1,0 +1,145 @@
+--- a/leaf-server/build.gradle.kts
++++ b/leaf-server/build.gradle.kts
+@@ -54,7 +_,36 @@
+         }
+     }
+ 
+-    activeFork = leaf
++    // Cartridge start - project setup
++    val cartridge = forks.register("cartridge") {
++        forks = leaf
++        upstream.patchRepo("paperServer") {
++            upstreamRepo = leaf.patchedRepo("paperServer")
++            patchesDir = rootDirectory.dir("cartridge-server/paper-patches")
++            outputDir = rootDirectory.dir("paper-server")
++        }
++        upstream.patchRepo("galeServer") {
++            upstreamRepo = leaf.patchedRepo("galeServer")
++            patchesDir = rootDirectory.dir("cartridge-server/gale-patches")
++            outputDir = rootDirectory.dir("gale-server")
++        }
++        upstream.patchDir("leafServer") {
++            upstreamPath = "leaf-server"
++            excludes = setOf(
++                "src/minecraft",
++                "gale-patches",
++                "paper-patches",
++                "minecraft-patches",
++                "build.gradle.kts",
++                "build.gradle.kts.patch"
++            )
++            patchesDir = rootDirectory.dir("cartridge-server/leaf-patches")
++            outputDir = rootDirectory.dir("leaf-server")
++        }
++    }
++
++    activeFork = cartridge
++    // Cartridge end - project setup
+     // Leaf end - project setup
+     // Gale end - project setup
+ 
+@@ -146,12 +_,16 @@
+         resources { srcDir("../paper-server/src/main/resources") }
+         java { srcDir("../gale-server/src/main/java") } // Leaf - project setup
+         resources { srcDir("../gale-server/src/main/resources") } // Leaf - project setup
++        java { srcDir("../leaf-server/src/main/java") } // Cartridge - project setup
++        resources { srcDir("../leaf-server/src/main/resources") } // Cartridge - project setup
+     }
+     test {
+         java { srcDir("../paper-server/src/test/java") }
+         resources { srcDir("../paper-server/src/test/resources") }
+         java { srcDir("../gale-server/src/test/java") } // Leaf - project setup
+         resources { srcDir("../gale-server/src/test/resources") } // Leaf - project setup
++        java { srcDir("../leaf-server/src/test/java") } // Cartridge - project setup
++        resources { srcDir("../leaf-server/src/test/resources") } // Cartridge - project setup
+     }
+ }
+ 
+@@ -176,16 +_,18 @@
+ }
+ 
+ dependencies {
+-    implementation(project(":leaf-api")) // Gale - project setup - Depend on own API // Leaf - project setup
++
++   implementation(project(":cartridge-api")) // Gale - project setup - Depend on own API // Leaf - project setup // Cartridge - project setup
+ 
+     // Leaf start - Libraries
+-    implementation("com.github.thatsmusic99:ConfigurationMaster-API:v2.0.0-rc.2") { // Leaf Config
++    implementation("com.github.thatsmusic99:ConfigurationMaster-API:v2.0.0-rc.2") { // Leaf config
+         exclude(group = "org.yaml", module = "snakeyaml")
+     }
+     implementation("com.github.luben:zstd-jni:1.5.6-9") // LinearPaper
+     implementation("org.lz4:lz4-java:1.8.0") // LinearPaper
+     implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
+     // Leaf end - Libraries
++
+     implementation("ca.spottedleaf:concurrentutil:0.0.3")
+     implementation("org.jline:jline-terminal-ffm:3.28.0") // use ffm on java 22+ // Leaf - Bump Dependencies
+     implementation("org.jline:jline-terminal-jni:3.28.0") // fall back to jni on java 21 // Leaf - Bump Dependencies
+@@ -201,23 +_,26 @@
+     // Leaf start - Bump Dependencies
+     implementation("org.apache.logging.log4j:log4j-core:2.24.3")
+     log4jPlugins.annotationProcessorConfigurationName("org.apache.logging.log4j:log4j-core:2.24.3") // Needed to generate meta for our Log4j plugins
++    // Leaf end - Bump Dependencies
+     runtimeOnly(log4jPlugins.output)
+     alsoShade(log4jPlugins.output)
+ 
+-    implementation("com.velocitypowered:velocity-native:3.4.0-SNAPSHOT") {
++    implementation("com.velocitypowered:velocity-native:3.4.0-20250222.161222-36") {
+         isTransitive = false
+     }
++    // Leaf start - Bump Dependencies
+     implementation("io.netty:netty-codec-haproxy:4.1.116.Final") // Add support for proxy protocol
+     implementation("org.apache.logging.log4j:log4j-iostreams:2.24.3")
+     // Leaf end - Bump Dependencies
+     implementation("org.ow2.asm:asm-commons:9.7.1")
+-    implementation("org.spongepowered:configurate-yaml:4.2.0-SNAPSHOT")
++    implementation("org.spongepowered:configurate-yaml:4.2.0-20250225.064233-199")
++    implementation("org.spongepowered:configurate-core:4.2.0-20250225.064233-204") // Pinned dependency of above pinned yaml snapshot.
+     implementation("commons-lang:commons-lang:2.6")
+     runtimeOnly("org.xerial:sqlite-jdbc:3.47.2.0") // Leaf - Bump Dependencies
+     runtimeOnly("com.mysql:mysql-connector-j:9.1.0")
++    // Leaf start - Bump Dependencies
+     runtimeOnly("com.lmax:disruptor:3.4.4") // Dreeam TODO - Waiting Log4j 3.x to support disruptor 4.0.0
+ 
+-    // Leaf start - Bump Dependencies
+     runtimeOnly("org.apache.maven:maven-resolver-provider:3.9.9")
+     runtimeOnly("org.apache.maven.resolver:maven-resolver-connector-basic:1.9.22") // Dreeam TODO - Update to 2.0.1
+     runtimeOnly("org.apache.maven.resolver:maven-resolver-transport-http:1.9.22") // Dreeam TODO - Update to 2.0.1
+@@ -251,7 +_,7 @@
+ 
+     // Spark
+     implementation("me.lucko:spark-api:0.1-20240720.200737-2")
+-    implementation("me.lucko:spark-paper:1.10.119-SNAPSHOT")
++    implementation("me.lucko:spark-paper:1.10.119-20241121.092015-1")
+ 
+     implementation("io.netty:netty-all:4.1.116.Final") // Leaf - Bump Dependencies // Dreeam TODO - Update to 4.2.0
+ }
+@@ -271,21 +_,21 @@
+         val git = Git(rootProject.layout.projectDirectory.path)
+         val mcVersion = rootProject.providers.gradleProperty("mcVersion").get()
+         val build = System.getenv("BUILD_NUMBER") ?: null
+-        val buildTime = Instant.now() // Gale - branding changes - we don't have ci yet
++        val buildTime = Instant.now() // Gale - branding changes - Always use current as build time
+         val gitHash = git.exec(providers, "rev-parse", "--short=7", "HEAD").get().trim()
+         val implementationVersion = "$mcVersion-${build ?: "DEV"}-$gitHash"
+         val date = git.exec(providers, "show", "-s", "--format=%ci", gitHash).get().trim()
+         val gitBranch = git.exec(providers, "rev-parse", "--abbrev-ref", "HEAD").get().trim()
+         attributes(
+             "Main-Class" to "org.bukkit.craftbukkit.Main",
+-            "Implementation-Title" to "Leaf", // Gale - branding changes // Leaf - Rebrand
++            "Implementation-Title" to "Cartridge", // Gale - branding changes // Leaf - Rebrand
+             "Implementation-Version" to implementationVersion,
+             "Implementation-Vendor" to date,
+-            "Specification-Title" to "Leaf", // Gale - branding changes // Leaf - Rebrand
++            "Specification-Title" to "Cartridge", // Gale - branding changes // Leaf - Rebrand // Cartridge - Rebrand
+             "Specification-Version" to project.version,
+-            "Specification-Vendor" to "Winds Studio", // Gale - branding changes // Leaf - Rebrand
+-            "Brand-Id" to "winds-studio:leaf", // Gale - branding changes // Leaf - Rebrand
+-            "Brand-Name" to "Leaf", // Gale - branding changes // Leaf - Rebrand
++            "Specification-Vendor" to "MineInAbyss", // Gale - branding changes // Leaf - Rebrand // Cartridge - Rebrand
++            "Brand-Id" to "mineinabyss:cartridge", // Gale - branding changes // Leaf - Rebrand // Cartridge - Rebrand
++            "Brand-Name" to "Cartridge", // Gale - branding changes // Leaf - Rebrand // Cartridge - Rebrand
+             "Build-Number" to (build ?: ""),
+             "Build-Time" to buildTime.toString(),
+             "Git-Branch" to gitBranch,

@@ -1,0 +1,41 @@
+--- a/leaf-api/build.gradle.kts
++++ b/leaf-api/build.gradle.kts
+@@ -94,10 +_,12 @@
+     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
+     testImplementation("org.hamcrest:hamcrest:3.0")
+     testImplementation("org.mockito:mockito-core:5.15.2")
++    // Leaf end - Bump Dependencies
+     testImplementation("org.ow2.asm:asm-tree:9.7.1")
+-    mockitoAgent("org.mockito:mockito-core:5.15.2") { isTransitive = false } // configure mockito agent that is needed in newer java versions
++    mockitoAgent("org.mockito:mockito-core:5.15.2") { isTransitive = false } // configure mockito agent that is needed in newer java versions // Leaf - Bump Dependencies
+     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+ 
++    // Leaf start - Bump Dependencies
+     // commons-lang3 is removed in maven-resolver-provider since 3.9.8
+     // Add this because bukkit api still need it.
+     compileOnly("org.apache.commons:commons-lang3:3.17.0")
+@@ -117,20 +_,24 @@
+             // Gale start - project setup
+             srcDir(file("../paper-api/src/main/java"))
+             srcDir(file("../gale-api/src/main/java")) // Leaf - project setup
++            srcDir(file("../leaf-api/src/main/java")) // Cartridge - project setup
+         }
+         resources {
+             srcDir(file("../paper-api/src/main/resources"))
+             srcDir(file("../gale-api/src/main/resources")) // Leaf - project setup
++            srcDir(file("../leaf-api/src/main/resources")) // Cartridge - project setup
+         }
+     }
+     test {
+         java {
+             srcDir(file("../paper-api/src/test/java"))
+             srcDir(file("../gale-api/src/test/java")) // Leaf - project setup
++            srcDir(file("../leaf-api/src/test/java")) // Cartridge - project setup
+         }
+         resources {
+             srcDir(file("../paper-api/src/test/resources"))
+             srcDir(file("../gale-api/src/test/resources")) // Leaf - project setup
++            srcDir(file("../leaf-api/src/test/resources")) // Cartridge - project setup
+             // Gale end - project setup
+         }
+     }

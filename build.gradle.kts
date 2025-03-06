@@ -2,33 +2,12 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 
 plugins {
+    `maven-publish`
     id("io.papermc.paperweight.patcher") version "2.0.0-beta.14"
 }
 
-paperweight {
-    upstreams.paper {
-        ref = providers.gradleProperty("paperRef")
-
-        patchFile {
-            path = "paper-server/build.gradle.kts"
-            outputFile = file("fork-server/build.gradle.kts")
-            patchFile = file("fork-server/build.gradle.kts.patch")
-        }
-        patchFile {
-            path = "paper-api/build.gradle.kts"
-            outputFile = file("fork-api/build.gradle.kts")
-            patchFile = file("fork-api/build.gradle.kts.patch")
-        }
-        patchDir("paperApi") {
-            upstreamPath = "paper-api"
-            excludes = setOf("build.gradle.kts")
-            patchesDir = file("fork-api/paper-patches")
-            outputDir = file("paper-api")
-        }
-    }
-}
-
 val paperMavenPublicUrl = "https://repo.papermc.io/repository/maven-public/"
+val leafMavenPublicUrl = "https://maven.nostal.ink/repository/maven-snapshots/"
 
 subprojects {
     apply(plugin = "java-library")
@@ -43,6 +22,8 @@ subprojects {
     repositories {
         mavenCentral()
         maven(paperMavenPublicUrl)
+        maven(leafMavenPublicUrl)
+        maven("https://repo.bsdevelopment.org/releases/") // Leaf - Leaf config - ConfigurationMaster-API
     }
 
     tasks.withType<AbstractArchiveTask>().configureEach {
@@ -53,6 +34,7 @@ subprojects {
         options.encoding = Charsets.UTF_8.name()
         options.release = 21
         options.isFork = true
+        options.forkOptions.memoryMaximumSize = "6g"
     }
     tasks.withType<Javadoc> {
         options.encoding = Charsets.UTF_8.name()
@@ -70,12 +52,41 @@ subprojects {
 
     extensions.configure<PublishingExtension> {
         repositories {
-            /*
-            maven("https://repo.papermc.io/repository/maven-snapshots/") {
-                name = "paperSnapshots"
-                credentials(PasswordCredentials::class)
+            maven(leafMavenPublicUrl) {
+                name = "leaf"
+
+                credentials.username = "dreeam"
+                credentials.password = "dreeam123"
             }
-             */
+        }
+    }
+}
+
+paperweight {
+    upstreams.register("leaf") {
+        repo = github("Winds-Studio", "Leaf")
+        ref = providers.gradleProperty("leafRef")
+
+        patchFile {
+            path = "leaf-server/build.gradle.kts"
+            outputFile = file("cartridge-server/build.gradle.kts")
+            patchFile = file("cartridge-server/build.gradle.kts.patch")
+        }
+        patchFile {
+            path = "leaf-api/build.gradle.kts"
+            outputFile = file("cartridge-api/build.gradle.kts")
+            patchFile = file("cartridge-api/build.gradle.kts.patch")
+        }
+        patchRepo("paperApi") {
+            upstreamPath = "paper-api"
+            patchesDir = file("fork-api/paper-patches")
+            outputDir = file("paper-api")
+        }
+        patchDir("leafApi") {
+            upstreamPath = "leaf-api"
+            excludes = listOf("build.gradle.kts", "build.gradle.kts.patch", "paper-patches")
+            patchesDir = file("cartridge-api/leaf-patches")
+            outputDir = file("leaf-api")
         }
     }
 }
