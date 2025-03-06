@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Boy <sivertpaulsen2@gmail.com>
+Date: Thu, 6 Mar 2025 23:36:43 +0100
+Subject: [PATCH] Enchantment Tweaks
+
+
+diff --git a/net/minecraft/data/tags/VanillaEnchantmentTagsProvider.java b/net/minecraft/data/tags/VanillaEnchantmentTagsProvider.java
+index 5b6bff7e3b55d750f2c7fa1c97f3a3520869943e..e5e5c66a0b3213631fab8284105e33d81d11a4fc 100644
+--- a/net/minecraft/data/tags/VanillaEnchantmentTagsProvider.java
++++ b/net/minecraft/data/tags/VanillaEnchantmentTagsProvider.java
+@@ -84,7 +84,7 @@ public class VanillaEnchantmentTagsProvider extends EnchantmentTagsProvider {
+             .add(
+                 Enchantments.PROTECTION,
+                 Enchantments.FIRE_PROTECTION,
+-                Enchantments.FEATHER_FALLING,
++                //Enchantments.FEATHER_FALLING, // Cartridge - Remove Feather Falling
+                 Enchantments.BLAST_PROTECTION,
+                 Enchantments.PROJECTILE_PROTECTION,
+                 Enchantments.RESPIRATION,

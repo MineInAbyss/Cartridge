@@ -1,0 +1,38 @@
+--- a/data/minecraft/enchantment/protection.json
++++ b/data/minecraft/enchantment/protection.json
+@@ -20,6 +_,35 @@
+             "tags": [
+               {
+                 "expected": false,
++                "id": "minecraft:is_fall"
++              },
++              {
++                "expected": false,
++                "id": "minecraft:bypasses_invulnerability"
++              }
++            ]
++          }
++        }
++      },
++      {
++        "effect": {
++          "type": "minecraft:add",
++          "value": {
++            "type": "minecraft:linear",
++            "base": 1.0,
++            "per_level_above_first": 0.5
++          }
++        },
++        "requirements": {
++          "condition": "minecraft:damage_source_properties",
++          "predicate": {
++            "tags": [
++              {
++                "expected": true,
++                "id": "minecraft:is_fall"
++              },
++              {
++                "expected": false,
+                 "id": "minecraft:bypasses_invulnerability"
+               }
+             ]
