@@ -5,12 +5,12 @@ Subject: [PATCH] Branding changes
 
 
 diff --git a/src/main/java/io/papermc/paper/ServerBuildInfo.java b/src/main/java/io/papermc/paper/ServerBuildInfo.java
-index 2240bb704dd9fa62836efa1b3d6ec4d7744d9b1d..dfa8b4c6b3fedcd27994f78bc3861071c08f0307 100644
+index 66a9fc729182476c4f601cdb32bcb10970a9498c..a52bed3b88085b284caf829d49b32d1ab482dd70 100644
 --- a/src/main/java/io/papermc/paper/ServerBuildInfo.java
 +++ b/src/main/java/io/papermc/paper/ServerBuildInfo.java
 @@ -44,6 +44,13 @@ public interface ServerBuildInfo {
      Key BRAND_LEAF_ID = Key.key("winds-studio", "leaf");
-     // Leaf end
+     // Leaf end - Rebrand
  
 +    // Cartridge start
 +    /**
