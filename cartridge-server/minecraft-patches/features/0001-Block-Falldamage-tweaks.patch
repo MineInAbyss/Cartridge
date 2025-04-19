@@ -923,10 +923,10 @@ index a3a093d95306baac22e5cf720f5b14f733b548d4..ca5c275cede3ef1ea4c80ea4e7dc1896
      private void destroyEgg(Level level, BlockState state, BlockPos pos, Entity entity, int chance) {
          if (state.is(Blocks.TURTLE_EGG)
 diff --git a/net/minecraft/world/level/material/FlowingFluid.java b/net/minecraft/world/level/material/FlowingFluid.java
-index 618a8af8fe30c39bb8c93dcc324f4ae1c48e704e..1e55dff46136a25c1e3d11441511ce644824b411 100644
+index f6bc70685e846e9114f477dfd8aceca3b910a09f..52a6d64eafd675d89fcf5f1a706aa725cbd2feb8 100644
 --- a/net/minecraft/world/level/material/FlowingFluid.java
 +++ b/net/minecraft/world/level/material/FlowingFluid.java
-@@ -522,39 +522,40 @@ public abstract class FlowingFluid extends Fluid {
+@@ -528,39 +528,40 @@ public abstract class FlowingFluid extends Fluid {
          return this.getTickDelay(level);
      }
  
