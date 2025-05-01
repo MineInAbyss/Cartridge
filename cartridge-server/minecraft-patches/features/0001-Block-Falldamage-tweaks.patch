@@ -89,7 +89,7 @@ index 3f22a4f612f0a9d582ad2da3f2be794a4913d08f..d9e2d7d93f2f3c222a298756bc38afa4
          return this.tags;
      }
 diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
-index 915498dcb08a678256e6cc1659642d6126851365..dcced29af281d7c4671627118d9f4daa74d629c0 100644
+index 9100da3fe4e478cea7198cb4e028fcefccb3eb3c..3dcccb5d2043ae8074080a2aefff0d79e92f9d4e 100644
 --- a/net/minecraft/server/level/ServerPlayer.java
 +++ b/net/minecraft/server/level/ServerPlayer.java
 @@ -436,6 +436,10 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
@@ -118,7 +118,7 @@ index 915498dcb08a678256e6cc1659642d6126851365..dcced29af281d7c4671627118d9f4daa
              }
              // Purpur end - Add boat fall damage config
              Entity entity = damageSource.getEntity();
-@@ -1749,6 +1755,18 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -1750,6 +1756,18 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
              this.spawnExtraParticlesOnFall = false;
          }
  
@@ -137,7 +137,7 @@ index 915498dcb08a678256e6cc1659642d6126851365..dcced29af281d7c4671627118d9f4daa
          super.checkFallDamage(y, onGround, state, pos);
      }
  
-@@ -1757,7 +1775,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -1758,7 +1776,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
          super.onExplosionHit(entity);
          this.currentImpulseImpactPos = this.position();
          this.currentExplosionCause = entity;
@@ -225,7 +225,7 @@ index fcc5320b82b12ef890934a7afe9dc83a1e1ea7b8..404e3c5ebdabe8c83e02befdae71bf01
          NetworkPayload(Map<ResourceLocation, IntList> tags) {
              this.tags = tags;
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index 075fcbcde23b5bb7b27ff622e8d188c3a2583973..a461802b76b971fdc9cad28f7e79ed8a7e369816 100644
+index 0ae36986492d98f46ccf409f6b71ed9cfca488e7..5e8c83d9d5f4a71306f2032d58de3ecbdac037b3 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
 @@ -83,6 +83,7 @@ import net.minecraft.world.InteractionResult;
@@ -236,7 +236,7 @@ index 075fcbcde23b5bb7b27ff622e8d188c3a2583973..a461802b76b971fdc9cad28f7e79ed8a
  import net.minecraft.world.entity.item.ItemEntity;
  import net.minecraft.world.entity.player.Player;
  import net.minecraft.world.entity.projectile.Projectile;
-@@ -919,7 +920,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -920,7 +921,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
  
          if (this.isInLava()) {
              this.lavaHurt();
@@ -245,7 +245,7 @@ index 075fcbcde23b5bb7b27ff622e8d188c3a2583973..a461802b76b971fdc9cad28f7e79ed8a
              // CraftBukkit start
          } else {
              this.lastLavaContact = null;
-@@ -1219,7 +1220,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1220,7 +1221,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                              new ClipContext(this.position(), this.position().add(vec3), ClipContext.Block.FALLDAMAGE_RESETTING, ClipContext.Fluid.WATER, this)
                          );
                      if (blockHitResult.getType() != HitResult.Type.MISS) {
@@ -254,7 +254,7 @@ index 075fcbcde23b5bb7b27ff622e8d188c3a2583973..a461802b76b971fdc9cad28f7e79ed8a
                      }
                  }
  
-@@ -1385,7 +1386,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1386,7 +1387,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
      }
  
      private boolean isStateClimbable(BlockState state) {
@@ -263,7 +263,7 @@ index 075fcbcde23b5bb7b27ff622e8d188c3a2583973..a461802b76b971fdc9cad28f7e79ed8a
      }
  
      private boolean vibrationAndSoundEffectsFromBlock(BlockPos pos, BlockState state, boolean playStepSound, boolean broadcastGameEvent, Vec3 entityPos) {
-@@ -1898,7 +1899,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1899,7 +1900,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
      }
  
      protected void checkFallDamage(double y, boolean onGround, BlockState state, BlockPos pos) {
@@ -272,7 +272,7 @@ index 075fcbcde23b5bb7b27ff622e8d188c3a2583973..a461802b76b971fdc9cad28f7e79ed8a
              if (this.fallDistance > 0.0F) {
                  state.getBlock().fallOn(this.level(), state, pos, this, this.fallDistance);
                  this.level()
-@@ -1931,7 +1932,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1932,7 +1933,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                  }
              }
  
@@ -281,7 +281,7 @@ index 075fcbcde23b5bb7b27ff622e8d188c3a2583973..a461802b76b971fdc9cad28f7e79ed8a
          }
      }
  
-@@ -1995,7 +1996,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1996,7 +1997,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                  this.doWaterSplashEffect();
              }
  
@@ -290,7 +290,7 @@ index 075fcbcde23b5bb7b27ff622e8d188c3a2583973..a461802b76b971fdc9cad28f7e79ed8a
              this.wasTouchingWater = true;
              this.clearFire();
          } else {
-@@ -3151,6 +3152,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -3152,6 +3153,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                      this.stopRiding();
                  }
  
@@ -298,7 +298,7 @@ index 075fcbcde23b5bb7b27ff622e8d188c3a2583973..a461802b76b971fdc9cad28f7e79ed8a
                  this.setPose(Pose.STANDING);
                  this.vehicle = vehicle;
                  this.vehicle.addPassenger(this);
-@@ -3164,9 +3166,12 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -3165,9 +3167,12 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
          }
      }
  
@@ -312,7 +312,7 @@ index 075fcbcde23b5bb7b27ff622e8d188c3a2583973..a461802b76b971fdc9cad28f7e79ed8a
  
      public void ejectPassengers() {
          for (int i = this.passengers.size() - 1; i >= 0; i--) {
-@@ -3734,7 +3739,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -3743,7 +3748,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
      }
  
      public void makeStuckInBlock(BlockState state, Vec3 motionMultiplier) {
@@ -322,7 +322,7 @@ index 075fcbcde23b5bb7b27ff622e8d188c3a2583973..a461802b76b971fdc9cad28f7e79ed8a
      }
  
 diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
-index 03c9edad5c2f5e902b7a766c6d0be61bf3c263ae..540427009162684b9da45bcdd4b004a62d84eb05 100644
+index f0a23d922a4541ec6821092ca3110d7cad4536a6..1547e89ee90a30dd550d0086c0242b284438015a 100644
 --- a/net/minecraft/world/entity/LivingEntity.java
 +++ b/net/minecraft/world/entity/LivingEntity.java
 @@ -395,7 +395,7 @@ public abstract class LivingEntity extends Entity implements Attackable, net.caf
