@@ -17,33 +17,14 @@
 -    api("com.google.guava:guava:33.4.0-jre")
 -    // Waiting Paper, Gson has breaking change since 2.12.0
 -    // See https://github.com/google/gson/commit/6c2e3db7d25ceceabe056aeb8b65477fdd509214
--    api("com.google.code.gson:gson:2.11.0")
++    api("com.google.guava:guava:33.4.0-jre") // Leaf - Bump Dependencies
+     api("com.google.code.gson:gson:2.11.0")
 -    api("org.yaml:snakeyaml:2.3") // 2.4 removed `org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder`
 -    // Leaf end - Bump Dependencies
-+    api("com.google.guava:guava:33.4.0-jre") // Leaf - Bump Dependencies
-+    api("com.google.code.gson:gson:2.12.1")
 +    api("org.yaml:snakeyaml:2.3") // Leaf - Bump Dependencies
      api("org.joml:joml:1.10.8") {
          isTransitive = false // https://github.com/JOML-CI/JOML/issues/352
      }
-@@ -86,7 +_,7 @@
-     compileOnly(annotations)
-     testCompileOnly(annotations)
- 
--    val checkerQual = "org.checkerframework:checker-qual:3.49.1" // Leaf - Bump Dependencies
-+    val checkerQual = "org.checkerframework:checker-qual:3.48.4" // Leaf - Bump Dependencies
-     compileOnlyApi(checkerQual)
-     testCompileOnly(checkerQual)
- 
-@@ -100,7 +_,7 @@
-     testImplementation("org.mockito:mockito-core:5.16.1")
-     // Leaf end - Bump Dependencies
-     testImplementation("org.ow2.asm:asm-tree:9.7.1")
--    mockitoAgent("org.mockito:mockito-core:5.16.1") { isTransitive = false } // configure mockito agent that is needed in newer java versions // Leaf - Bump Dependencies
-+    mockitoAgent("org.mockito:mockito-core:5.15.2") { isTransitive = false } // configure mockito agent that is needed in newer java versions // Leaf - Bump Dependencies
-     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
- 
-     // Leaf start - Bump Dependencies
 @@ -123,20 +_,24 @@
              // Gale start - project setup
              srcDir(file("../paper-api/src/main/java"))
