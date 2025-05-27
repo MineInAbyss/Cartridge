@@ -5,7 +5,7 @@ Subject: [PATCH] Block Falldamage tweaks
 
 
 diff --git a/net/minecraft/DefaultUncaughtExceptionHandler.java b/net/minecraft/DefaultUncaughtExceptionHandler.java
-index 6341da454460aa6c00075f82163b97286f760eee..a8bc94121a0209faa8dd293ff3c0862dac280cdb 100755
+index 6341da454460aa6c00075f82163b97286f760eee..a8bc94121a0209faa8dd293ff3c0862dac280cdb 100644
 --- a/net/minecraft/DefaultUncaughtExceptionHandler.java
 +++ b/net/minecraft/DefaultUncaughtExceptionHandler.java
 @@ -12,6 +12,7 @@ public class DefaultUncaughtExceptionHandler implements UncaughtExceptionHandler
@@ -17,7 +17,7 @@ index 6341da454460aa6c00075f82163b97286f760eee..a8bc94121a0209faa8dd293ff3c0862d
      }
  }
 diff --git a/net/minecraft/data/tags/VanillaBlockTagsProvider.java b/net/minecraft/data/tags/VanillaBlockTagsProvider.java
-index 8829f019eb172234e44d2ae862f0dfe7c7909d83..66e667c29bfb42755d1a9a0ac6debf06041d352c 100755
+index 8829f019eb172234e44d2ae862f0dfe7c7909d83..66e667c29bfb42755d1a9a0ac6debf06041d352c 100644
 --- a/net/minecraft/data/tags/VanillaBlockTagsProvider.java
 +++ b/net/minecraft/data/tags/VanillaBlockTagsProvider.java
 @@ -775,7 +775,7 @@ public class VanillaBlockTagsProvider extends IntrinsicHolderTagsProvider<Block>
@@ -30,7 +30,7 @@ index 8829f019eb172234e44d2ae862f0dfe7c7909d83..66e667c29bfb42755d1a9a0ac6debf06
              .add(Blocks.SOUL_FIRE)
              .add(Blocks.SOUL_TORCH)
 diff --git a/net/minecraft/network/protocol/common/ClientboundUpdateTagsPacket.java b/net/minecraft/network/protocol/common/ClientboundUpdateTagsPacket.java
-index 3f22a4f612f0a9d582ad2da3f2be794a4913d08f..d9e2d7d93f2f3c222a298756bc38afa426cbfd58 100755
+index 3f22a4f612f0a9d582ad2da3f2be794a4913d08f..d9e2d7d93f2f3c222a298756bc38afa426cbfd58 100644
 --- a/net/minecraft/network/protocol/common/ClientboundUpdateTagsPacket.java
 +++ b/net/minecraft/network/protocol/common/ClientboundUpdateTagsPacket.java
 @@ -1,13 +1,27 @@
@@ -89,7 +89,7 @@ index 3f22a4f612f0a9d582ad2da3f2be794a4913d08f..d9e2d7d93f2f3c222a298756bc38afa4
          return this.tags;
      }
 diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
-index 943f48c41214f440517ecf7f392e08f0e4d1b888..1ba46ecff715b4e37ee9f9a405bd9055982ad65c 100755
+index 8e693028ef9e512094dbb97d6088d95ead03487d..1fd01be03a14b246240cf26f76801e590906378f 100644
 --- a/net/minecraft/server/level/ServerPlayer.java
 +++ b/net/minecraft/server/level/ServerPlayer.java
 @@ -429,6 +429,10 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
@@ -103,7 +103,7 @@ index 943f48c41214f440517ecf7f392e08f0e4d1b888..1ba46ecff715b4e37ee9f9a405bd9055
      public ServerPlayer(MinecraftServer server, ServerLevel level, GameProfile gameProfile, ClientInformation clientInformation) {
          super(level, level.getSharedSpawnPos(), level.getSharedSpawnAngle(), gameProfile);
          this.textFilter = server.createTextFilterForPlayer(this);
-@@ -1252,9 +1256,11 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -1255,9 +1259,11 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
                      return false;
                  }
                  // Purpur end - Minecart settings and WASD controls
@@ -118,7 +118,7 @@ index 943f48c41214f440517ecf7f392e08f0e4d1b888..1ba46ecff715b4e37ee9f9a405bd9055
              }
              // Purpur end - Add boat fall damage config
              Entity entity = damageSource.getEntity();
-@@ -1748,6 +1754,18 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -1751,6 +1757,18 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
              this.spawnExtraParticlesOnFall = false;
          }
  
@@ -137,7 +137,7 @@ index 943f48c41214f440517ecf7f392e08f0e4d1b888..1ba46ecff715b4e37ee9f9a405bd9055
          super.checkFallDamage(y, onGround, state, pos);
      }
  
-@@ -1756,7 +1774,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -1759,7 +1777,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
          super.onExplosionHit(entity);
          this.currentImpulseImpactPos = this.position();
          this.currentExplosionCause = entity;
@@ -147,7 +147,7 @@ index 943f48c41214f440517ecf7f392e08f0e4d1b888..1ba46ecff715b4e37ee9f9a405bd9055
  
      @Override
 diff --git a/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index 405b8da8b886b5caac7ed774472e106374c42185..49834f8709a7f23b857975fe676059cc3e8ec202 100755
+index 1a09ea1953169b72d67126283b5f581c2797506a..d5a1139680069d8b7e8529a4c79754db5e0d3463 100644
 --- a/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 @@ -132,6 +132,8 @@ import net.minecraft.resources.ResourceLocation;
@@ -184,7 +184,7 @@ index 405b8da8b886b5caac7ed774472e106374c42185..49834f8709a7f23b857975fe676059cc
              }
          }
      }
-@@ -1651,7 +1660,7 @@ public class ServerGamePacketListenerImpl
+@@ -1648,7 +1657,7 @@ public class ServerGamePacketListenerImpl
                                  if (!this.player.isSpectator() && this.player.isAffectedByBlocks()) this.player.recordMovementThroughBlocks(new Vec3(x, y, z), this.player.position()); // Paper - Do not record movement for vehicles/players unaffected by blocks
                                  this.handlePlayerKnownMovement(vec3);
                                  if (flag) {
@@ -193,7 +193,7 @@ index 405b8da8b886b5caac7ed774472e106374c42185..49834f8709a7f23b857975fe676059cc
                                  }
  
                                  if (packet.isOnGround()
-@@ -1676,7 +1685,7 @@ public class ServerGamePacketListenerImpl
+@@ -1673,7 +1682,7 @@ public class ServerGamePacketListenerImpl
                                  this.lastGoodZ = this.player.getZ();
                              } else {
                                  this.internalTeleport(x, y, z, f, f1); // CraftBukkit - SPIGOT-1807: Don't call teleport event, when the client thinks the player is falling, because the chunks are not loaded on the client yet.
@@ -203,7 +203,7 @@ index 405b8da8b886b5caac7ed774472e106374c42185..49834f8709a7f23b857975fe676059cc
                          }
                      }
 diff --git a/net/minecraft/tags/TagNetworkSerialization.java b/net/minecraft/tags/TagNetworkSerialization.java
-index fcc5320b82b12ef890934a7afe9dc83a1e1ea7b8..404e3c5ebdabe8c83e02befdae71bf0141e676ad 100755
+index fcc5320b82b12ef890934a7afe9dc83a1e1ea7b8..404e3c5ebdabe8c83e02befdae71bf0141e676ad 100644
 --- a/net/minecraft/tags/TagNetworkSerialization.java
 +++ b/net/minecraft/tags/TagNetworkSerialization.java
 @@ -45,7 +45,7 @@ public class TagNetworkSerialization {
@@ -225,7 +225,7 @@ index fcc5320b82b12ef890934a7afe9dc83a1e1ea7b8..404e3c5ebdabe8c83e02befdae71bf01
          NetworkPayload(Map<ResourceLocation, IntList> tags) {
              this.tags = tags;
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index e8a24178cb74afee749bfb067ac010f5178e070c..a55291d49845fd7da5134e1f3cfffcfab7865391 100755
+index 9f581d5bdc3f658694bbd8c80abbce4e27e568d3..acd48aa63295b20185312b24f8e9f9c76c802db8 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
 @@ -83,6 +83,7 @@ import net.minecraft.world.InteractionResult;
@@ -236,7 +236,7 @@ index e8a24178cb74afee749bfb067ac010f5178e070c..a55291d49845fd7da5134e1f3cfffcfa
  import net.minecraft.world.entity.item.ItemEntity;
  import net.minecraft.world.entity.player.Player;
  import net.minecraft.world.entity.projectile.Projectile;
-@@ -919,7 +920,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -924,7 +925,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
  
          if (this.isInLava()) {
              this.lavaHurt();
@@ -245,7 +245,7 @@ index e8a24178cb74afee749bfb067ac010f5178e070c..a55291d49845fd7da5134e1f3cfffcfa
              // CraftBukkit start
          } else {
              this.lastLavaContact = null;
-@@ -1185,7 +1186,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1190,7 +1191,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                              new ClipContext(this.position(), this.position().add(vec3), ClipContext.Block.FALLDAMAGE_RESETTING, ClipContext.Fluid.WATER, this)
                          );
                      if (blockHitResult.getType() != HitResult.Type.MISS) {
@@ -254,7 +254,7 @@ index e8a24178cb74afee749bfb067ac010f5178e070c..a55291d49845fd7da5134e1f3cfffcfa
                      }
                  }
  
-@@ -1344,7 +1345,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1349,7 +1350,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
      }
  
      private boolean isStateClimbable(BlockState state) {
@@ -263,7 +263,7 @@ index e8a24178cb74afee749bfb067ac010f5178e070c..a55291d49845fd7da5134e1f3cfffcfa
      }
  
      private boolean vibrationAndSoundEffectsFromBlock(BlockPos pos, BlockState state, boolean playStepSound, boolean broadcastGameEvent, Vec3 entityPos) {
-@@ -1874,7 +1875,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1879,7 +1880,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
      }
  
      protected void checkFallDamage(double y, boolean onGround, BlockState state, BlockPos pos) {
@@ -272,7 +272,7 @@ index e8a24178cb74afee749bfb067ac010f5178e070c..a55291d49845fd7da5134e1f3cfffcfa
              if (this.fallDistance > 0.0F) {
                  state.getBlock().fallOn(this.level(), state, pos, this, this.fallDistance);
                  this.level()
-@@ -1907,7 +1908,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1912,7 +1913,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                  }
              }
  
@@ -281,7 +281,7 @@ index e8a24178cb74afee749bfb067ac010f5178e070c..a55291d49845fd7da5134e1f3cfffcfa
          }
      }
  
-@@ -1971,7 +1972,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1976,7 +1977,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                  this.doWaterSplashEffect();
              }
  
@@ -290,7 +290,7 @@ index e8a24178cb74afee749bfb067ac010f5178e070c..a55291d49845fd7da5134e1f3cfffcfa
              this.wasTouchingWater = true;
              this.clearFire();
          } else {
-@@ -3130,6 +3131,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -3163,6 +3164,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                      this.stopRiding();
                  }
  
@@ -298,7 +298,7 @@ index e8a24178cb74afee749bfb067ac010f5178e070c..a55291d49845fd7da5134e1f3cfffcfa
                  this.setPose(Pose.STANDING);
                  this.vehicle = vehicle;
                  this.vehicle.addPassenger(this);
-@@ -3143,9 +3145,12 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -3176,9 +3178,12 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
          }
      }
  
@@ -312,7 +312,7 @@ index e8a24178cb74afee749bfb067ac010f5178e070c..a55291d49845fd7da5134e1f3cfffcfa
  
      public void ejectPassengers() {
          for (int i = this.passengers.size() - 1; i >= 0; i--) {
-@@ -3720,7 +3725,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -3753,7 +3758,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
      }
  
      public void makeStuckInBlock(BlockState state, Vec3 motionMultiplier) {
@@ -322,7 +322,7 @@ index e8a24178cb74afee749bfb067ac010f5178e070c..a55291d49845fd7da5134e1f3cfffcfa
      }
  
 diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
-index f0a23d922a4541ec6821092ca3110d7cad4536a6..1547e89ee90a30dd550d0086c0242b284438015a 100755
+index f0a23d922a4541ec6821092ca3110d7cad4536a6..1547e89ee90a30dd550d0086c0242b284438015a 100644
 --- a/net/minecraft/world/entity/LivingEntity.java
 +++ b/net/minecraft/world/entity/LivingEntity.java
 @@ -395,7 +395,7 @@ public abstract class LivingEntity extends Entity implements Attackable, net.caf
@@ -410,7 +410,7 @@ index f0a23d922a4541ec6821092ca3110d7cad4536a6..1547e89ee90a30dd550d0086c0242b28
  
      @Override
 diff --git a/net/minecraft/world/entity/projectile/ThrownEnderpearl.java b/net/minecraft/world/entity/projectile/ThrownEnderpearl.java
-index ed4df82581b5411e54068ccc59ea85a78404fa2b..5e74971cc7fd64d87b560b7254efc6efb85359dd 100755
+index ed4df82581b5411e54068ccc59ea85a78404fa2b..5e74971cc7fd64d87b560b7254efc6efb85359dd 100644
 --- a/net/minecraft/world/entity/projectile/ThrownEnderpearl.java
 +++ b/net/minecraft/world/entity/projectile/ThrownEnderpearl.java
 @@ -125,6 +125,7 @@ public class ThrownEnderpearl extends ThrowableItemProjectile {
@@ -445,7 +445,7 @@ index ed4df82581b5411e54068ccc59ea85a78404fa2b..5e74971cc7fd64d87b560b7254efc6ef
  
                      this.playSound(serverLevel, vec3);
 diff --git a/net/minecraft/world/entity/vehicle/AbstractBoat.java b/net/minecraft/world/entity/vehicle/AbstractBoat.java
-index b1b312e45ed4514eaa6fb3941af64b641220c5bd..3dbae9b8a757cff32d3bf1d193f3d6f17aed2d88 100755
+index b1b312e45ed4514eaa6fb3941af64b641220c5bd..3dbae9b8a757cff32d3bf1d193f3d6f17aed2d88 100644
 --- a/net/minecraft/world/entity/vehicle/AbstractBoat.java
 +++ b/net/minecraft/world/entity/vehicle/AbstractBoat.java
 @@ -822,7 +822,7 @@ public abstract class AbstractBoat extends VehicleEntity implements Leashable {
@@ -458,7 +458,7 @@ index b1b312e45ed4514eaa6fb3941af64b641220c5bd..3dbae9b8a757cff32d3bf1d193f3d6f1
                  this.fallDistance -= (float)y;
              }
 diff --git a/net/minecraft/world/item/MaceItem.java b/net/minecraft/world/item/MaceItem.java
-index d3eb13865ded58147ea652cc98b37923706ab82f..7d171def97bfd1ada20084828a7a6db07abec7e3 100755
+index d3eb13865ded58147ea652cc98b37923706ab82f..7d171def97bfd1ada20084828a7a6db07abec7e3 100644
 --- a/net/minecraft/world/item/MaceItem.java
 +++ b/net/minecraft/world/item/MaceItem.java
 @@ -72,7 +72,7 @@ public class MaceItem extends Item {
@@ -480,7 +480,7 @@ index d3eb13865ded58147ea652cc98b37923706ab82f..7d171def97bfd1ada20084828a7a6db0
      }
  
 diff --git a/net/minecraft/world/level/block/BedBlock.java b/net/minecraft/world/level/block/BedBlock.java
-index 999abf6a27682eed16273c9a73dc9479fc3008c0..28cf30d5535c0c52ceca0aacf62a6a2870792631 100755
+index 999abf6a27682eed16273c9a73dc9479fc3008c0..28cf30d5535c0c52ceca0aacf62a6a2870792631 100644
 --- a/net/minecraft/world/level/block/BedBlock.java
 +++ b/net/minecraft/world/level/block/BedBlock.java
 @@ -154,7 +154,7 @@ public class BedBlock extends HorizontalDirectionalBlock implements EntityBlock
@@ -493,7 +493,7 @@ index 999abf6a27682eed16273c9a73dc9479fc3008c0..28cf30d5535c0c52ceca0aacf62a6a28
  
      private boolean kickVillagerOutOfBed(Level level, BlockPos pos) {
 diff --git a/net/minecraft/world/level/block/CoralBlock.java b/net/minecraft/world/level/block/CoralBlock.java
-index b747af5f3c65f4b79a304b0e903f7b824fb03d8d..b90e5ca511f09522153bda09866e06cff3d6d8fa 100755
+index b747af5f3c65f4b79a304b0e903f7b824fb03d8d..b90e5ca511f09522153bda09866e06cff3d6d8fa 100644
 --- a/net/minecraft/world/level/block/CoralBlock.java
 +++ b/net/minecraft/world/level/block/CoralBlock.java
 @@ -34,17 +34,18 @@ public class CoralBlock extends Block {
@@ -527,7 +527,7 @@ index b747af5f3c65f4b79a304b0e903f7b824fb03d8d..b90e5ca511f09522153bda09866e06cf
      @Override
      protected BlockState updateShape(
 diff --git a/net/minecraft/world/level/block/CoralFanBlock.java b/net/minecraft/world/level/block/CoralFanBlock.java
-index 9530fa0793ed0904b17f8972d09f98a97b2cecb0..a4636d2f1229d0497f3bc5aa65b6c40ff2a8339a 100755
+index 9530fa0793ed0904b17f8972d09f98a97b2cecb0..a4636d2f1229d0497f3bc5aa65b6c40ff2a8339a 100644
 --- a/net/minecraft/world/level/block/CoralFanBlock.java
 +++ b/net/minecraft/world/level/block/CoralFanBlock.java
 @@ -35,17 +35,18 @@ public class CoralFanBlock extends BaseCoralFanBlock {
@@ -561,7 +561,7 @@ index 9530fa0793ed0904b17f8972d09f98a97b2cecb0..a4636d2f1229d0497f3bc5aa65b6c40f
      @Override
      protected BlockState updateShape(
 diff --git a/net/minecraft/world/level/block/CoralPlantBlock.java b/net/minecraft/world/level/block/CoralPlantBlock.java
-index d1a4dd8ef1ad9d7fb8ae434fc096a9d5b9c5b69d..c4b5ee75b4a332cf4c64e6ab5e7082bb741fa7b4 100755
+index d1a4dd8ef1ad9d7fb8ae434fc096a9d5b9c5b69d..c4b5ee75b4a332cf4c64e6ab5e7082bb741fa7b4 100644
 --- a/net/minecraft/world/level/block/CoralPlantBlock.java
 +++ b/net/minecraft/world/level/block/CoralPlantBlock.java
 @@ -40,17 +40,18 @@ public class CoralPlantBlock extends BaseCoralPlantTypeBlock {
@@ -595,7 +595,7 @@ index d1a4dd8ef1ad9d7fb8ae434fc096a9d5b9c5b69d..c4b5ee75b4a332cf4c64e6ab5e7082bb
      @Override
      protected BlockState updateShape(
 diff --git a/net/minecraft/world/level/block/CoralWallFanBlock.java b/net/minecraft/world/level/block/CoralWallFanBlock.java
-index 5f05dcda8c6eb869d3d6f80f60d4addd5f3bb988..3e36dd81662b5cc063796546b680859b98af48c8 100755
+index 5f05dcda8c6eb869d3d6f80f60d4addd5f3bb988..3e36dd81662b5cc063796546b680859b98af48c8 100644
 --- a/net/minecraft/world/level/block/CoralWallFanBlock.java
 +++ b/net/minecraft/world/level/block/CoralWallFanBlock.java
 @@ -35,17 +35,18 @@ public class CoralWallFanBlock extends BaseCoralWallFanBlock {
@@ -629,7 +629,7 @@ index 5f05dcda8c6eb869d3d6f80f60d4addd5f3bb988..3e36dd81662b5cc063796546b680859b
      @Override
      protected BlockState updateShape(
 diff --git a/net/minecraft/world/level/block/FarmBlock.java b/net/minecraft/world/level/block/FarmBlock.java
-index 2ff5457300d66378dbbea492deff0136629bc365..7d7258ebba60908daa92643b4b465b8672cc5808 100755
+index 2ff5457300d66378dbbea492deff0136629bc365..7d7258ebba60908daa92643b4b465b8672cc5808 100644
 --- a/net/minecraft/world/level/block/FarmBlock.java
 +++ b/net/minecraft/world/level/block/FarmBlock.java
 @@ -108,57 +108,58 @@ public class FarmBlock extends Block {
@@ -743,7 +743,7 @@ index 2ff5457300d66378dbbea492deff0136629bc365..7d7258ebba60908daa92643b4b465b86
      public static void turnToDirt(@Nullable Entity entity, BlockState state, Level level, BlockPos pos) {
          // CraftBukkit start
 diff --git a/net/minecraft/world/level/block/HoneyBlock.java b/net/minecraft/world/level/block/HoneyBlock.java
-index bab3ac2c4be08ea7589752b8472c1e13bcaab76a..b22f12495a8dae37449778460a9e251bbf902d50 100755
+index bab3ac2c4be08ea7589752b8472c1e13bcaab76a..b22f12495a8dae37449778460a9e251bbf902d50 100644
 --- a/net/minecraft/world/level/block/HoneyBlock.java
 +++ b/net/minecraft/world/level/block/HoneyBlock.java
 @@ -53,7 +53,7 @@ public class HoneyBlock extends HalfTransparentBlock {
@@ -765,7 +765,7 @@ index bab3ac2c4be08ea7589752b8472c1e13bcaab76a..b22f12495a8dae37449778460a9e251b
  
      private void maybeDoSlideEffects(Level level, Entity entity) {
 diff --git a/net/minecraft/world/level/block/IceBlock.java b/net/minecraft/world/level/block/IceBlock.java
-index a4d735a4365fdaf9e602315aa1176dfd5db77ff5..652d0d0df852d132c9402c773d663bb870354df3 100755
+index a4d735a4365fdaf9e602315aa1176dfd5db77ff5..652d0d0df852d132c9402c773d663bb870354df3 100644
 --- a/net/minecraft/world/level/block/IceBlock.java
 +++ b/net/minecraft/world/level/block/IceBlock.java
 @@ -52,12 +52,13 @@ public class IceBlock extends HalfTransparentBlock {
@@ -789,7 +789,7 @@ index a4d735a4365fdaf9e602315aa1176dfd5db77ff5..652d0d0df852d132c9402c773d663bb8
      protected void melt(BlockState state, Level level, BlockPos pos) {
          // CraftBukkit start
 diff --git a/net/minecraft/world/level/block/NoteBlock.java b/net/minecraft/world/level/block/NoteBlock.java
-index 62db23309d722868e406a52b8e67c23273e36c96..62cfb7a681bb8da7a2e0b18a6593968f23a4753a 100755
+index 62db23309d722868e406a52b8e67c23273e36c96..62cfb7a681bb8da7a2e0b18a6593968f23a4753a 100644
 --- a/net/minecraft/world/level/block/NoteBlock.java
 +++ b/net/minecraft/world/level/block/NoteBlock.java
 @@ -70,8 +70,7 @@ public class NoteBlock extends Block {
@@ -831,7 +831,7 @@ index 62db23309d722868e406a52b8e67c23273e36c96..62cfb7a681bb8da7a2e0b18a6593968f
  
      private void playNote(@Nullable Entity entity, BlockState state, Level level, BlockPos pos) {
 diff --git a/net/minecraft/world/level/block/PowderSnowBlock.java b/net/minecraft/world/level/block/PowderSnowBlock.java
-index 4f3646961beb877520e257e11224c3045467d351..baa43da6f723fbb00b1922d3777c21e7291bd6cd 100755
+index 4f3646961beb877520e257e11224c3045467d351..baa43da6f723fbb00b1922d3777c21e7291bd6cd 100644
 --- a/net/minecraft/world/level/block/PowderSnowBlock.java
 +++ b/net/minecraft/world/level/block/PowderSnowBlock.java
 @@ -97,6 +97,7 @@ public class PowderSnowBlock extends Block implements BucketPickup {
@@ -843,7 +843,7 @@ index 4f3646961beb877520e257e11224c3045467d351..baa43da6f723fbb00b1922d3777c21e7
              LivingEntity.Fallsounds fallSounds = livingEntity.getFallSounds();
              SoundEvent soundEvent = fallDistance < 7.0 ? fallSounds.small() : fallSounds.big();
 diff --git a/net/minecraft/world/level/block/SlimeBlock.java b/net/minecraft/world/level/block/SlimeBlock.java
-index 3cb84ca78d17bbf5af067e06cbaccaf51da336b7..af4338bff3008072d2249ecc734558f5e746c108 100755
+index 3cb84ca78d17bbf5af067e06cbaccaf51da336b7..af4338bff3008072d2249ecc734558f5e746c108 100644
 --- a/net/minecraft/world/level/block/SlimeBlock.java
 +++ b/net/minecraft/world/level/block/SlimeBlock.java
 @@ -25,7 +25,7 @@ public class SlimeBlock extends HalfTransparentBlock {
@@ -856,7 +856,7 @@ index 3cb84ca78d17bbf5af067e06cbaccaf51da336b7..af4338bff3008072d2249ecc734558f5
      }
  
 diff --git a/net/minecraft/world/level/block/SweetBerryBushBlock.java b/net/minecraft/world/level/block/SweetBerryBushBlock.java
-index 63ec7a5c3b4a0397ce264ca7769ff4adbbab4ef1..aa7800fe05e48eceb4c5f2aad25ded873c405f13 100755
+index 63ec7a5c3b4a0397ce264ca7769ff4adbbab4ef1..aa7800fe05e48eceb4c5f2aad25ded873c405f13 100644
 --- a/net/minecraft/world/level/block/SweetBerryBushBlock.java
 +++ b/net/minecraft/world/level/block/SweetBerryBushBlock.java
 @@ -78,19 +78,21 @@ public class SweetBerryBushBlock extends BushBlock implements BonemealableBlock
@@ -895,7 +895,7 @@ index 63ec7a5c3b4a0397ce264ca7769ff4adbbab4ef1..aa7800fe05e48eceb4c5f2aad25ded87
  
      @Override
 diff --git a/net/minecraft/world/level/block/TurtleEggBlock.java b/net/minecraft/world/level/block/TurtleEggBlock.java
-index a3a093d95306baac22e5cf720f5b14f733b548d4..ca5c275cede3ef1ea4c80ea4e7dc18968e405560 100755
+index a3a093d95306baac22e5cf720f5b14f733b548d4..ca5c275cede3ef1ea4c80ea4e7dc18968e405560 100644
 --- a/net/minecraft/world/level/block/TurtleEggBlock.java
 +++ b/net/minecraft/world/level/block/TurtleEggBlock.java
 @@ -60,14 +60,15 @@ public class TurtleEggBlock extends Block {
@@ -923,7 +923,7 @@ index a3a093d95306baac22e5cf720f5b14f733b548d4..ca5c275cede3ef1ea4c80ea4e7dc1896
      private void destroyEgg(Level level, BlockState state, BlockPos pos, Entity entity, int chance) {
          if (state.is(Blocks.TURTLE_EGG)
 diff --git a/net/minecraft/world/level/material/FlowingFluid.java b/net/minecraft/world/level/material/FlowingFluid.java
-index f6bc70685e846e9114f477dfd8aceca3b910a09f..52a6d64eafd675d89fcf5f1a706aa725cbd2feb8 100755
+index f6bc70685e846e9114f477dfd8aceca3b910a09f..52a6d64eafd675d89fcf5f1a706aa725cbd2feb8 100644
 --- a/net/minecraft/world/level/material/FlowingFluid.java
 +++ b/net/minecraft/world/level/material/FlowingFluid.java
 @@ -528,39 +528,40 @@ public abstract class FlowingFluid extends Fluid {
