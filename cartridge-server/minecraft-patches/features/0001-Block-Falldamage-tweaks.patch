@@ -322,7 +322,7 @@ index 9f581d5bdc3f658694bbd8c80abbce4e27e568d3..acd48aa63295b20185312b24f8e9f9c7
      }
  
 diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
-index f0a23d922a4541ec6821092ca3110d7cad4536a6..1547e89ee90a30dd550d0086c0242b284438015a 100644
+index 156d0c14eedf2f79e4276cc4065e19a43699b965..1a26ce35bef5d9d6ba2b2f92be81f5ccefa75da9 100644
 --- a/net/minecraft/world/entity/LivingEntity.java
 +++ b/net/minecraft/world/entity/LivingEntity.java
 @@ -395,7 +395,7 @@ public abstract class LivingEntity extends Entity implements Attackable, net.caf
@@ -923,10 +923,10 @@ index a3a093d95306baac22e5cf720f5b14f733b548d4..ca5c275cede3ef1ea4c80ea4e7dc1896
      private void destroyEgg(Level level, BlockState state, BlockPos pos, Entity entity, int chance) {
          if (state.is(Blocks.TURTLE_EGG)
 diff --git a/net/minecraft/world/level/material/FlowingFluid.java b/net/minecraft/world/level/material/FlowingFluid.java
-index f6bc70685e846e9114f477dfd8aceca3b910a09f..52a6d64eafd675d89fcf5f1a706aa725cbd2feb8 100644
+index 01ba0756789fcc61905bbaf1be88b526b76f2490..efd9e43991c7dae17fc047eff3ae7f9fbd474869 100644
 --- a/net/minecraft/world/level/material/FlowingFluid.java
 +++ b/net/minecraft/world/level/material/FlowingFluid.java
-@@ -528,39 +528,40 @@ public abstract class FlowingFluid extends Fluid {
+@@ -570,39 +570,40 @@ public abstract class FlowingFluid extends Fluid {
          return this.getTickDelay(level);
      }
  
