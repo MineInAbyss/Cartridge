@@ -89,7 +89,7 @@ index 3f22a4f612f0a9d582ad2da3f2be794a4913d08f..d9e2d7d93f2f3c222a298756bc38afa4
          return this.tags;
      }
 diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
-index 8e693028ef9e512094dbb97d6088d95ead03487d..1fd01be03a14b246240cf26f76801e590906378f 100644
+index e6414643d4c44bcf22d17bf185cc288d2a4f8399..c1198b35097119ad755b45464c9be500e3a24b81 100644
 --- a/net/minecraft/server/level/ServerPlayer.java
 +++ b/net/minecraft/server/level/ServerPlayer.java
 @@ -429,6 +429,10 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
@@ -118,7 +118,7 @@ index 8e693028ef9e512094dbb97d6088d95ead03487d..1fd01be03a14b246240cf26f76801e59
              }
              // Purpur end - Add boat fall damage config
              Entity entity = damageSource.getEntity();
-@@ -1751,6 +1757,18 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -1750,6 +1756,18 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
              this.spawnExtraParticlesOnFall = false;
          }
  
@@ -137,7 +137,7 @@ index 8e693028ef9e512094dbb97d6088d95ead03487d..1fd01be03a14b246240cf26f76801e59
          super.checkFallDamage(y, onGround, state, pos);
      }
  
-@@ -1759,7 +1777,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -1758,7 +1776,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
          super.onExplosionHit(entity);
          this.currentImpulseImpactPos = this.position();
          this.currentExplosionCause = entity;
@@ -225,7 +225,7 @@ index fcc5320b82b12ef890934a7afe9dc83a1e1ea7b8..404e3c5ebdabe8c83e02befdae71bf01
          NetworkPayload(Map<ResourceLocation, IntList> tags) {
              this.tags = tags;
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index 9f581d5bdc3f658694bbd8c80abbce4e27e568d3..acd48aa63295b20185312b24f8e9f9c76c802db8 100644
+index df23d80d6b18e900414aa02e5c1812f0a10f0fb7..39ce63e23f6f3250437f462a021bb2cb570dffa2 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
 @@ -83,6 +83,7 @@ import net.minecraft.world.InteractionResult;
@@ -236,7 +236,7 @@ index 9f581d5bdc3f658694bbd8c80abbce4e27e568d3..acd48aa63295b20185312b24f8e9f9c7
  import net.minecraft.world.entity.item.ItemEntity;
  import net.minecraft.world.entity.player.Player;
  import net.minecraft.world.entity.projectile.Projectile;
-@@ -924,7 +925,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -922,7 +923,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
  
          if (this.isInLava()) {
              this.lavaHurt();
@@ -245,7 +245,7 @@ index 9f581d5bdc3f658694bbd8c80abbce4e27e568d3..acd48aa63295b20185312b24f8e9f9c7
              // CraftBukkit start
          } else {
              this.lastLavaContact = null;
-@@ -1190,7 +1191,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1188,7 +1189,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                              new ClipContext(this.position(), this.position().add(vec3), ClipContext.Block.FALLDAMAGE_RESETTING, ClipContext.Fluid.WATER, this)
                          );
                      if (blockHitResult.getType() != HitResult.Type.MISS) {
@@ -254,7 +254,7 @@ index 9f581d5bdc3f658694bbd8c80abbce4e27e568d3..acd48aa63295b20185312b24f8e9f9c7
                      }
                  }
  
-@@ -1349,7 +1350,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1347,7 +1348,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
      }
  
      private boolean isStateClimbable(BlockState state) {
@@ -263,7 +263,7 @@ index 9f581d5bdc3f658694bbd8c80abbce4e27e568d3..acd48aa63295b20185312b24f8e9f9c7
      }
  
      private boolean vibrationAndSoundEffectsFromBlock(BlockPos pos, BlockState state, boolean playStepSound, boolean broadcastGameEvent, Vec3 entityPos) {
-@@ -1879,7 +1880,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1877,7 +1878,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
      }
  
      protected void checkFallDamage(double y, boolean onGround, BlockState state, BlockPos pos) {
@@ -272,7 +272,7 @@ index 9f581d5bdc3f658694bbd8c80abbce4e27e568d3..acd48aa63295b20185312b24f8e9f9c7
              if (this.fallDistance > 0.0F) {
                  state.getBlock().fallOn(this.level(), state, pos, this, this.fallDistance);
                  this.level()
-@@ -1912,7 +1913,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1910,7 +1911,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                  }
              }
  
@@ -281,7 +281,7 @@ index 9f581d5bdc3f658694bbd8c80abbce4e27e568d3..acd48aa63295b20185312b24f8e9f9c7
          }
      }
  
-@@ -1976,7 +1977,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1974,7 +1975,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                  this.doWaterSplashEffect();
              }
  
@@ -290,7 +290,7 @@ index 9f581d5bdc3f658694bbd8c80abbce4e27e568d3..acd48aa63295b20185312b24f8e9f9c7
              this.wasTouchingWater = true;
              this.clearFire();
          } else {
-@@ -3163,6 +3164,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -3161,6 +3162,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                      this.stopRiding();
                  }
  
@@ -298,7 +298,7 @@ index 9f581d5bdc3f658694bbd8c80abbce4e27e568d3..acd48aa63295b20185312b24f8e9f9c7
                  this.setPose(Pose.STANDING);
                  this.vehicle = vehicle;
                  this.vehicle.addPassenger(this);
-@@ -3176,9 +3178,12 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -3174,9 +3176,12 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
          }
      }
  
@@ -312,7 +312,7 @@ index 9f581d5bdc3f658694bbd8c80abbce4e27e568d3..acd48aa63295b20185312b24f8e9f9c7
  
      public void ejectPassengers() {
          for (int i = this.passengers.size() - 1; i >= 0; i--) {
-@@ -3753,7 +3758,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -3751,7 +3756,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
      }
  
      public void makeStuckInBlock(BlockState state, Vec3 motionMultiplier) {
@@ -322,10 +322,10 @@ index 9f581d5bdc3f658694bbd8c80abbce4e27e568d3..acd48aa63295b20185312b24f8e9f9c7
      }
  
 diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
-index 156d0c14eedf2f79e4276cc4065e19a43699b965..1a26ce35bef5d9d6ba2b2f92be81f5ccefa75da9 100644
+index 3aedae4c11bd33502e3ac2ba57d4f99c4c900a62..9623d5abdffa775ea31da30bb18086c839883de2 100644
 --- a/net/minecraft/world/entity/LivingEntity.java
 +++ b/net/minecraft/world/entity/LivingEntity.java
-@@ -395,7 +395,7 @@ public abstract class LivingEntity extends Entity implements Attackable, net.caf
+@@ -391,7 +391,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
              this.updateInWaterStateAndDoWaterCurrentPushing();
          }
  
@@ -334,7 +334,7 @@ index 156d0c14eedf2f79e4276cc4065e19a43699b965..1a26ce35bef5d9d6ba2b2f92be81f5cc
              this.onChangedBlock(serverLevel, pos);
              double attributeValue = this.getAttributeValue(Attributes.SAFE_FALL_DISTANCE);
              if (this.fallDistance > attributeValue && !state.isAir()) {
-@@ -414,20 +414,28 @@ public abstract class LivingEntity extends Entity implements Attackable, net.caf
+@@ -410,20 +410,28 @@ public abstract class LivingEntity extends Entity implements Attackable {
                  float f = Mth.ceil(this.fallDistance - attributeValue);
                  double min = Math.min((double)(0.2F + f / 15.0F), 2.5);
                  int i = (int)(150.0 * min);
@@ -368,7 +368,7 @@ index 156d0c14eedf2f79e4276cc4065e19a43699b965..1a26ce35bef5d9d6ba2b2f92be81f5cc
      }
  
      public final boolean canBreatheUnderwater() {
-@@ -2116,6 +2124,11 @@ public abstract class LivingEntity extends Entity implements Attackable, net.caf
+@@ -2111,6 +2119,11 @@ public abstract class LivingEntity extends Entity implements Attackable {
      // CraftBukkit end
  
      public Optional<BlockPos> getLastClimbablePos() {
@@ -380,7 +380,7 @@ index 156d0c14eedf2f79e4276cc4065e19a43699b965..1a26ce35bef5d9d6ba2b2f92be81f5cc
          return this.lastClimbablePos;
      }
  
-@@ -2150,7 +2163,9 @@ public abstract class LivingEntity extends Entity implements Attackable, net.caf
+@@ -2145,7 +2158,9 @@ public abstract class LivingEntity extends Entity implements Attackable {
  
      public Boolean onClimbable(boolean loadChunk) {
          // Gale end - don't load chunks to activate climbing entities
@@ -391,7 +391,7 @@ index 156d0c14eedf2f79e4276cc4065e19a43699b965..1a26ce35bef5d9d6ba2b2f92be81f5cc
              return false;
          } else {
              BlockPos blockPos = this.blockPosition();
-@@ -3597,7 +3612,7 @@ public abstract class LivingEntity extends Entity implements Attackable, net.caf
+@@ -3587,7 +3602,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
          AABB boundingBox = this.getBoundingBox();
          Vec3 vec3 = new Vec3(this.xxa, this.yya, this.zza);
          if (this.hasEffect(MobEffects.SLOW_FALLING) || this.hasEffect(MobEffects.LEVITATION)) {
@@ -400,7 +400,7 @@ index 156d0c14eedf2f79e4276cc4065e19a43699b965..1a26ce35bef5d9d6ba2b2f92be81f5cc
          }
  
          if (this.getControllingPassenger() instanceof Player player && this.isAlive()) {
-@@ -3902,7 +3917,7 @@ public abstract class LivingEntity extends Entity implements Attackable, net.caf
+@@ -3892,7 +3907,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
          super.rideTick();
          this.oRun = this.run;
          this.run = 0.0F;
@@ -410,7 +410,7 @@ index 156d0c14eedf2f79e4276cc4065e19a43699b965..1a26ce35bef5d9d6ba2b2f92be81f5cc
  
      @Override
 diff --git a/net/minecraft/world/entity/projectile/ThrownEnderpearl.java b/net/minecraft/world/entity/projectile/ThrownEnderpearl.java
-index ed4df82581b5411e54068ccc59ea85a78404fa2b..5e74971cc7fd64d87b560b7254efc6efb85359dd 100644
+index 3712a2143efe82d41bd62dcec826aede03b6448b..f71d1be0a12ef1170f71de4a42c3d5359a4f4b7d 100644
 --- a/net/minecraft/world/entity/projectile/ThrownEnderpearl.java
 +++ b/net/minecraft/world/entity/projectile/ThrownEnderpearl.java
 @@ -125,6 +125,7 @@ public class ThrownEnderpearl extends ThrowableItemProjectile {
@@ -422,19 +422,19 @@ index ed4df82581b5411e54068ccc59ea85a78404fa2b..5e74971cc7fd64d87b560b7254efc6ef
                          // Leaf start - SparklyPaper - parallel world ticking mod (handling for pearl teleportation cross-dimension)
                          java.util.function.Consumer<ServerPlayer> teleportPlayerCrossDimensionTask = taskServerPlayer -> {
 @@ -156,9 +157,10 @@ public class ThrownEnderpearl extends ThrowableItemProjectile {
-                             // );
-                             // CraftBukkit end - moved up
-                             if (serverPlayer1 != null) {
--                                serverPlayer1.resetFallDistance();
--                                serverPlayer1.resetCurrentImpulseContext();
--                                serverPlayer1.hurtServer(taskServerPlayer.serverLevel(), this.damageSources().enderPearl().eventEntityDamager(this), this.level().purpurConfig.enderPearlDamage); // CraftBukkit // Paper - fix DamageSource API // Purpur - Configurable Ender Pearl damage
+                         // );
+                         // CraftBukkit end - moved up
+                         if (serverPlayer1 != null) {
+-                            serverPlayer1.resetFallDistance();
+-                            serverPlayer1.resetCurrentImpulseContext();
+-                            serverPlayer1.hurtServer(taskServerPlayer.serverLevel(), this.damageSources().enderPearl().eventEntityDamager(this), this.level().purpurConfig.enderPearlDamage); // CraftBukkit // Paper - fix DamageSource API // Purpur - Configurable Ender Pearl damage
 +                                // Cartridge start - Make Ender Pearls increase fall-damage
 +                            //serverPlayer1.resetFallDistance(); // Cartridge
 +                                serverPlayer1.fallDistance += Math.max((float) (originalY - this.getY()), 0f);
 +                                serverPlayer1.hurtServer(taskServerPlayer.serverLevel(), this.damageSources().enderPearl().eventEntityDamager(this), serverPlayer1.fallDistance); // CraftBukkit // Paper - fix DamageSource API // Purpur - Configurable Ender Pearl damage
-                             }
+                         }
  
-                             this.playSound(serverLevel, vec3);
+                         this.playSound(serverLevel, vec3);
 @@ -174,7 +176,7 @@ public class ThrownEnderpearl extends ThrowableItemProjectile {
                          new TeleportTransition(serverLevel, vec3, owner.getDeltaMovement(), owner.getYRot(), owner.getXRot(), TeleportTransition.DO_NOTHING)
                      );
@@ -742,6 +742,18 @@ index 2ff5457300d66378dbbea492deff0136629bc365..7d7258ebba60908daa92643b4b465b86
  
      public static void turnToDirt(@Nullable Entity entity, BlockState state, Level level, BlockPos pos) {
          // CraftBukkit start
+diff --git a/net/minecraft/world/level/block/HayBlock.java b/net/minecraft/world/level/block/HayBlock.java
+index 406e94e4a88921900f59a3a1b65e74a6482c3b8f..30d6c8ea4e48aee65990f62920a7ce693e3a5519 100644
+--- a/net/minecraft/world/level/block/HayBlock.java
++++ b/net/minecraft/world/level/block/HayBlock.java
+@@ -23,6 +23,6 @@ public class HayBlock extends RotatedPillarBlock {
+ 
+     @Override
+     public void fallOn(Level level, BlockState state, BlockPos pos, Entity entity, float fallDistance) {
+-        super.fallOn(level, state, pos, entity, fallDistance); // Purpur - Configurable block fall damage modifiers
++        entity.causeFallDamage(fallDistance, 1.0F, level.damageSources().fall()); // Cartridge
+     }
+ }
 diff --git a/net/minecraft/world/level/block/HoneyBlock.java b/net/minecraft/world/level/block/HoneyBlock.java
 index bab3ac2c4be08ea7589752b8472c1e13bcaab76a..b22f12495a8dae37449778460a9e251bbf902d50 100644
 --- a/net/minecraft/world/level/block/HoneyBlock.java
