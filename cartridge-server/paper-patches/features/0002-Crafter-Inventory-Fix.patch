@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Boy0000 <sivertpaulsen2@gmail.com>
+Date: Sun, 22 Jun 2025 12:13:40 +0200
+Subject: [PATCH] Crafter Inventory Fix
+
+
+diff --git a/src/main/java/org/bukkit/craftbukkit/inventory/view/CraftCrafterView.java b/src/main/java/org/bukkit/craftbukkit/inventory/view/CraftCrafterView.java
+index f8bc61ba35d687758030723211183cdf7217c862..10229423ec0a21155181d6c72ed66dff643f0b0e 100755
+--- a/src/main/java/org/bukkit/craftbukkit/inventory/view/CraftCrafterView.java
++++ b/src/main/java/org/bukkit/craftbukkit/inventory/view/CraftCrafterView.java
+@@ -4,8 +4,11 @@ import com.google.common.base.Preconditions;
+ import net.minecraft.world.inventory.CrafterMenu;
+ import org.bukkit.craftbukkit.inventory.CraftInventoryView;
+ import org.bukkit.entity.HumanEntity;
++import org.bukkit.event.inventory.InventoryType;
+ import org.bukkit.inventory.CrafterInventory;
++import org.bukkit.inventory.Inventory;
+ import org.bukkit.inventory.view.CrafterView;
++import org.jetbrains.annotations.NotNull;
+ 
+ public class CraftCrafterView extends CraftInventoryView<CrafterMenu, CrafterInventory> implements CrafterView {
+ 
+@@ -29,4 +32,36 @@ public class CraftCrafterView extends CraftInventoryView<CrafterMenu, CrafterInv
+ 
+         this.container.setSlotState(slot, !disabled);
+     }
++
++    // Cartridge start - Fix Crafter getInventory slot check
++    @Override
++    public Inventory getInventory(final int rawSlot) {
++        // Slot may be -1 if not properly detected due to client bug
++        // e.g. dropping an item into part of the enchantment list section of an enchanting table
++        if (rawSlot == OUTSIDE || rawSlot == -1) {
++            return null;
++        }
++        Preconditions.checkArgument(rawSlot >= 0, "Negative, non outside slot %s", rawSlot);
++        Preconditions.checkArgument(rawSlot < this.countSlots(), "Slot %s greater than inventory slot count", rawSlot);
++
++        // For some reason, Mojang decided that the grid is 0-8, player is 9-44 and output is 45, unlike all other 3x3 inventories
++        if (rawSlot < 9 || rawSlot == 45) {
++            return this.getTopInventory();
++        } else {
++            return this.getBottomInventory();
++        }
++    }
++
++    @NotNull
++    @Override
++    public InventoryType.SlotType getSlotType(final int slot) {
++        InventoryType.SlotType type;
++        if (slot < 9) type = InventoryType.SlotType.CRAFTING;
++        else if (slot == 45) type = InventoryType.SlotType.RESULT;
++        else if (slot >= 36 && slot < 45) type = InventoryType.SlotType.QUICKBAR;
++        else type = InventoryType.SlotType.CONTAINER;
++        return type;
++    }
++
++    // Cartridge end - Fix Crafter getInventory slot check
+ }
