@@ -4,10 +4,65 @@ Date: Thu, 6 Mar 2025 23:36:43 +0100
 Subject: [PATCH] Enchantment Tweaks
 
 
+diff --git a/net/minecraft/data/loot/packs/VanillaChestLoot.java b/net/minecraft/data/loot/packs/VanillaChestLoot.java
+index 4f2323ba4e4c6dca21dc5f9a98fcf963b98b48e3..77266a94f8270a5ebba4819c789e0522d4b8ffef 100644
+--- a/net/minecraft/data/loot/packs/VanillaChestLoot.java
++++ b/net/minecraft/data/loot/packs/VanillaChestLoot.java
+@@ -1052,7 +1052,7 @@ public record VanillaChestLoot(HolderLookup.Provider registries) implements Loot
+                                         .withOneOf(
+                                             HolderSet.direct(
+                                                 registryLookup.getOrThrow(Enchantments.SHARPNESS),
+-                                                registryLookup.getOrThrow(Enchantments.BANE_OF_ARTHROPODS),
++                                                //registryLookup.getOrThrow(Enchantments.BANE_OF_ARTHROPODS), // Cartridge - tweak enchantments
+                                                 registryLookup.getOrThrow(Enchantments.EFFICIENCY),
+                                                 registryLookup.getOrThrow(Enchantments.FORTUNE),
+                                                 registryLookup.getOrThrow(Enchantments.SILK_TOUCH),
+@@ -1183,7 +1183,7 @@ public record VanillaChestLoot(HolderLookup.Provider registries) implements Loot
+                                             HolderSet.direct(
+                                                 registryLookup.getOrThrow(Enchantments.KNOCKBACK),
+                                                 registryLookup.getOrThrow(Enchantments.PUNCH),
+-                                                registryLookup.getOrThrow(Enchantments.SMITE),
++                                                //registryLookup.getOrThrow(Enchantments.SMITE), // Cartridge - tweak enchantments
+                                                 registryLookup.getOrThrow(Enchantments.LOOTING),
+                                                 registryLookup.getOrThrow(Enchantments.MULTISHOT)
+                                             )
+diff --git a/net/minecraft/data/tags/TradeRebalanceEnchantmentTagsProvider.java b/net/minecraft/data/tags/TradeRebalanceEnchantmentTagsProvider.java
+index 02c79b9c351a54932d837e9554881c74edc2e6b0..6c1e2ec20b0c3f0f686a24ff41327c07327477f6 100644
+--- a/net/minecraft/data/tags/TradeRebalanceEnchantmentTagsProvider.java
++++ b/net/minecraft/data/tags/TradeRebalanceEnchantmentTagsProvider.java
+@@ -17,7 +17,7 @@ public class TradeRebalanceEnchantmentTagsProvider extends TagsProvider<Enchantm
+     protected void addTags(HolderLookup.Provider provider) {
+         this.tag(EnchantmentTags.TRADES_DESERT_COMMON).add(Enchantments.FIRE_PROTECTION, Enchantments.THORNS, Enchantments.INFINITY);
+         this.tag(EnchantmentTags.TRADES_JUNGLE_COMMON).add(Enchantments.FEATHER_FALLING, Enchantments.PROJECTILE_PROTECTION, Enchantments.POWER);
+-        this.tag(EnchantmentTags.TRADES_PLAINS_COMMON).add(Enchantments.PUNCH, Enchantments.SMITE, Enchantments.BANE_OF_ARTHROPODS);
++        this.tag(EnchantmentTags.TRADES_PLAINS_COMMON).add(Enchantments.PUNCH/*, Enchantments.SMITE, Enchantments.BANE_OF_ARTHROPODS*/); // Cartridge - tweak enchantments
+         this.tag(EnchantmentTags.TRADES_SAVANNA_COMMON).add(Enchantments.KNOCKBACK, Enchantments.BINDING_CURSE, Enchantments.SWEEPING_EDGE);
+         this.tag(EnchantmentTags.TRADES_SNOW_COMMON).add(Enchantments.AQUA_AFFINITY, Enchantments.LOOTING, Enchantments.FROST_WALKER);
+         this.tag(EnchantmentTags.TRADES_SWAMP_COMMON).add(Enchantments.DEPTH_STRIDER, Enchantments.RESPIRATION, Enchantments.VANISHING_CURSE);
 diff --git a/net/minecraft/data/tags/VanillaEnchantmentTagsProvider.java b/net/minecraft/data/tags/VanillaEnchantmentTagsProvider.java
-index 5b6bff7e3b55d750f2c7fa1c97f3a3520869943e..e5e5c66a0b3213631fab8284105e33d81d11a4fc 100644
+index 5b6bff7e3b55d750f2c7fa1c97f3a3520869943e..c011bc40ac5406d8db68893cdaf3bb6a86996ea7 100644
 --- a/net/minecraft/data/tags/VanillaEnchantmentTagsProvider.java
 +++ b/net/minecraft/data/tags/VanillaEnchantmentTagsProvider.java
+@@ -24,8 +24,8 @@ public class VanillaEnchantmentTagsProvider extends EnchantmentTagsProvider {
+                 Enchantments.WIND_BURST,
+                 Enchantments.FROST_WALKER,
+                 Enchantments.SHARPNESS,
+-                Enchantments.SMITE,
+-                Enchantments.BANE_OF_ARTHROPODS,
++                //Enchantments.SMITE, // Cartridge - tweak enchantments
++                //Enchantments.BANE_OF_ARTHROPODS, // Cartridge - tweak enchantments
+                 Enchantments.IMPALING,
+                 Enchantments.POWER,
+                 Enchantments.DENSITY,
+@@ -67,7 +67,7 @@ public class VanillaEnchantmentTagsProvider extends EnchantmentTagsProvider {
+         this.tag(EnchantmentTags.BOW_EXCLUSIVE).add(Enchantments.INFINITY, Enchantments.MENDING);
+         this.tag(EnchantmentTags.CROSSBOW_EXCLUSIVE).add(Enchantments.MULTISHOT, Enchantments.PIERCING);
+         this.tag(EnchantmentTags.DAMAGE_EXCLUSIVE)
+-            .add(Enchantments.SHARPNESS, Enchantments.SMITE, Enchantments.BANE_OF_ARTHROPODS, Enchantments.IMPALING, Enchantments.DENSITY, Enchantments.BREACH);
++            .add(Enchantments.SHARPNESS, /*Enchantments.SMITE, Enchantments.BANE_OF_ARTHROPODS, */Enchantments.IMPALING, Enchantments.DENSITY, Enchantments.BREACH); // Cartridge - tweak enchantments
+         this.tag(EnchantmentTags.MINING_EXCLUSIVE).add(Enchantments.FORTUNE, Enchantments.SILK_TOUCH);
+         this.tag(EnchantmentTags.RIPTIDE_EXCLUSIVE).add(Enchantments.LOYALTY, Enchantments.CHANNELING);
+         this.tag(EnchantmentTags.TREASURE)
 @@ -84,7 +84,7 @@ public class VanillaEnchantmentTagsProvider extends EnchantmentTagsProvider {
              .add(
                  Enchantments.PROTECTION,
@@ -17,3 +72,15 @@ index 5b6bff7e3b55d750f2c7fa1c97f3a3520869943e..e5e5c66a0b3213631fab8284105e33d8
                  Enchantments.BLAST_PROTECTION,
                  Enchantments.PROJECTILE_PROTECTION,
                  Enchantments.RESPIRATION,
+@@ -92,8 +92,9 @@ public class VanillaEnchantmentTagsProvider extends EnchantmentTagsProvider {
+                 Enchantments.THORNS,
+                 Enchantments.DEPTH_STRIDER,
+                 Enchantments.SHARPNESS,
+-                Enchantments.SMITE,
+-                Enchantments.BANE_OF_ARTHROPODS,
++                // Cartridge - tweak enchantments
++                /*Enchantments.SMITE,
++                Enchantments.BANE_OF_ARTHROPODS,*/
+                 Enchantments.KNOCKBACK,
+                 Enchantments.FIRE_ASPECT,
+                 Enchantments.LOOTING,
