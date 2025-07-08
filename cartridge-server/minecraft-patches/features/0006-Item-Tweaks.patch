@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Boy0000 <sivertpaulsen2@gmail.com>
+Date: Tue, 8 Jul 2025 10:30:36 +0200
+Subject: [PATCH] Item Tweaks
+
+
+diff --git a/net/minecraft/world/item/Items.java b/net/minecraft/world/item/Items.java
+index d55e5e6deca43c7fddb15657fa5ceaeed8f95c67..408c9a25244a5ba0b5864bc4364ad3ec9e464017 100644
+--- a/net/minecraft/world/item/Items.java
++++ b/net/minecraft/world/item/Items.java
+@@ -1191,11 +1191,12 @@ public class Items {
+     public static final Item PORKCHOP = registerItem("porkchop", new Item.Properties().food(Foods.PORKCHOP));
+     public static final Item COOKED_PORKCHOP = registerItem("cooked_porkchop", new Item.Properties().food(Foods.COOKED_PORKCHOP));
+     public static final Item PAINTING = registerItem("painting", properties -> new HangingEntityItem(EntityType.PAINTING, properties));
+-    public static final Item GOLDEN_APPLE = registerItem("golden_apple", new Item.Properties().food(Foods.GOLDEN_APPLE, Consumables.GOLDEN_APPLE));
++    public static final Item GOLDEN_APPLE = registerItem("golden_apple", new Item.Properties().useCooldown(10f).food(Foods.GOLDEN_APPLE, Consumables.GOLDEN_APPLE)); // Cartridge - tweak items
+     public static final Item ENCHANTED_GOLDEN_APPLE = registerItem(
+         "enchanted_golden_apple",
+         new Item.Properties()
+             .rarity(Rarity.RARE)
++            .useCooldown(10f) // Cartridge - tweak items
+             .food(Foods.ENCHANTED_GOLDEN_APPLE, Consumables.ENCHANTED_GOLDEN_APPLE)
+             .component(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true)
+     );
+@@ -1471,7 +1472,7 @@ public class Items {
+     public static final Item CHICKEN = registerItem("chicken", new Item.Properties().food(Foods.CHICKEN, Consumables.CHICKEN));
+     public static final Item COOKED_CHICKEN = registerItem("cooked_chicken", new Item.Properties().food(Foods.COOKED_CHICKEN));
+     public static final Item ROTTEN_FLESH = registerItem("rotten_flesh", new Item.Properties().food(Foods.ROTTEN_FLESH, Consumables.ROTTEN_FLESH));
+-    public static final Item ENDER_PEARL = registerItem("ender_pearl", EnderpearlItem::new, new Item.Properties().stacksTo(16).useCooldown(1.0F));
++    public static final Item ENDER_PEARL = registerItem("ender_pearl", EnderpearlItem::new, new Item.Properties().stacksTo(16).useCooldown(20.0F)); // Cartridge - tweak items
+     public static final Item BLAZE_ROD = registerItem("blaze_rod");
+     public static final Item GHAST_TEAR = registerItem("ghast_tear");
+     public static final Item GOLD_NUGGET = registerItem("gold_nugget");
