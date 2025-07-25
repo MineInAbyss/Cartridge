@@ -89,10 +89,10 @@ index 3f22a4f612f0a9d582ad2da3f2be794a4913d08f..d9e2d7d93f2f3c222a298756bc38afa4
          return this.tags;
      }
 diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
-index a16607c165965a7c325909ded75a3cf65440f6f7..fb709a03476077b958b35b88f71d28a1b49fbf79 100644
+index b0e4a7066ab12a0f7890e529f12027b330f0518b..c05dc2497fbac7f9ee39dc25bbb381251c23d7b0 100644
 --- a/net/minecraft/server/level/ServerPlayer.java
 +++ b/net/minecraft/server/level/ServerPlayer.java
-@@ -467,6 +467,10 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -465,6 +465,10 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
  
      public boolean hasTickedAtLeastOnceInNewWorld = false; // SparklyPaper - parallel world ticking (fixes bug in DreamResourceReset where the inventory is opened AFTER the player has changed worlds, if you click with the quick tp torch in a chest, because the inventory is opened AFTER the player has teleported)
  
@@ -103,7 +103,7 @@ index a16607c165965a7c325909ded75a3cf65440f6f7..fb709a03476077b958b35b88f71d28a1
      public ServerPlayer(MinecraftServer server, ServerLevel level, GameProfile gameProfile, ClientInformation clientInformation) {
          super(level, gameProfile);
          this.textFilter = server.createTextFilterForPlayer(this);
-@@ -1221,9 +1225,11 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -1219,9 +1223,11 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
                      return false;
                  }
                  // Purpur end - Minecart settings and WASD controls
@@ -118,7 +118,7 @@ index a16607c165965a7c325909ded75a3cf65440f6f7..fb709a03476077b958b35b88f71d28a1
              }
              // Purpur end - Add boat fall damage config
              Entity entity = damageSource.getEntity();
-@@ -1714,6 +1720,18 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -1712,6 +1718,18 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
              this.spawnExtraParticlesOnFall = false;
          }
  
@@ -137,7 +137,7 @@ index a16607c165965a7c325909ded75a3cf65440f6f7..fb709a03476077b958b35b88f71d28a1
          super.checkFallDamage(y, onGround, state, pos);
      }
  
-@@ -1722,7 +1740,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -1720,7 +1738,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
          super.onExplosionHit(entity);
          this.currentImpulseImpactPos = this.position();
          this.currentExplosionCause = entity;
@@ -147,7 +147,7 @@ index a16607c165965a7c325909ded75a3cf65440f6f7..fb709a03476077b958b35b88f71d28a1
  
      @Override
 diff --git a/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index 512d9b22e79c2bff18defa2f101475d315098176..7634456c9c8bbac9be0a3642aa59ad5da395aebd 100644
+index 0f95b746f5d728f923b1b558b584e2e1becf16eb..40299ce59671451bb04c71ba98c9690857095168 100644
 --- a/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 @@ -143,6 +143,8 @@ import net.minecraft.server.MinecraftServer;
@@ -225,7 +225,7 @@ index fcc5320b82b12ef890934a7afe9dc83a1e1ea7b8..404e3c5ebdabe8c83e02befdae71bf01
          NetworkPayload(Map<ResourceLocation, IntList> tags) {
              this.tags = tags;
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index 4a6f3e060496c831f8d810148e4f36a57f5e9f5d..c1b1905a905c67c58d8b1060d2325671a3e3bfbd 100644
+index e7b375720c1bb78a9c3edf6d49c973eba1fcf115..f56b75b2aa42078407b580c956d745216ba73251 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
 @@ -85,6 +85,7 @@ import net.minecraft.world.InteractionResult;
@@ -322,7 +322,7 @@ index 4a6f3e060496c831f8d810148e4f36a57f5e9f5d..c1b1905a905c67c58d8b1060d2325671
      }
  
 diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
-index d6be86981219f0fe0db15d36d9c85e9a56020373..f7104ad081f3196f00ac01379bb2e94d191b60f8 100644
+index e3fc8014dbe9a26b17bb13d56a16cad813d1926b..17c8934b062371ee4d023e251ad595a74e344cb5 100644
 --- a/net/minecraft/world/entity/LivingEntity.java
 +++ b/net/minecraft/world/entity/LivingEntity.java
 @@ -378,7 +378,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
