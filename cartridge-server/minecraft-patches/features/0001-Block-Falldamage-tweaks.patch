@@ -765,18 +765,20 @@ index ef70ba88e492904c426c7d35df442fa6f8d68844..fc55f466963dd97dd00866a439855bc2
              LivingEntity.Fallsounds fallSounds = livingEntity.getFallSounds();
              SoundEvent soundEvent = fallDistance < 7.0 ? fallSounds.small() : fallSounds.big();
 diff --git a/net/minecraft/world/level/block/SlimeBlock.java b/net/minecraft/world/level/block/SlimeBlock.java
-index f26c3100d0aad0227f016bfa4c86ac647e13485a..2e564653d3e484a1a1b79ea3fed7dabd87a76763 100644
+index f26c3100d0aad0227f016bfa4c86ac647e13485a..61d50bd4038745fe8b0b25d2018c39b0e6b9a007 100644
 --- a/net/minecraft/world/level/block/SlimeBlock.java
 +++ b/net/minecraft/world/level/block/SlimeBlock.java
-@@ -25,7 +25,7 @@ public class SlimeBlock extends HalfTransparentBlock {
+@@ -24,9 +24,7 @@ public class SlimeBlock extends HalfTransparentBlock {
+ 
      @Override
      public void fallOn(Level level, BlockState state, BlockPos pos, Entity entity, double fallDistance) {
-         if (!entity.isSuppressingBounce()) {
+-        if (!entity.isSuppressingBounce()) {
 -            entity.causeFallDamage(fallDistance, 0.0F, level.damageSources().fall());
-+            entity.causeFallDamage(fallDistance, 1.0F, level.damageSources().fall()); // Cartridge
-         }
+-        }
++        entity.causeFallDamage(fallDistance, 1.0F, level.damageSources().fall()); // Cartridge
      }
  
+     @Override
 diff --git a/net/minecraft/world/level/block/SweetBerryBushBlock.java b/net/minecraft/world/level/block/SweetBerryBushBlock.java
 index 1c891a82bd0c5a7c7805356c309c481371cb79b0..ac390af86738e0d4f2017ccaa20f2563c8bba5a5 100644
 --- a/net/minecraft/world/level/block/SweetBerryBushBlock.java
