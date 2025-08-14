@@ -89,7 +89,7 @@ index 3f22a4f612f0a9d582ad2da3f2be794a4913d08f..d9e2d7d93f2f3c222a298756bc38afa4
          return this.tags;
      }
 diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
-index b0e4a7066ab12a0f7890e529f12027b330f0518b..c05dc2497fbac7f9ee39dc25bbb381251c23d7b0 100644
+index a26943a7c70ac8b8eb3be5cd1f9838e4fcc6e04e..738674b0d6b2daa6e959e897c13b225218a7813a 100644
 --- a/net/minecraft/server/level/ServerPlayer.java
 +++ b/net/minecraft/server/level/ServerPlayer.java
 @@ -465,6 +465,10 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
@@ -103,7 +103,7 @@ index b0e4a7066ab12a0f7890e529f12027b330f0518b..c05dc2497fbac7f9ee39dc25bbb38125
      public ServerPlayer(MinecraftServer server, ServerLevel level, GameProfile gameProfile, ClientInformation clientInformation) {
          super(level, gameProfile);
          this.textFilter = server.createTextFilterForPlayer(this);
-@@ -1219,9 +1223,11 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -1223,9 +1227,11 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
                      return false;
                  }
                  // Purpur end - Minecart settings and WASD controls
@@ -118,7 +118,7 @@ index b0e4a7066ab12a0f7890e529f12027b330f0518b..c05dc2497fbac7f9ee39dc25bbb38125
              }
              // Purpur end - Add boat fall damage config
              Entity entity = damageSource.getEntity();
-@@ -1712,6 +1718,18 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -1716,6 +1722,18 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
              this.spawnExtraParticlesOnFall = false;
          }
  
@@ -137,7 +137,7 @@ index b0e4a7066ab12a0f7890e529f12027b330f0518b..c05dc2497fbac7f9ee39dc25bbb38125
          super.checkFallDamage(y, onGround, state, pos);
      }
  
-@@ -1720,7 +1738,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -1724,7 +1742,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
          super.onExplosionHit(entity);
          this.currentImpulseImpactPos = this.position();
          this.currentExplosionCause = entity;
@@ -147,7 +147,7 @@ index b0e4a7066ab12a0f7890e529f12027b330f0518b..c05dc2497fbac7f9ee39dc25bbb38125
  
      @Override
 diff --git a/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index 0f95b746f5d728f923b1b558b584e2e1becf16eb..40299ce59671451bb04c71ba98c9690857095168 100644
+index 581791bf2892715543f003c36e301e690cc393f1..66eb938b7c64886d7535866cc4e175fbb92a2608 100644
 --- a/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 @@ -143,6 +143,8 @@ import net.minecraft.server.MinecraftServer;
@@ -225,7 +225,7 @@ index fcc5320b82b12ef890934a7afe9dc83a1e1ea7b8..404e3c5ebdabe8c83e02befdae71bf01
          NetworkPayload(Map<ResourceLocation, IntList> tags) {
              this.tags = tags;
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index e7b375720c1bb78a9c3edf6d49c973eba1fcf115..f56b75b2aa42078407b580c956d745216ba73251 100644
+index 72c9c235bf900b59fdd84d6d665e2a525577b1d0..6fa75cdc129f3ee4ec6c3dae4b8dbfe19bedbf45 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
 @@ -85,6 +85,7 @@ import net.minecraft.world.InteractionResult;
@@ -236,7 +236,7 @@ index e7b375720c1bb78a9c3edf6d49c973eba1fcf115..f56b75b2aa42078407b580c956d74521
  import net.minecraft.world.entity.item.ItemEntity;
  import net.minecraft.world.entity.player.Player;
  import net.minecraft.world.entity.projectile.Projectile;
-@@ -931,7 +932,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -932,7 +933,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
          }
  
          if (this.isInLava()) {
@@ -245,7 +245,7 @@ index e7b375720c1bb78a9c3edf6d49c973eba1fcf115..f56b75b2aa42078407b580c956d74521
              // CraftBukkit start
          } else {
              this.lastLavaContact = null;
-@@ -1214,7 +1215,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1215,7 +1216,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                              new ClipContext(this.position(), this.position().add(vec3), ClipContext.Block.FALLDAMAGE_RESETTING, ClipContext.Fluid.WATER, this)
                          );
                      if (blockHitResult.getType() != HitResult.Type.MISS) {
@@ -254,7 +254,7 @@ index e7b375720c1bb78a9c3edf6d49c973eba1fcf115..f56b75b2aa42078407b580c956d74521
                      }
                  }
  
-@@ -1407,7 +1408,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1408,7 +1409,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
      }
  
      private boolean isStateClimbable(BlockState state) {
@@ -263,7 +263,7 @@ index e7b375720c1bb78a9c3edf6d49c973eba1fcf115..f56b75b2aa42078407b580c956d74521
      }
  
      private boolean vibrationAndSoundEffectsFromBlock(BlockPos pos, BlockState state, boolean playStepSound, boolean broadcastGameEvent, Vec3 entityPos) {
-@@ -1964,7 +1965,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1965,7 +1966,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
              this.fallDistance -= (float)y;
          }
  
@@ -272,7 +272,7 @@ index e7b375720c1bb78a9c3edf6d49c973eba1fcf115..f56b75b2aa42078407b580c956d74521
              if (this.fallDistance > 0.0) {
                  state.getBlock().fallOn(this.level(), state, pos, this, this.fallDistance);
                  this.level()
-@@ -1990,7 +1991,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1991,7 +1992,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
              return false;
          } else {
              this.propagateFallToPassengers(fallDistance, damageMultiplier, damageSource);
@@ -281,7 +281,7 @@ index e7b375720c1bb78a9c3edf6d49c973eba1fcf115..f56b75b2aa42078407b580c956d74521
          }
      }
  
-@@ -2065,7 +2066,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -2066,7 +2067,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                  this.doWaterSplashEffect();
              }
  
@@ -290,7 +290,7 @@ index e7b375720c1bb78a9c3edf6d49c973eba1fcf115..f56b75b2aa42078407b580c956d74521
              this.wasTouchingWater = true;
          } else {
              this.wasTouchingWater = false;
-@@ -3321,6 +3322,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -3322,6 +3323,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                      this.stopRiding();
                  }
  
@@ -298,7 +298,7 @@ index e7b375720c1bb78a9c3edf6d49c973eba1fcf115..f56b75b2aa42078407b580c956d74521
                  this.setPose(Pose.STANDING);
                  this.vehicle = vehicle;
                  this.vehicle.addPassenger(this);
-@@ -3334,9 +3336,12 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -3335,9 +3337,12 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
          }
      }
  
@@ -312,7 +312,7 @@ index e7b375720c1bb78a9c3edf6d49c973eba1fcf115..f56b75b2aa42078407b580c956d74521
  
      public void ejectPassengers() {
          for (int i = this.passengers.size() - 1; i >= 0; i--) {
-@@ -3937,7 +3942,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -3938,7 +3943,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
      }
  
      public void makeStuckInBlock(BlockState state, Vec3 motionMultiplier) {
@@ -322,7 +322,7 @@ index e7b375720c1bb78a9c3edf6d49c973eba1fcf115..f56b75b2aa42078407b580c956d74521
      }
  
 diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
-index e3fc8014dbe9a26b17bb13d56a16cad813d1926b..17c8934b062371ee4d023e251ad595a74e344cb5 100644
+index 1057bd5e086d74bb28d1aab219f46e0837eb20f9..d48bda5d1b8c3b25deabe9eac0233431ddce3c7e 100644
 --- a/net/minecraft/world/entity/LivingEntity.java
 +++ b/net/minecraft/world/entity/LivingEntity.java
 @@ -378,7 +378,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
@@ -368,7 +368,7 @@ index e3fc8014dbe9a26b17bb13d56a16cad813d1926b..17c8934b062371ee4d023e251ad595a7
      }
  
      public boolean canBreatheUnderwater() {
-@@ -2212,6 +2220,11 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+@@ -2206,6 +2214,11 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
      }
  
      public Optional<BlockPos> getLastClimbablePos() {
@@ -380,7 +380,7 @@ index e3fc8014dbe9a26b17bb13d56a16cad813d1926b..17c8934b062371ee4d023e251ad595a7
          return this.lastClimbablePos;
      }
  
-@@ -2246,7 +2259,9 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+@@ -2240,7 +2253,9 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
  
      public Boolean onClimbable(boolean loadChunk) {
          // Gale end - don't load chunks to activate climbing entities
@@ -391,7 +391,7 @@ index e3fc8014dbe9a26b17bb13d56a16cad813d1926b..17c8934b062371ee4d023e251ad595a7
              return false;
          } else {
              BlockPos blockPos = this.blockPosition();
-@@ -3666,7 +3681,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+@@ -3675,7 +3690,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
          AABB boundingBox = this.getBoundingBox();
          Vec3 vec3 = new Vec3(this.xxa, this.yya, this.zza);
          if (this.hasEffect(MobEffects.SLOW_FALLING) || this.hasEffect(MobEffects.LEVITATION)) {
@@ -400,7 +400,7 @@ index e3fc8014dbe9a26b17bb13d56a16cad813d1926b..17c8934b062371ee4d023e251ad595a7
          }
  
          if (this.getControllingPassenger() instanceof Player player && this.isAlive()) {
-@@ -3977,7 +3992,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+@@ -3986,7 +4001,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
      @Override
      public void rideTick() {
          super.rideTick();
@@ -410,7 +410,7 @@ index e3fc8014dbe9a26b17bb13d56a16cad813d1926b..17c8934b062371ee4d023e251ad595a7
  
      @Override
 diff --git a/net/minecraft/world/entity/projectile/ThrownEnderpearl.java b/net/minecraft/world/entity/projectile/ThrownEnderpearl.java
-index aa71eca6cd69cfa79b84cb181c25c4be8e4511b2..46741dc77774ed12af94d7c68edfaa599d87c35e 100644
+index 4d6d843769e1ac9176fc1e90d429b8f0f2ec1f85..caea61f2cfbd928b4754a8cce09b3d9b75706672 100644
 --- a/net/minecraft/world/entity/projectile/ThrownEnderpearl.java
 +++ b/net/minecraft/world/entity/projectile/ThrownEnderpearl.java
 @@ -118,6 +118,7 @@ public class ThrownEnderpearl extends ThrowableItemProjectile {
@@ -421,7 +421,7 @@ index aa71eca6cd69cfa79b84cb181c25c4be8e4511b2..46741dc77774ed12af94d7c68edfaa59
                      if (serverPlayer.connection.isAcceptingMessages()) {
                          // Leaf start - SparklyPaper - parallel world ticking mod (handling for pearl teleportation cross-dimension)
                          java.util.function.Consumer<ServerPlayer> teleportPlayerCrossDimensionTask = taskServerPlayer -> {
-@@ -149,9 +150,10 @@ public class ThrownEnderpearl extends ThrowableItemProjectile {
+@@ -152,9 +153,10 @@ public class ThrownEnderpearl extends ThrowableItemProjectile {
                          // );
                          // CraftBukkit end - moved up
                          if (serverPlayer1 != null) {
@@ -435,7 +435,7 @@ index aa71eca6cd69cfa79b84cb181c25c4be8e4511b2..46741dc77774ed12af94d7c68edfaa59
                          }
  
                          this.playSound(serverLevel, vec3);
-@@ -167,7 +169,7 @@ public class ThrownEnderpearl extends ThrowableItemProjectile {
+@@ -170,7 +172,7 @@ public class ThrownEnderpearl extends ThrowableItemProjectile {
                          new TeleportTransition(serverLevel, vec3, owner.getDeltaMovement(), owner.getYRot(), owner.getXRot(), TeleportTransition.DO_NOTHING)
                      );
                      if (entity != null) {
