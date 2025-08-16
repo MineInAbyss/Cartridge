@@ -924,3 +924,18 @@ index a00c38b0d6b6d32af4ab3e926705b0f2594157dd..4e934a7be8e15cc7abf155bf0a76dc90
  
      protected static int getLegacyLevel(FluidState state) {
          return state.isSource() ? 0 : 8 - Math.min(state.getAmount(), 8) + (state.getValue(FALLING) ? 8 : 0);
+diff --git a/org/purpurmc/purpur/PurpurConfig.java b/org/purpurmc/purpur/PurpurConfig.java
+index f8045ef8b800b608388fbdc31337ab349a54b8a6..faf8401e9a8dd25240ca7372f57be28b28a2d866 100644
+--- a/org/purpurmc/purpur/PurpurConfig.java
++++ b/org/purpurmc/purpur/PurpurConfig.java
+@@ -574,8 +574,8 @@ public class PurpurConfig {
+                 log(Level.SEVERE, "Invalid multiplier for `settings.block-fall-multipliers." + blockId + ".distance`: " + map.get("distance"));
+                 return;
+             }
+-            block.fallDamageMultiplier = fallDamageMultiplier.floatValue();
+-            block.fallDistanceMultiplier = fallDistanceMultiplier.floatValue();
++            block.fallDamageMultiplier = 1; // Cartridge - Block Falldamage tweaks
++            block.fallDistanceMultiplier = 1; // Cartridge - Block Falldamage tweaks
+         });
+     }
+ 
