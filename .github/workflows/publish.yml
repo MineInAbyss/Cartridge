@@ -1,0 +1,27 @@
+name: Publish
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths-ignore:
+      - '**.md'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git User Details
+        run: git config --global user.email "actions@github.com" && git config --global user.name "Github Actions"
+        
+      - uses: MineInAbyss/publish-action@develop
+        with:
+          pre-build: "./gradlew applyPatches"
+          build-tasks: "createMojmapPaperclipJar"
+          release-files: |
+            ${{ github.workspace }}/build/libs/*.jar
