@@ -89,7 +89,7 @@ index 3f22a4f612f0a9d582ad2da3f2be794a4913d08f..d9e2d7d93f2f3c222a298756bc38afa4
          return this.tags;
      }
 diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
-index a26943a7c70ac8b8eb3be5cd1f9838e4fcc6e04e..738674b0d6b2daa6e959e897c13b225218a7813a 100644
+index 58b0eb299f8750e167145f4cba6aba99b6198aa5..6d6c3562167c050647685500b0c056bfa0aa8d46 100644
 --- a/net/minecraft/server/level/ServerPlayer.java
 +++ b/net/minecraft/server/level/ServerPlayer.java
 @@ -465,6 +465,10 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
@@ -225,7 +225,7 @@ index fcc5320b82b12ef890934a7afe9dc83a1e1ea7b8..404e3c5ebdabe8c83e02befdae71bf01
          NetworkPayload(Map<ResourceLocation, IntList> tags) {
              this.tags = tags;
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index 72c9c235bf900b59fdd84d6d665e2a525577b1d0..6fa75cdc129f3ee4ec6c3dae4b8dbfe19bedbf45 100644
+index 841c90c20525e34177de271983db4c1c6b96b57f..b9e4926c35dbdd6379b0f01bcfc3030f8f64baeb 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
 @@ -85,6 +85,7 @@ import net.minecraft.world.InteractionResult;
@@ -236,7 +236,7 @@ index 72c9c235bf900b59fdd84d6d665e2a525577b1d0..6fa75cdc129f3ee4ec6c3dae4b8dbfe1
  import net.minecraft.world.entity.item.ItemEntity;
  import net.minecraft.world.entity.player.Player;
  import net.minecraft.world.entity.projectile.Projectile;
-@@ -932,7 +933,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -946,7 +947,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
          }
  
          if (this.isInLava()) {
@@ -245,7 +245,7 @@ index 72c9c235bf900b59fdd84d6d665e2a525577b1d0..6fa75cdc129f3ee4ec6c3dae4b8dbfe1
              // CraftBukkit start
          } else {
              this.lastLavaContact = null;
-@@ -1215,7 +1216,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1205,7 +1206,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                              new ClipContext(this.position(), this.position().add(vec3), ClipContext.Block.FALLDAMAGE_RESETTING, ClipContext.Fluid.WATER, this)
                          );
                      if (blockHitResult.getType() != HitResult.Type.MISS) {
@@ -254,16 +254,16 @@ index 72c9c235bf900b59fdd84d6d665e2a525577b1d0..6fa75cdc129f3ee4ec6c3dae4b8dbfe1
                      }
                  }
  
-@@ -1408,7 +1409,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -1398,7 +1399,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
      }
  
      private boolean isStateClimbable(BlockState state) {
--        return state.is(BlockTags.CLIMBABLE) || state.is(Blocks.POWDER_SNOW);
+-        return (state.tagFlag & org.dreeam.leaf.util.BlockMasks.IS_STATE_CLIMBABLE) != 0; // Leaf - optimize isStateClimbable
 +        return (state.is(BlockTags.CLIMBABLE) && (!(this instanceof ServerPlayer serverPlayer) || serverPlayer.hasClientSideClimbable)) || state.is(Blocks.POWDER_SNOW); // Cartridge
      }
  
      private boolean vibrationAndSoundEffectsFromBlock(BlockPos pos, BlockState state, boolean playStepSound, boolean broadcastGameEvent, Vec3 entityPos) {
-@@ -1965,7 +1966,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -2033,7 +2034,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
              this.fallDistance -= (float)y;
          }
  
@@ -272,7 +272,7 @@ index 72c9c235bf900b59fdd84d6d665e2a525577b1d0..6fa75cdc129f3ee4ec6c3dae4b8dbfe1
              if (this.fallDistance > 0.0) {
                  state.getBlock().fallOn(this.level(), state, pos, this, this.fallDistance);
                  this.level()
-@@ -1991,7 +1992,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -2059,7 +2060,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
              return false;
          } else {
              this.propagateFallToPassengers(fallDistance, damageMultiplier, damageSource);
@@ -281,7 +281,7 @@ index 72c9c235bf900b59fdd84d6d665e2a525577b1d0..6fa75cdc129f3ee4ec6c3dae4b8dbfe1
          }
      }
  
-@@ -2066,7 +2067,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -2134,7 +2135,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                  this.doWaterSplashEffect();
              }
  
@@ -290,7 +290,7 @@ index 72c9c235bf900b59fdd84d6d665e2a525577b1d0..6fa75cdc129f3ee4ec6c3dae4b8dbfe1
              this.wasTouchingWater = true;
          } else {
              this.wasTouchingWater = false;
-@@ -3322,6 +3323,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -3380,6 +3381,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                      this.stopRiding();
                  }
  
@@ -298,7 +298,7 @@ index 72c9c235bf900b59fdd84d6d665e2a525577b1d0..6fa75cdc129f3ee4ec6c3dae4b8dbfe1
                  this.setPose(Pose.STANDING);
                  this.vehicle = vehicle;
                  this.vehicle.addPassenger(this);
-@@ -3335,9 +3337,12 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -3393,9 +3395,12 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
          }
      }
  
@@ -312,7 +312,7 @@ index 72c9c235bf900b59fdd84d6d665e2a525577b1d0..6fa75cdc129f3ee4ec6c3dae4b8dbfe1
  
      public void ejectPassengers() {
          for (int i = this.passengers.size() - 1; i >= 0; i--) {
-@@ -3938,7 +3943,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -3996,7 +4001,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
      }
  
      public void makeStuckInBlock(BlockState state, Vec3 motionMultiplier) {
@@ -322,7 +322,7 @@ index 72c9c235bf900b59fdd84d6d665e2a525577b1d0..6fa75cdc129f3ee4ec6c3dae4b8dbfe1
      }
  
 diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
-index 1057bd5e086d74bb28d1aab219f46e0837eb20f9..d48bda5d1b8c3b25deabe9eac0233431ddce3c7e 100644
+index 8baa17d2eadfa83b1fcb36fcd1408e917b883989..91c948ad06703f0e2d6012c5180af2fb28f3cecd 100644
 --- a/net/minecraft/world/entity/LivingEntity.java
 +++ b/net/minecraft/world/entity/LivingEntity.java
 @@ -378,7 +378,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
@@ -380,18 +380,18 @@ index 1057bd5e086d74bb28d1aab219f46e0837eb20f9..d48bda5d1b8c3b25deabe9eac0233431
          return this.lastClimbablePos;
      }
  
-@@ -2240,7 +2253,9 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
- 
-     public Boolean onClimbable(boolean loadChunk) {
+@@ -2241,7 +2254,9 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+     // Leaf start - optimize onClimbable
+     public int onClimbable1(boolean loadChunk) {
          // Gale end - don't load chunks to activate climbing entities
 -        if (this.isSpectator()) {
 +        if (this instanceof ServerPlayer serverPlayer && !serverPlayer.hasClientSideClimbable) { // Cartridge
-+            return false;
++            return 0;
 +        } else if (this.isSpectator()) {
-             return false;
+             return 0;
          } else {
              BlockPos blockPos = this.blockPosition();
-@@ -3675,7 +3690,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+@@ -3682,7 +3697,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
          AABB boundingBox = this.getBoundingBox();
          Vec3 vec3 = new Vec3(this.xxa, this.yya, this.zza);
          if (this.hasEffect(MobEffects.SLOW_FALLING) || this.hasEffect(MobEffects.LEVITATION)) {
@@ -399,8 +399,8 @@ index 1057bd5e086d74bb28d1aab219f46e0837eb20f9..d48bda5d1b8c3b25deabe9eac0233431
 +            //this.resetFallDistance(); // Cartridge
          }
  
-         if (this.getControllingPassenger() instanceof Player player && this.isAlive()) {
-@@ -3986,7 +4001,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+         this.leaf$cacheOnBlock = true; // Leaf
+@@ -4011,7 +4026,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
      @Override
      public void rideTick() {
          super.rideTick();
@@ -847,7 +847,7 @@ index 41e51cb4f1a2443361b52c8523688e2c307a1d75..864b4306f2549d6a1457a66e00d377d4
      private void destroyEgg(Level level, BlockState state, BlockPos pos, Entity entity, int chance) {
          if (state.is(Blocks.TURTLE_EGG)
 diff --git a/net/minecraft/world/level/material/FlowingFluid.java b/net/minecraft/world/level/material/FlowingFluid.java
-index a00c38b0d6b6d32af4ab3e926705b0f2594157dd..4e934a7be8e15cc7abf155bf0a76dc909b27dd9a 100644
+index bcda72fbd920a087ea7d10171da933b13adc1813..e738f8dedfd518248ccf370474d2e6503a2daf33 100644
 --- a/net/minecraft/world/level/material/FlowingFluid.java
 +++ b/net/minecraft/world/level/material/FlowingFluid.java
 @@ -572,39 +572,40 @@ public abstract class FlowingFluid extends Fluid {
