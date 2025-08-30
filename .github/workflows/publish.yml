@@ -22,4 +22,4 @@ jobs:
           pre-build: "./gradlew applyAllPatches"
           build-tasks: "createMojmapPaperclipJar"
           release-files: |
-            ${{ github.workspace }}/build/libs/*.jar
+            ${{ github.workspace }}/cartridge-server/build/libs/*.jar
