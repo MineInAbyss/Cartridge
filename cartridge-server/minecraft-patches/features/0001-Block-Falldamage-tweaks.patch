@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jason Penilla <11360596+jpenilla@users.noreply.github.com>
+Date: Wed, 11 Dec 2024 19:23:25 -0700
+Subject: [PATCH] Block Falldamage tweaks
+
+
+diff --git a/net/minecraft/data/tags/VanillaBlockTagsProvider.java b/net/minecraft/data/tags/VanillaBlockTagsProvider.java
+index b9b92d1dfff11ea05039dfd8a5a2fdc84be6f5d3..c22dfffb4a5dc36f86b9f1e696f325b4fb94600d 100644
+--- a/net/minecraft/data/tags/VanillaBlockTagsProvider.java
++++ b/net/minecraft/data/tags/VanillaBlockTagsProvider.java
+@@ -298,7 +298,7 @@ public class VanillaBlockTagsProvider extends IntrinsicHolderTagsProvider<Block>
+                 Blocks.CAVE_VINES,
+                 Blocks.CAVE_VINES_PLANT
+             );
+-        this.tag(BlockTags.FALL_DAMAGE_RESETTING).addTag(BlockTags.CLIMBABLE).add(Blocks.SWEET_BERRY_BUSH, Blocks.COBWEB);
++        this.tag(BlockTags.FALL_DAMAGE_RESETTING);//.addTag(BlockTags.CLIMBABLE).add(Blocks.SWEET_BERRY_BUSH, Blocks.COBWEB);
+         this.tag(BlockTags.PIGLIN_REPELLENTS)
+             .add(Blocks.SOUL_FIRE)
+             .add(Blocks.SOUL_TORCH)

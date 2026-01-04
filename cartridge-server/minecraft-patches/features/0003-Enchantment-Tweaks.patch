@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Boy <sivertpaulsen2@gmail.com>
+Date: Thu, 6 Mar 2025 23:36:43 +0100
+Subject: [PATCH] Enchantment Tweaks
+
+
+diff --git a/net/minecraft/data/loot/packs/VanillaGiftLoot.java b/net/minecraft/data/loot/packs/VanillaGiftLoot.java
+index 98b385fac98479810fa75719ab348f4920ee8d43..b4cb409f827e45f9f823cfe641a4a68cfadcfa81 100644
+--- a/net/minecraft/data/loot/packs/VanillaGiftLoot.java
++++ b/net/minecraft/data/loot/packs/VanillaGiftLoot.java
+@@ -44,7 +44,7 @@ public record VanillaGiftLoot(HolderLookup.Provider registries) implements LootT
+                         .add(LootItem.lootTableItem(Items.FEATHER).setWeight(10))
+                         .add(LootItem.lootTableItem(Items.ROTTEN_FLESH).setWeight(10))
+                         .add(LootItem.lootTableItem(Items.STRING).setWeight(10))
+-                        .add(LootItem.lootTableItem(Items.PHANTOM_MEMBRANE).setWeight(2))
++                        //.add(LootItem.lootTableItem(Items.PHANTOM_MEMBRANE).setWeight(2))
+                 )
+         );
+         output.accept(

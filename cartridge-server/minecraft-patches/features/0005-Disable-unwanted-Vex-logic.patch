@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Boy <sivertpaulsen2@gmail.com>
+Date: Thu, 6 Mar 2025 23:50:21 +0100
+Subject: [PATCH] Disable unwanted Vex logic
+
+
+diff --git a/net/minecraft/world/entity/monster/Vex.java b/net/minecraft/world/entity/monster/Vex.java
+index a6bfb39305732068c50ae99a28114b58b76d2cf7..c5efdf965b5be016c6b82dbb3d3f716478c6595a 100644
+--- a/net/minecraft/world/entity/monster/Vex.java
++++ b/net/minecraft/world/entity/monster/Vex.java
+@@ -70,9 +70,9 @@ public class Vex extends Monster implements TraceableEntity {
+ 
+     @Override
+     public void tick() {
+-        this.noPhysics = true;
+-        super.tick();
+         this.noPhysics = false;
++        super.tick();
++        //this.noPhysics = false;
+         this.setNoGravity(true);
+         if (this.hasLimitedLife && --this.limitedLifeTicks <= 0) {
+             this.limitedLifeTicks = 20;
+@@ -208,8 +208,8 @@ public class Vex extends Monster implements TraceableEntity {
+ 
+     @Override
+     protected void populateDefaultEquipmentSlots(RandomSource random, DifficultyInstance difficulty) {
+-        this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
+-        this.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
++        //this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
++        //this.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
+     }
+ 
+     class VexChargeAttackGoal extends Goal {
