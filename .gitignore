@@ -6,10 +6,10 @@ build
 
 /run
 
-/fork-server/build.gradle.kts
-/fork-server/src/minecraft
+/cartridge-server/build.gradle.kts
+/cartridge-server/src/minecraft
 /paper-server
-/fork-api/build.gradle.kts
+/cartridge-api/build.gradle.kts
 /paper-api
 /paper-api-generator
 
