@@ -30,7 +30,7 @@ index b9b92d1dfff11ea05039dfd8a5a2fdc84be6f5d3..c22dfffb4a5dc36f86b9f1e696f325b4
              .add(Blocks.SOUL_FIRE)
              .add(Blocks.SOUL_TORCH)
 diff --git a/net/minecraft/network/protocol/common/ClientboundUpdateTagsPacket.java b/net/minecraft/network/protocol/common/ClientboundUpdateTagsPacket.java
-index 3f22a4f612f0a9d582ad2da3f2be794a4913d08f..d9e2d7d93f2f3c222a298756bc38afa426cbfd58 100644
+index 3f22a4f612f0a9d582ad2da3f2be794a4913d08f..4c0a844320bd85686afaadd967d4d2c2f1411506 100644
 --- a/net/minecraft/network/protocol/common/ClientboundUpdateTagsPacket.java
 +++ b/net/minecraft/network/protocol/common/ClientboundUpdateTagsPacket.java
 @@ -1,13 +1,27 @@
@@ -52,7 +52,7 @@ index 3f22a4f612f0a9d582ad2da3f2be794a4913d08f..d9e2d7d93f2f3c222a298756bc38afa4
  import net.minecraft.network.protocol.Packet;
  import net.minecraft.network.protocol.PacketType;
  import net.minecraft.resources.ResourceKey;
-+import net.minecraft.resources.ResourceLocation;
++import net.minecraft.resources.Identifier;
 +import net.minecraft.server.level.ServerPlayer;
 +import net.minecraft.tags.BlockTags;
  import net.minecraft.tags.TagNetworkSerialization;
@@ -72,7 +72,7 @@ index 3f22a4f612f0a9d582ad2da3f2be794a4913d08f..d9e2d7d93f2f3c222a298756bc38afa4
 +        if (player == null) {
 +            return;
 +        }
-+        Map<ResourceLocation, IntList> regTags = Optional.ofNullable(tags.get(BuiltInRegistries.BLOCK.key())).map(n -> n.tags).orElse(null);
++        Map<Identifier, IntList> regTags = Optional.ofNullable(tags.get(BuiltInRegistries.BLOCK.key())).map(n -> n.tags).orElse(null);
 +        // If the packet does not contain the block-registry, return as tag was not modified
 +        if (regTags == null) {
 +            return;
