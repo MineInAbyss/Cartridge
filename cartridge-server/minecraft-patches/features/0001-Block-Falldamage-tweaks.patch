@@ -132,7 +132,7 @@ index 79c804245c7f41a5a7f062e1c5e01760adde7d84..927f77603521b405a7b43494f2e96e51
  
      @Override
 diff --git a/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index 5c4dacec63cf40676ffc3cd28364377ae5408e35..616a9970dfcf19bb33bf7bd3cd4761c2bfd2a8ad 100644
+index e158d614abed8d16e80192c0c9abd8537c92b9dc..4285ccb305178e7a76efdab71d4d16b4045f5dca 100644
 --- a/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 @@ -143,6 +143,8 @@ import net.minecraft.server.commands.GameModeCommand;
@@ -144,7 +144,7 @@ index 5c4dacec63cf40676ffc3cd28364377ae5408e35..616a9970dfcf19bb33bf7bd3cd4761c2
  import net.minecraft.util.FutureChain;
  import net.minecraft.util.Mth;
  import net.minecraft.util.ProblemReporter;
-@@ -618,9 +620,15 @@ public class ServerGamePacketListenerImpl
+@@ -619,9 +621,15 @@ public class ServerGamePacketListenerImpl
                  d4 = d1 - this.vehicleLastGoodY; // Paper - diff on change, used for checking large move vectors above
                  d5 = d2 - this.vehicleLastGoodZ; // Paper - diff on change, used for checking large move vectors above
                  boolean flag = rootVehicle.verticalCollisionBelow;
@@ -161,7 +161,7 @@ index 5c4dacec63cf40676ffc3cd28364377ae5408e35..616a9970dfcf19bb33bf7bd3cd4761c2
  
                  rootVehicle.move(MoverType.PLAYER, new Vec3(d3, d4, d5));
                  final boolean didCollide = toX != rootVehicle.getX() || toY != rootVehicle.getY() || toZ != rootVehicle.getZ(); // Paper - needed here as the difference in Y can be reset - also note: this is only a guess at whether collisions took place, floating point errors can make this true when it shouldn't be...
-@@ -723,6 +731,7 @@ public class ServerGamePacketListenerImpl
+@@ -724,6 +732,7 @@ public class ServerGamePacketListenerImpl
                  this.vehicleLastGoodX = rootVehicle.getX();
                  this.vehicleLastGoodY = rootVehicle.getY();
                  this.vehicleLastGoodZ = rootVehicle.getZ();
@@ -169,7 +169,7 @@ index 5c4dacec63cf40676ffc3cd28364377ae5408e35..616a9970dfcf19bb33bf7bd3cd4761c2
              }
          }
      }
-@@ -1711,7 +1720,7 @@ public class ServerGamePacketListenerImpl
+@@ -1712,7 +1721,7 @@ public class ServerGamePacketListenerImpl
                                      this.player.doCheckFallDamage(vec3.x, vec3.y, vec3.z, packet.isOnGround());
                                      this.handlePlayerKnownMovement(vec3);
                                      if (flag) {
@@ -178,7 +178,7 @@ index 5c4dacec63cf40676ffc3cd28364377ae5408e35..616a9970dfcf19bb33bf7bd3cd4761c2
                                      }
  
                                      if (packet.isOnGround()
-@@ -1729,7 +1738,7 @@ public class ServerGamePacketListenerImpl
+@@ -1730,7 +1739,7 @@ public class ServerGamePacketListenerImpl
                                      this.lastGoodZ = this.player.getZ();
                                  } else {
                                      this.internalTeleport(x, y, z, f, f1); // CraftBukkit - SPIGOT-1807: Don't call teleport event, when the client thinks the player is falling, because the chunks are not loaded on the client yet.
