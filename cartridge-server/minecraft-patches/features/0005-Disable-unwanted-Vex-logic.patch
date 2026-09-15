@@ -5,10 +5,10 @@ Subject: [PATCH] Disable unwanted Vex logic
 
 
 diff --git a/net/minecraft/world/entity/monster/Vex.java b/net/minecraft/world/entity/monster/Vex.java
-index a6bfb39305732068c50ae99a28114b58b76d2cf7..c5efdf965b5be016c6b82dbb3d3f716478c6595a 100644
+index 3c3cef88f503db93b2c097096c505577b945fa76..1b9c44bec9e1282bbaf6436a67c2de209df3ff62 100644
 --- a/net/minecraft/world/entity/monster/Vex.java
 +++ b/net/minecraft/world/entity/monster/Vex.java
-@@ -70,9 +70,9 @@ public class Vex extends Monster implements TraceableEntity {
+@@ -72,9 +72,9 @@ public class Vex extends Monster implements TraceableEntity, OwnableEntity {
  
      @Override
      public void tick() {
@@ -20,14 +20,14 @@ index a6bfb39305732068c50ae99a28114b58b76d2cf7..c5efdf965b5be016c6b82dbb3d3f7164
          this.setNoGravity(true);
          if (this.hasLimitedLife && --this.limitedLifeTicks <= 0) {
              this.limitedLifeTicks = 20;
-@@ -208,8 +208,8 @@ public class Vex extends Monster implements TraceableEntity {
+@@ -215,8 +215,8 @@ public class Vex extends Monster implements TraceableEntity, OwnableEntity {
  
      @Override
-     protected void populateDefaultEquipmentSlots(RandomSource random, DifficultyInstance difficulty) {
+     protected void populateDefaultEquipmentSlots(final RandomSource random, final DifficultyInstance difficulty) {
 -        this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
 -        this.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
-+        //this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
-+        //this.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
++        //this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD)); // Cartridge
++        //this.setDropChance(EquipmentSlot.MAINHAND, 0.0F); // Cartridge
      }
  
-     class VexChargeAttackGoal extends Goal {
+     private class VexChargeAttackGoal extends Goal {

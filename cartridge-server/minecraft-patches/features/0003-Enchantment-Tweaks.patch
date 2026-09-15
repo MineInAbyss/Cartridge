@@ -5,32 +5,32 @@ Subject: [PATCH] Enchantment Tweaks
 
 
 diff --git a/net/minecraft/data/loot/packs/VanillaChestLoot.java b/net/minecraft/data/loot/packs/VanillaChestLoot.java
-index df0019e6f853d9951164f368e163e9c84e26cd30..7ab8c79d27685c0bfe92cb49544614f295174201 100644
+index da21f84d84f552e9287d3115c0ab2db1f6fa4fdd..2ce9572606dfe822d20e9bcdc8622e14ebf26ca1 100644
 --- a/net/minecraft/data/loot/packs/VanillaChestLoot.java
 +++ b/net/minecraft/data/loot/packs/VanillaChestLoot.java
-@@ -1152,7 +1152,7 @@ public record VanillaChestLoot(HolderLookup.Provider registries) implements Loot
+@@ -1173,7 +1173,7 @@ public record VanillaChestLoot(HolderLookup.Provider registries) implements Loot
                                          .withOneOf(
                                              HolderSet.direct(
-                                                 registryLookup.getOrThrow(Enchantments.SHARPNESS),
--                                                registryLookup.getOrThrow(Enchantments.BANE_OF_ARTHROPODS),
-+                                                //registryLookup.getOrThrow(Enchantments.BANE_OF_ARTHROPODS), // Cartridge - tweak enchantments
-                                                 registryLookup.getOrThrow(Enchantments.EFFICIENCY),
-                                                 registryLookup.getOrThrow(Enchantments.FORTUNE),
-                                                 registryLookup.getOrThrow(Enchantments.SILK_TOUCH),
-@@ -1283,7 +1283,7 @@ public record VanillaChestLoot(HolderLookup.Provider registries) implements Loot
+                                                 enchantments.getOrThrow(Enchantments.SHARPNESS),
+-                                                enchantments.getOrThrow(Enchantments.BANE_OF_ARTHROPODS),
++                                                //enchantments.getOrThrow(Enchantments.BANE_OF_ARTHROPODS), // Cartridge - tweak enchantments
+                                                 enchantments.getOrThrow(Enchantments.EFFICIENCY),
+                                                 enchantments.getOrThrow(Enchantments.FORTUNE),
+                                                 enchantments.getOrThrow(Enchantments.SILK_TOUCH),
+@@ -1304,7 +1304,7 @@ public record VanillaChestLoot(HolderLookup.Provider registries) implements Loot
                                              HolderSet.direct(
-                                                 registryLookup.getOrThrow(Enchantments.KNOCKBACK),
-                                                 registryLookup.getOrThrow(Enchantments.PUNCH),
--                                                registryLookup.getOrThrow(Enchantments.SMITE),
-+                                                //registryLookup.getOrThrow(Enchantments.SMITE), // Cartridge - tweak enchantments
-                                                 registryLookup.getOrThrow(Enchantments.LOOTING),
-                                                 registryLookup.getOrThrow(Enchantments.MULTISHOT)
+                                                 enchantments.getOrThrow(Enchantments.KNOCKBACK),
+                                                 enchantments.getOrThrow(Enchantments.PUNCH),
+-                                                enchantments.getOrThrow(Enchantments.SMITE),
++                                                //enchantments.getOrThrow(Enchantments.SMITE), // Cartridge - tweak enchantments
+                                                 enchantments.getOrThrow(Enchantments.LOOTING),
+                                                 enchantments.getOrThrow(Enchantments.MULTISHOT)
                                              )
 diff --git a/net/minecraft/data/loot/packs/VanillaGiftLoot.java b/net/minecraft/data/loot/packs/VanillaGiftLoot.java
-index 98b385fac98479810fa75719ab348f4920ee8d43..b4cb409f827e45f9f823cfe641a4a68cfadcfa81 100644
+index db6430c67908e979c99ffe63dbed84f08163761d..5a600fe192aa18e0649bae0e4d7375825e432c55 100644
 --- a/net/minecraft/data/loot/packs/VanillaGiftLoot.java
 +++ b/net/minecraft/data/loot/packs/VanillaGiftLoot.java
-@@ -44,7 +44,7 @@ public record VanillaGiftLoot(HolderLookup.Provider registries) implements LootT
+@@ -42,7 +42,7 @@ public record VanillaGiftLoot(HolderLookup.Provider registries) implements LootT
                          .add(LootItem.lootTableItem(Items.FEATHER).setWeight(10))
                          .add(LootItem.lootTableItem(Items.ROTTEN_FLESH).setWeight(10))
                          .add(LootItem.lootTableItem(Items.STRING).setWeight(10))
@@ -40,11 +40,11 @@ index 98b385fac98479810fa75719ab348f4920ee8d43..b4cb409f827e45f9f823cfe641a4a68c
          );
          output.accept(
 diff --git a/net/minecraft/data/tags/TradeRebalanceEnchantmentTagsProvider.java b/net/minecraft/data/tags/TradeRebalanceEnchantmentTagsProvider.java
-index 40fddeb364fdeeee68ddc7c75ed7116ab2f87211..a6c6183534e5a2575c965ccc222e59dbe41b5de0 100644
+index 9300b29cc200a21d844e29cfa76b549356b52425..85c642aa3fdbbed3b0b5901a81f5e7de9be68366 100644
 --- a/net/minecraft/data/tags/TradeRebalanceEnchantmentTagsProvider.java
 +++ b/net/minecraft/data/tags/TradeRebalanceEnchantmentTagsProvider.java
-@@ -17,7 +17,7 @@ public class TradeRebalanceEnchantmentTagsProvider extends KeyTagProvider<Enchan
-     protected void addTags(HolderLookup.Provider provider) {
+@@ -17,7 +17,7 @@ public class TradeRebalanceEnchantmentTagsProvider extends TagsProvider<Enchantm
+     protected void addTags(final HolderLookup.Provider registries) {
          this.tag(EnchantmentTags.TRADES_DESERT_COMMON).add(Enchantments.FIRE_PROTECTION, Enchantments.THORNS, Enchantments.INFINITY);
          this.tag(EnchantmentTags.TRADES_JUNGLE_COMMON).add(Enchantments.FEATHER_FALLING, Enchantments.PROJECTILE_PROTECTION, Enchantments.POWER);
 -        this.tag(EnchantmentTags.TRADES_PLAINS_COMMON).add(Enchantments.PUNCH, Enchantments.SMITE, Enchantments.BANE_OF_ARTHROPODS);
@@ -53,7 +53,7 @@ index 40fddeb364fdeeee68ddc7c75ed7116ab2f87211..a6c6183534e5a2575c965ccc222e59db
          this.tag(EnchantmentTags.TRADES_SNOW_COMMON).add(Enchantments.AQUA_AFFINITY, Enchantments.LOOTING, Enchantments.FROST_WALKER);
          this.tag(EnchantmentTags.TRADES_SWAMP_COMMON).add(Enchantments.DEPTH_STRIDER, Enchantments.RESPIRATION, Enchantments.VANISHING_CURSE);
 diff --git a/net/minecraft/data/tags/VanillaEnchantmentTagsProvider.java b/net/minecraft/data/tags/VanillaEnchantmentTagsProvider.java
-index 0d13f8847befe5424ccc67855d4d891f2bc2f746..e4e6236988d39efc457f0f7ff325c5f547e22334 100644
+index c41c707910024beea1d1c29531838038b229fdb0..89e537221c3ded09122fa4eac1f1d1fb56437dcc 100644
 --- a/net/minecraft/data/tags/VanillaEnchantmentTagsProvider.java
 +++ b/net/minecraft/data/tags/VanillaEnchantmentTagsProvider.java
 @@ -23,8 +23,10 @@ public class VanillaEnchantmentTagsProvider extends EnchantmentTagsProvider {

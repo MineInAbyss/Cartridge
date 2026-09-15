@@ -77,7 +77,7 @@ index dcf53d18ab698547a63bc465706317b497b7b43d..c315d97d94b59fa7860c1ff81d0e356f
          return this.tags;
      }
 diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
-index 3cd4e850f223100b61ac6831a87dd38f3a3bb58f..df1a8554689e333fff7a112a265a7adbbe0c9f0c 100644
+index 3cd4e850f223100b61ac6831a87dd38f3a3bb58f..e66bc44e552d0e0a18335b437f289f2556e94ae5 100644
 --- a/net/minecraft/server/level/ServerPlayer.java
 +++ b/net/minecraft/server/level/ServerPlayer.java
 @@ -472,6 +472,11 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
@@ -92,17 +92,18 @@ index 3cd4e850f223100b61ac6831a87dd38f3a3bb58f..df1a8554689e333fff7a112a265a7adb
      public ServerPlayer(final MinecraftServer server, final ServerLevel level, final GameProfile gameProfile, final ClientInformation clientInformation) {
          super(level, gameProfile);
          this.server = server;
-@@ -763,6 +768,18 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -763,6 +768,19 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
          }
  
          this.trackStartFallingPosition();
 +        // Cartridge start - flowing water and bubble columns batter anyone swimming in them
 +        if (this.flowingWaterHurtCooldown > 0) this.flowingWaterHurtCooldown--;
 +        if (this.flowingWaterHurtCooldown <= 0 && this.isInHazardousWater()) {
-+            if (this.hurtServer(this.level(), this.damageSources().generic(), 4.0F)) {
++            DamageSource hazardSource = this.damageSources().generic();
++            if (this.hurtServer(this.level(), hazardSource, 4.0F)) {
 +                // shove in a random horizontal direction so the current cannot be ridden calmly
 +                double angle = this.random.nextDouble() * Math.PI * 2.0;
-+                this.knockback(0.4, Math.cos(angle), Math.sin(angle));
++                this.knockback(0.4, Math.cos(angle), Math.sin(angle), hazardSource, 4.0F, false);
 +                this.hurtMarked = true;
 +            }
 +            this.flowingWaterHurtCooldown = 20;
@@ -111,7 +112,7 @@ index 3cd4e850f223100b61ac6831a87dd38f3a3bb58f..df1a8554689e333fff7a112a265a7adb
          this.trackEnteredOrExitedLavaOnVehicle();
          this.updatePlayerAttributes();
          this.advancements.flushDirty(this, true);
-@@ -1769,7 +1786,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -1769,7 +1787,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
          super.onExplosionHit(explosionCausedBy);
          this.currentExplosionImpactPos = this.position();
          this.currentExplosionCause = explosionCausedBy;
@@ -189,7 +190,7 @@ index 3fb7bbc1c4671e77750590512a875323abab8bfe..d1d2ef88f72a471ee52eefb3a94cb924
          public NetworkPayload(final Map<Identifier, IntList> tags) {
              this.tags = tags;
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index d958c4717739e588c5f8985dec5d215c745f49fc..8c6dd1903ee34861075a3cf416c77c9c5dda49c6 100644
+index d958c4717739e588c5f8985dec5d215c745f49fc..a963ad7e94e43f3e4a077930d0d8bf1656f856b4 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
 @@ -94,6 +94,7 @@ import net.minecraft.world.Nameable;
@@ -232,7 +233,7 @@ index d958c4717739e588c5f8985dec5d215c745f49fc..8c6dd1903ee34861075a3cf416c77c9c
          }
  
 -        if (onGround) {
-+        if (onGround || (state.is(BlockTags.CLIMBABLE) && this instanceof ServerPlayer serverPlayer && serverPlayer.hasClientSideClimbable)) { // Cartridge
++        if (onGround || (onState.is(BlockTags.CLIMBABLE) && this instanceof ServerPlayer serverPlayer && serverPlayer.hasClientSideClimbable)) { // Cartridge
              if (this.fallDistance > 0.0) {
                  onState.getBlock().fallOn(this.level(), onState, pos, this, this.fallDistance);
                  this.level()
