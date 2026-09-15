@@ -1,0 +1,11 @@
+--- a/data/minecraft/tags/enchantment/tooltip_order.json
++++ b/data/minecraft/tags/enchantment/tooltip_order.json
+@@ -8,8 +_,6 @@
+     "minecraft:frost_walker",
+     "minecraft:lunge",
+     "minecraft:sharpness",
+-    "minecraft:smite",
+-    "minecraft:bane_of_arthropods",
+     "minecraft:impaling",
+     "minecraft:power",
+     "minecraft:density",

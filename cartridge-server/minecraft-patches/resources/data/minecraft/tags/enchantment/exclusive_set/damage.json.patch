@@ -1,0 +1,11 @@
+--- a/data/minecraft/tags/enchantment/exclusive_set/damage.json
++++ b/data/minecraft/tags/enchantment/exclusive_set/damage.json
+@@ -1,8 +_,6 @@
+ {
+   "values": [
+     "minecraft:sharpness",
+-    "minecraft:smite",
+-    "minecraft:bane_of_arthropods",
+     "minecraft:impaling",
+     "minecraft:density",
+     "minecraft:breach"

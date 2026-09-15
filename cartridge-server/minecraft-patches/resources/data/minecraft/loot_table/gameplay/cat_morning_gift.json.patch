@@ -1,0 +1,14 @@
+--- a/data/minecraft/loot_table/gameplay/cat_morning_gift.json
++++ b/data/minecraft/loot_table/gameplay/cat_morning_gift.json
+@@ -32,11 +_,6 @@
+           "type": "minecraft:item",
+           "name": "minecraft:string",
+           "weight": 10
+-        },
+-        {
+-          "type": "minecraft:item",
+-          "name": "minecraft:phantom_membrane",
+-          "weight": 2
+         }
+       ],
+       "rolls": 1.0

@@ -1,0 +1,11 @@
+--- a/data/minecraft/datapacks/trade_rebalance/data/minecraft/tags/enchantment/trades/plains_common.json
++++ b/data/minecraft/datapacks/trade_rebalance/data/minecraft/tags/enchantment/trades/plains_common.json
+@@ -1,7 +_,5 @@
+ {
+   "values": [
+-    "minecraft:punch",
+-    "minecraft:smite",
+-    "minecraft:bane_of_arthropods"
++    "minecraft:punch"
+   ]
+ }

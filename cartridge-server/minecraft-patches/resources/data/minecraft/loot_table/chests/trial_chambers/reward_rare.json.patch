@@ -1,0 +1,10 @@
+--- a/data/minecraft/loot_table/chests/trial_chambers/reward_rare.json
++++ b/data/minecraft/loot_table/chests/trial_chambers/reward_rare.json
+@@ -119,7 +_,6 @@
+               "function": "minecraft:enchant_randomly",
+               "options": [
+                 "minecraft:sharpness",
+-                "minecraft:bane_of_arthropods",
+                 "minecraft:efficiency",
+                 "minecraft:fortune",
+                 "minecraft:silk_touch",

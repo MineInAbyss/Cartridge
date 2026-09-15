@@ -77,7 +77,7 @@ index dcf53d18ab698547a63bc465706317b497b7b43d..c315d97d94b59fa7860c1ff81d0e356f
          return this.tags;
      }
 diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
-index 3cd4e850f223100b61ac6831a87dd38f3a3bb58f..e66bc44e552d0e0a18335b437f289f2556e94ae5 100644
+index 3cd4e850f223100b61ac6831a87dd38f3a3bb58f..70d871a6dd1b09d74612d5e7d9bd3d752bc43e9d 100644
 --- a/net/minecraft/server/level/ServerPlayer.java
 +++ b/net/minecraft/server/level/ServerPlayer.java
 @@ -472,6 +472,11 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
@@ -85,7 +85,7 @@ index 3cd4e850f223100b61ac6831a87dd38f3a3bb58f..e66bc44e552d0e0a18335b437f289f25
      // Paper end - rewrite chunk system
  
 +    // Cartridge start
-+    public boolean hasClientSideClimbable = true;
++    public volatile boolean hasClientSideClimbable = true; // volatile, written from the netty thread on tag sync
 +    public int flowingWaterHurtCooldown = 0;
 +    // Cartridge end
 +
@@ -122,7 +122,7 @@ index 3cd4e850f223100b61ac6831a87dd38f3a3bb58f..e66bc44e552d0e0a18335b437f289f25
  
      @Override
 diff --git a/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index c2aba28916da7f8b0bc8a325cddaa9bb7ecfb251..4889ea4eaa1e1035f906400a83ccdaeee8bbe5c2 100644
+index c2aba28916da7f8b0bc8a325cddaa9bb7ecfb251..47cd7907ba8b2e2f16edf76e260ca53741e50925 100644
 --- a/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 @@ -150,6 +150,7 @@ import net.minecraft.server.level.ServerLevel;
@@ -133,24 +133,27 @@ index c2aba28916da7f8b0bc8a325cddaa9bb7ecfb251..4889ea4eaa1e1035f906400a83ccdaee
  import net.minecraft.util.FutureChain;
  import net.minecraft.util.Mth;
  import net.minecraft.util.ProblemReporter;
-@@ -631,9 +632,15 @@ public class ServerGamePacketListenerImpl
+@@ -631,9 +632,17 @@ public class ServerGamePacketListenerImpl
                  yDist = targetY - this.vehicleLastGoodY; // Paper - diff on change, used for checking large move vectors above
                  zDist = targetZ - this.vehicleLastGoodZ; // Paper - diff on change, used for checking large move vectors above
                  boolean vehicleRestsOnSomething = vehicle.verticalCollisionBelow;
-+                // Cartridge start
-                 if (vehicle instanceof LivingEntity livingVehicle && livingVehicle.onClimbable()) {
+-                if (vehicle instanceof LivingEntity livingVehicle && livingVehicle.onClimbable()) {
 -                    livingVehicle.resetFallDistance();
-+                    if (livingVehicle.getInBlockState().is(BlockTags.CLIMBABLE) && (!(livingVehicle instanceof ServerPlayer serverPlayer) || serverPlayer.hasClientSideClimbable)) {
-+                        // If on climbable and the last climbable is not empty, they are currently climbing
-+                        // If it is not present, they landed on the ladder, and we want to retain their falldistance
-+                        if (livingVehicle.getLastClimbablePos().isPresent()) livingVehicle.resetFallDistance();
++                // Cartridge start
++                if (vehicle instanceof LivingEntity livingVehicle) {
++                    // capture before onClimbable(), which records the current climbable pos as a side effect
++                    boolean wasClimbing = livingVehicle.getLastClimbablePos().isPresent();
++                    if (livingVehicle.onClimbable() && livingVehicle.getInBlockState().is(BlockTags.CLIMBABLE) && (!(livingVehicle instanceof ServerPlayer serverPlayer) || serverPlayer.hasClientSideClimbable)) {
++                        // If they were already climbing, keep negating the fall
++                        // If they just grabbed the climbable mid-fall, retain the falldistance
++                        if (wasClimbing) livingVehicle.resetFallDistance();
 +                    }
                  }
 +                // Cartridge end
  
                  vehicle.move(MoverType.PLAYER, new Vec3(xDist, yDist, zDist));
                  final boolean didCollide = targetX != vehicle.getX() || targetY != vehicle.getY() || targetZ != vehicle.getZ(); // Paper - needed here as the difference in Y can be reset - also note: this is only a guess at whether collisions took place, floating point errors can make this true when it shouldn't be...
-@@ -736,6 +743,7 @@ public class ServerGamePacketListenerImpl
+@@ -736,6 +745,7 @@ public class ServerGamePacketListenerImpl
                  this.vehicleLastGoodX = vehicle.getX();
                  this.vehicleLastGoodY = vehicle.getY();
                  this.vehicleLastGoodZ = vehicle.getZ();
@@ -158,7 +161,7 @@ index c2aba28916da7f8b0bc8a325cddaa9bb7ecfb251..4889ea4eaa1e1035f906400a83ccdaee
              }
          }
      }
-@@ -1729,7 +1737,7 @@ public class ServerGamePacketListenerImpl
+@@ -1729,7 +1739,7 @@ public class ServerGamePacketListenerImpl
                                      this.player.doCheckFallDamage(clientDeltaMovement.x, clientDeltaMovement.y, clientDeltaMovement.z, packet.isOnGround());
                                      this.handlePlayerKnownMovement(clientDeltaMovement);
                                      if (movedUpwards) {
@@ -190,7 +193,7 @@ index 3fb7bbc1c4671e77750590512a875323abab8bfe..d1d2ef88f72a471ee52eefb3a94cb924
          public NetworkPayload(final Map<Identifier, IntList> tags) {
              this.tags = tags;
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index d958c4717739e588c5f8985dec5d215c745f49fc..a963ad7e94e43f3e4a077930d0d8bf1656f856b4 100644
+index d958c4717739e588c5f8985dec5d215c745f49fc..d8bec766d9fd4cd158496134c4c761c9d5646059 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
 @@ -94,6 +94,7 @@ import net.minecraft.world.Nameable;
@@ -237,7 +240,7 @@ index d958c4717739e588c5f8985dec5d215c745f49fc..a963ad7e94e43f3e4a077930d0d8bf16
              if (this.fallDistance > 0.0) {
                  onState.getBlock().fallOn(this.level(), onState, pos, this, this.fallDistance);
                  this.level()
-@@ -2102,7 +2103,7 @@ public abstract class Entity
+@@ -2102,13 +2103,14 @@ public abstract class Entity
          }
  
          this.propagateFallToPassengers(fallDistance, damageModifier, damageSource);
@@ -246,7 +249,14 @@ index d958c4717739e588c5f8985dec5d215c745f49fc..a963ad7e94e43f3e4a077930d0d8bf16
      }
  
      protected void propagateFallToPassengers(final double fallDistance, final float damageModifier, final DamageSource damageSource) {
-@@ -2130,6 +2131,14 @@ public abstract class Entity
+         if (this.isVehicle()) {
+             for (Entity passenger : this.getPassengers()) {
+                 passenger.causeFallDamage(fallDistance, damageModifier, damageSource);
++                passenger.resetFallDistance(); // Cartridge - the fall is charged here, don't charge it again when they land or dismount
+             }
+         }
+     }
+@@ -2130,6 +2132,14 @@ public abstract class Entity
          return this.isInWater() || this.isInLava();
      }
  
@@ -261,13 +271,19 @@ index d958c4717739e588c5f8985dec5d215c745f49fc..a963ad7e94e43f3e4a077930d0d8bf16
      public boolean isUnderWater() {
          return this.wasEyeInWater && this.isInWater();
      }
-@@ -2171,6 +2180,20 @@ public abstract class Entity
+@@ -2167,10 +2177,22 @@ public abstract class Entity
+         boolean inWater = this.fluidInteraction.isInFluid(FluidTags.WATER);
+         boolean inLava = this.fluidInteraction.isInFluid(FluidTags.LAVA);
+         if (inWater) {
+-            this.resetFallDistance();
              if (!this.wasTouchingWater && !this.firstTick) {
                  this.doWaterSplashEffect();
              }
 +
-+            // Cartridge start - water surfaces act like ground: falling onto water hurts on first contact
-+            if (this instanceof ServerPlayer) {
++            // Cartridge start - water surfaces act like ground: falling onto water hurts on first contact.
++            // Players and boats pay the accumulated fall once, boats propagate it to their passengers,
++            // other entities keep the vanilla reset
++            if (this instanceof ServerPlayer || this instanceof net.minecraft.world.entity.vehicle.boat.AbstractBoat) {
 +                if (!this.wasTouchingWater && this.fallDistance > 0.0) {
 +                    this.causeFallDamage(this.fallDistance, 1.0F, this.damageSources().fall());
 +                    this.resetFallDistance();
@@ -276,21 +292,23 @@ index d958c4717739e588c5f8985dec5d215c745f49fc..a963ad7e94e43f3e4a077930d0d8bf16
 +                this.resetFallDistance();
 +            }
 +            // Cartridge end
-+            this.wasTouchingWater = true;
-+        } else {
-+            this.wasTouchingWater = false;
          }
  
          this.wasTouchingWater = inWater;
-@@ -3369,6 +3392,7 @@ public abstract class Entity
+@@ -3369,6 +3391,12 @@ public abstract class Entity
                  this.stopRiding();
              }
  
-+            this.causeFallDamage(this.fallDistance, 1.0f, this.damageSources().fall()); // Cartridge
++            // Cartridge start - pay any accumulated fall on mounting so it cannot be dodged or charged twice
++            if (this.fallDistance > 0.0) {
++                this.causeFallDamage(this.fallDistance, 1.0f, this.damageSources().fall());
++                this.resetFallDistance();
++            }
++            // Cartridge end
              this.setPose(Pose.STANDING);
              this.vehicle = entityToRide;
              this.vehicle.addPassenger(this);
-@@ -3385,9 +3409,12 @@ public abstract class Entity
+@@ -3385,9 +3413,12 @@ public abstract class Entity
          }
      }
  
@@ -304,7 +322,7 @@ index d958c4717739e588c5f8985dec5d215c745f49fc..a963ad7e94e43f3e4a077930d0d8bf16
  
      public void ejectPassengers() {
          for (int i = this.passengers.size() - 1; i >= 0; i--) {
-@@ -3912,7 +3939,7 @@ public abstract class Entity
+@@ -3912,7 +3943,7 @@ public abstract class Entity
          }
  
          entity.setDeltaMovement(movement.x, yd, movement.z);
@@ -313,7 +331,7 @@ index d958c4717739e588c5f8985dec5d215c745f49fc..a963ad7e94e43f3e4a077930d0d8bf16
      }
  
      // Paper start
-@@ -3967,7 +3994,7 @@ public abstract class Entity
+@@ -3967,7 +3998,7 @@ public abstract class Entity
      }
  
      public void makeStuckInBlock(final BlockState blockState, final Vec3 speedMultiplier) {
