@@ -5,10 +5,10 @@ Subject: [PATCH] Block Falldamage tweaks
 
 
 diff --git a/net/minecraft/data/tags/VanillaBlockTagsProvider.java b/net/minecraft/data/tags/VanillaBlockTagsProvider.java
-index 14a011b2c5fd1c2cf25acb2549553144ff8a69e8..55b0429eae322840aa74242ce85c80bf990d44a7 100644
+index 8358941703f634ebc7b7fa08d6cafed6ab667c00..cfb1010c4c5699bbadfbccc29f4852f743781f84 100644
 --- a/net/minecraft/data/tags/VanillaBlockTagsProvider.java
 +++ b/net/minecraft/data/tags/VanillaBlockTagsProvider.java
-@@ -257,7 +257,7 @@ public class VanillaBlockTagsProvider extends TagsProvider<Block> {
+@@ -262,7 +262,7 @@ public class VanillaBlockTagsProvider extends TagsProvider<Block> {
              .add(BlockIds.TWISTING_VINES_PLANT)
              .add(new BlockItemId[]{BlockItemIds.GLOW_BERRY_CROP})
              .add(BlockIds.CAVE_VINES_PLANT);
@@ -18,24 +18,19 @@ index 14a011b2c5fd1c2cf25acb2549553144ff8a69e8..55b0429eae322840aa74242ce85c80bf
              .add(BlockIds.SOUL_FIRE)
              .add(new BlockItemId[]{BlockItemIds.SOUL_TORCH})
 diff --git a/net/minecraft/network/protocol/common/ClientboundUpdateTagsPacket.java b/net/minecraft/network/protocol/common/ClientboundUpdateTagsPacket.java
-index dcf53d18ab698547a63bc465706317b497b7b43d..c315d97d94b59fa7860c1ff81d0e356f93238034 100644
+index 6da0352bff6d76779aa01655fac98b6b9b319a66..10f1782f9f88a82b98cd87c187fcef9d23346928 100644
 --- a/net/minecraft/network/protocol/common/ClientboundUpdateTagsPacket.java
 +++ b/net/minecraft/network/protocol/common/ClientboundUpdateTagsPacket.java
-@@ -1,13 +1,27 @@
- package net.minecraft.network.protocol.common;
- 
-+import java.util.ArrayList;
-+import java.util.List;
+@@ -3,13 +3,21 @@ package net.minecraft.network.protocol.common;
+ import io.netty.buffer.ByteBuf;
+ import java.util.IdentityHashMap;
  import java.util.Map;
 +import java.util.Optional;
 +
-+import it.unimi.dsi.fastutil.ints.IntArrayList;
 +import it.unimi.dsi.fastutil.ints.IntList;
  import net.minecraft.core.Registry;
 +import net.minecraft.core.registries.BuiltInRegistries;
-+import net.minecraft.core.registries.Registries;
-+import net.minecraft.nbt.Tag;
- import net.minecraft.network.FriendlyByteBuf;
+ import net.minecraft.network.codec.ByteBufCodecs;
  import net.minecraft.network.codec.StreamCodec;
  import net.minecraft.network.protocol.Packet;
  import net.minecraft.network.protocol.PacketType;
@@ -44,15 +39,15 @@ index dcf53d18ab698547a63bc465706317b497b7b43d..c315d97d94b59fa7860c1ff81d0e356f
 +import net.minecraft.server.level.ServerPlayer;
 +import net.minecraft.tags.BlockTags;
  import net.minecraft.tags.TagNetworkSerialization;
-+import net.minecraft.world.level.block.Block;
 +import org.jetbrains.annotations.Nullable;
  
- public class ClientboundUpdateTagsPacket implements Packet<ClientCommonPacketListener> {
-     public static final StreamCodec<FriendlyByteBuf, ClientboundUpdateTagsPacket> STREAM_CODEC = Packet.codec(
-@@ -37,6 +51,26 @@ public class ClientboundUpdateTagsPacket implements Packet<ClientCommonPacketLis
+ public record ClientboundUpdateTagsPacket(Map<ResourceKey<? extends Registry<?>>, TagNetworkSerialization.NetworkPayload> tags)
+     implements Packet<ClientCommonPacketListener> {
+@@ -28,4 +36,24 @@ public record ClientboundUpdateTagsPacket(Map<ResourceKey<? extends Registry<?>>
+     public void handle(final ClientCommonPacketListener listener) {
          listener.handleUpdateTags(this);
      }
- 
++
 +    // Cartridge start
 +    @Override
 +    public void onPacketDispatch(@Nullable ServerPlayer player) {
@@ -60,7 +55,7 @@ index dcf53d18ab698547a63bc465706317b497b7b43d..c315d97d94b59fa7860c1ff81d0e356f
 +        if (player == null) {
 +            return;
 +        }
-+        Map<Identifier, IntList> regTags = Optional.ofNullable(tags.get(BuiltInRegistries.BLOCK.key())).map(n -> n.tags).orElse(null);
++        Map<Identifier, IntList> regTags = Optional.ofNullable(this.tags.get(BuiltInRegistries.BLOCK.key())).map(TagNetworkSerialization.NetworkPayload::tags).orElse(null);
 +        // If the packet does not contain the block-registry, return as tag was not modified
 +        if (regTags == null) {
 +            return;
@@ -72,12 +67,9 @@ index dcf53d18ab698547a63bc465706317b497b7b43d..c315d97d94b59fa7860c1ff81d0e356f
 +        player.hasClientSideClimbable = !climbableIds.isEmpty();
 +    }
 +    // Cartridge end
-+
-     public Map<ResourceKey<? extends Registry<?>>, TagNetworkSerialization.NetworkPayload> getTags() {
-         return this.tags;
-     }
+ }
 diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
-index 3cd4e850f223100b61ac6831a87dd38f3a3bb58f..70d871a6dd1b09d74612d5e7d9bd3d752bc43e9d 100644
+index cbd379d29d2b90b2b6fca8cd42301d12598760a8..9ee6758747269a19c3232e90d4b7e41943bc8fff 100644
 --- a/net/minecraft/server/level/ServerPlayer.java
 +++ b/net/minecraft/server/level/ServerPlayer.java
 @@ -472,6 +472,11 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
@@ -92,7 +84,7 @@ index 3cd4e850f223100b61ac6831a87dd38f3a3bb58f..70d871a6dd1b09d74612d5e7d9bd3d75
      public ServerPlayer(final MinecraftServer server, final ServerLevel level, final GameProfile gameProfile, final ClientInformation clientInformation) {
          super(level, gameProfile);
          this.server = server;
-@@ -763,6 +768,19 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -765,6 +770,19 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
          }
  
          this.trackStartFallingPosition();
@@ -104,7 +96,7 @@ index 3cd4e850f223100b61ac6831a87dd38f3a3bb58f..70d871a6dd1b09d74612d5e7d9bd3d75
 +                // shove in a random horizontal direction so the current cannot be ridden calmly
 +                double angle = this.random.nextDouble() * Math.PI * 2.0;
 +                this.knockback(0.4, Math.cos(angle), Math.sin(angle), hazardSource, 4.0F, false);
-+                this.hurtMarked = true;
++                this.markHurt();
 +            }
 +            this.flowingWaterHurtCooldown = 20;
 +        }
@@ -112,7 +104,7 @@ index 3cd4e850f223100b61ac6831a87dd38f3a3bb58f..70d871a6dd1b09d74612d5e7d9bd3d75
          this.trackEnteredOrExitedLavaOnVehicle();
          this.updatePlayerAttributes();
          this.advancements.flushDirty(this, true);
-@@ -1769,7 +1787,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -1820,7 +1838,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
          super.onExplosionHit(explosionCausedBy);
          this.currentExplosionImpactPos = this.position();
          this.currentExplosionCause = explosionCausedBy;
@@ -122,18 +114,18 @@ index 3cd4e850f223100b61ac6831a87dd38f3a3bb58f..70d871a6dd1b09d74612d5e7d9bd3d75
  
      @Override
 diff --git a/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index c2aba28916da7f8b0bc8a325cddaa9bb7ecfb251..47cd7907ba8b2e2f16edf76e260ca53741e50925 100644
+index f01fede96872749f1ac664d0c53c2ef3617bed0e..0f4d4905e6abc3ad9a1674b35f6ec6b6ce60f0e3 100644
 --- a/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-@@ -150,6 +150,7 @@ import net.minecraft.server.level.ServerLevel;
+@@ -149,6 +149,7 @@ import net.minecraft.server.level.ServerLevel;
  import net.minecraft.server.level.ServerPlayer;
  import net.minecraft.server.permissions.Permissions;
  import net.minecraft.server.players.PlayerList;
 +import net.minecraft.tags.BlockTags;
  import net.minecraft.util.FutureChain;
  import net.minecraft.util.Mth;
- import net.minecraft.util.ProblemReporter;
-@@ -631,9 +632,17 @@ public class ServerGamePacketListenerImpl
+ import net.minecraft.util.Prediction;
+@@ -642,9 +643,17 @@ public class ServerGamePacketListenerImpl
                  yDist = targetY - this.vehicleLastGoodY; // Paper - diff on change, used for checking large move vectors above
                  zDist = targetZ - this.vehicleLastGoodZ; // Paper - diff on change, used for checking large move vectors above
                  boolean vehicleRestsOnSomething = vehicle.verticalCollisionBelow;
@@ -152,51 +144,29 @@ index c2aba28916da7f8b0bc8a325cddaa9bb7ecfb251..47cd7907ba8b2e2f16edf76e260ca537
 +                // Cartridge end
  
                  vehicle.move(MoverType.PLAYER, new Vec3(xDist, yDist, zDist));
-                 final boolean didCollide = targetX != vehicle.getX() || targetY != vehicle.getY() || targetZ != vehicle.getZ(); // Paper - needed here as the difference in Y can be reset - also note: this is only a guess at whether collisions took place, floating point errors can make this true when it shouldn't be...
+                 double oyDist = yDist;
 @@ -736,6 +745,7 @@ public class ServerGamePacketListenerImpl
                  this.vehicleLastGoodX = vehicle.getX();
                  this.vehicleLastGoodY = vehicle.getY();
                  this.vehicleLastGoodZ = vehicle.getZ();
 +                if (vehicle.fallDistance > this.player.getMaxFallDistance()) this.player.fallDistance = vehicle.fallDistance; // Cartridge
-             }
-         }
-     }
-@@ -1729,7 +1739,7 @@ public class ServerGamePacketListenerImpl
-                                     this.player.doCheckFallDamage(clientDeltaMovement.x, clientDeltaMovement.y, clientDeltaMovement.z, packet.isOnGround());
-                                     this.handlePlayerKnownMovement(clientDeltaMovement);
-                                     if (movedUpwards) {
--                                        this.player.resetFallDistance();
-+                                        //this.player.resetFallDistance(); // Cartridge
-                                     }
+             } else if (vehicle != this.player
+                 && vehicle.getControllingPassenger() != this.player
+                 && (this.tickCount - this.vehiclePositionLastResetAt > 20 || vehicle.distanceToSqr(movingToPos) > Mth.square(1))) {
+@@ -1713,7 +1723,7 @@ public class ServerGamePacketListenerImpl
+                     this.player.doCheckFallDamage(clientDeltaMovement.x, clientDeltaMovement.y, clientDeltaMovement.z, isOnGround);
+                     this.handlePlayerKnownMovement(clientDeltaMovement);
+                     if (movedUpwards) {
+-                        this.player.resetFallDistance();
++                        //this.player.resetFallDistance(); // Cartridge
+                     }
  
-                                     if (packet.isOnGround()
-diff --git a/net/minecraft/tags/TagNetworkSerialization.java b/net/minecraft/tags/TagNetworkSerialization.java
-index 3fb7bbc1c4671e77750590512a875323abab8bfe..d1d2ef88f72a471ee52eefb3a94cb924eba129cf 100644
---- a/net/minecraft/tags/TagNetworkSerialization.java
-+++ b/net/minecraft/tags/TagNetworkSerialization.java
-@@ -45,7 +45,7 @@ public class TagNetworkSerialization {
-         return new TagNetworkSerialization.NetworkPayload(result);
-     }
- 
--    private static <T> TagLoader.LoadResult<T> deserializeTagsFromNetwork(final Registry<T> registry, final TagNetworkSerialization.NetworkPayload payload) {
-+    public static <T> TagLoader.LoadResult<T> deserializeTagsFromNetwork(final Registry<T> registry, final TagNetworkSerialization.NetworkPayload payload) {
-         ResourceKey<? extends Registry<T>> registryKey = registry.key();
-         Map<TagKey<T>, List<Holder<T>>> tags = new HashMap<>();
-         payload.tags.forEach((key, ids) -> {
-@@ -58,7 +58,7 @@ public class TagNetworkSerialization {
- 
-     public static final class NetworkPayload {
-         public static final TagNetworkSerialization.NetworkPayload EMPTY = new TagNetworkSerialization.NetworkPayload(Map.of());
--        private final Map<Identifier, IntList> tags;
-+        public final Map<Identifier, IntList> tags; // Cartridge - private -> public
- 
-         public NetworkPayload(final Map<Identifier, IntList> tags) {
-             this.tags = tags;
+                     if (isOnGround
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index d958c4717739e588c5f8985dec5d215c745f49fc..d8bec766d9fd4cd158496134c4c761c9d5646059 100644
+index cf3619b6de23f32e9e5a81fbe287fb438ecfcabc..88a6216a3106862919339c3ec196a900fa2d9a53 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
-@@ -94,6 +94,7 @@ import net.minecraft.world.Nameable;
+@@ -95,6 +95,7 @@ import net.minecraft.world.Nameable;
  import net.minecraft.world.attribute.EnvironmentAttributes;
  import net.minecraft.world.damagesource.DamageSource;
  import net.minecraft.world.damagesource.DamageSources;
@@ -204,7 +174,7 @@ index d958c4717739e588c5f8985dec5d215c745f49fc..d8bec766d9fd4cd158496134c4c761c9
  import net.minecraft.world.entity.item.ItemEntity;
  import net.minecraft.world.entity.player.Player;
  import net.minecraft.world.entity.projectile.Projectile;
-@@ -916,7 +917,7 @@ public abstract class Entity
+@@ -936,7 +937,7 @@ public abstract class Entity
          }
  
          if (this.isInLava()) {
@@ -213,7 +183,7 @@ index d958c4717739e588c5f8985dec5d215c745f49fc..d8bec766d9fd4cd158496134c4c761c9
              // CraftBukkit start
          } else {
              this.lastLavaContact = null;
-@@ -1194,7 +1195,7 @@ public abstract class Entity
+@@ -1221,7 +1222,7 @@ public abstract class Entity
                      BlockHitResult hitResult = this.level()
                          .clip(new ClipContext(this.position(), checkTo, ClipContext.Block.FALLDAMAGE_RESETTING, ClipContext.Fluid.WATER, this));
                      if (hitResult.getType() != HitResult.Type.MISS) {
@@ -222,7 +192,7 @@ index d958c4717739e588c5f8985dec5d215c745f49fc..d8bec766d9fd4cd158496134c4c761c9
                      }
                  }
  
-@@ -1457,7 +1458,7 @@ public abstract class Entity
+@@ -1494,7 +1495,7 @@ public abstract class Entity
      }
  
      private boolean isStateClimbable(final BlockState state) {
@@ -231,7 +201,7 @@ index d958c4717739e588c5f8985dec5d215c745f49fc..d8bec766d9fd4cd158496134c4c761c9
      }
  
      private boolean vibrationAndSoundEffectsFromBlock(
-@@ -2075,7 +2076,7 @@ public abstract class Entity
+@@ -2117,7 +2118,7 @@ public abstract class Entity
              this.fallDistance -= (float)ya;
          }
  
@@ -240,7 +210,7 @@ index d958c4717739e588c5f8985dec5d215c745f49fc..d8bec766d9fd4cd158496134c4c761c9
              if (this.fallDistance > 0.0) {
                  onState.getBlock().fallOn(this.level(), onState, pos, this, this.fallDistance);
                  this.level()
-@@ -2102,13 +2103,14 @@ public abstract class Entity
+@@ -2144,13 +2145,14 @@ public abstract class Entity
          }
  
          this.propagateFallToPassengers(fallDistance, damageModifier, damageSource);
@@ -256,8 +226,8 @@ index d958c4717739e588c5f8985dec5d215c745f49fc..d8bec766d9fd4cd158496134c4c761c9
              }
          }
      }
-@@ -2130,6 +2132,14 @@ public abstract class Entity
-         return this.isInWater() || this.isInLava();
+@@ -2176,6 +2178,14 @@ public abstract class Entity
+         return this.fluidInteraction.isInFluid(FluidTags.ENTITY_FLOATABLE);
      }
  
 +    // Cartridge start - flowing water (waterfalls etc) and bubble columns batter anyone swimming in them
@@ -271,7 +241,7 @@ index d958c4717739e588c5f8985dec5d215c745f49fc..d8bec766d9fd4cd158496134c4c761c9
      public boolean isUnderWater() {
          return this.wasEyeInWater && this.isInWater();
      }
-@@ -2167,10 +2177,22 @@ public abstract class Entity
+@@ -2213,10 +2223,22 @@ public abstract class Entity
          boolean inWater = this.fluidInteraction.isInFluid(FluidTags.WATER);
          boolean inLava = this.fluidInteraction.isInFluid(FluidTags.LAVA);
          if (inWater) {
@@ -295,7 +265,7 @@ index d958c4717739e588c5f8985dec5d215c745f49fc..d8bec766d9fd4cd158496134c4c761c9
          }
  
          this.wasTouchingWater = inWater;
-@@ -3369,6 +3391,12 @@ public abstract class Entity
+@@ -3440,6 +3462,12 @@ public abstract class Entity
                  this.stopRiding();
              }
  
@@ -308,7 +278,7 @@ index d958c4717739e588c5f8985dec5d215c745f49fc..d8bec766d9fd4cd158496134c4c761c9
              this.setPose(Pose.STANDING);
              this.vehicle = entityToRide;
              this.vehicle.addPassenger(this);
-@@ -3385,9 +3413,12 @@ public abstract class Entity
+@@ -3456,9 +3484,12 @@ public abstract class Entity
          }
      }
  
@@ -322,16 +292,16 @@ index d958c4717739e588c5f8985dec5d215c745f49fc..d8bec766d9fd4cd158496134c4c761c9
  
      public void ejectPassengers() {
          for (int i = this.passengers.size() - 1; i >= 0; i--) {
-@@ -3912,7 +3943,7 @@ public abstract class Entity
+@@ -4012,7 +4043,7 @@ public abstract class Entity
+             entity.setDeltaMovement(movement.x, yd, movement.z);
          }
  
-         entity.setDeltaMovement(movement.x, yd, movement.z);
 -        entity.resetFallDistance();
 +        if (!(entity instanceof ServerPlayer)) entity.resetFallDistance(); // Cartridge - bubble columns no longer negate fall damage
      }
  
      // Paper start
-@@ -3967,7 +3998,7 @@ public abstract class Entity
+@@ -4071,7 +4102,7 @@ public abstract class Entity
      }
  
      public void makeStuckInBlock(final BlockState blockState, final Vec3 speedMultiplier) {
@@ -341,10 +311,10 @@ index d958c4717739e588c5f8985dec5d215c745f49fc..d8bec766d9fd4cd158496134c4c761c9
      }
  
 diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
-index 3a4da514c163e7565fc241835db52c464a5c4734..b3cdc10c2dd65c61d33d14a49bb620894041a95a 100644
+index f332edbc4dad82cbdc02a58aa9ec21faf1f2db89..f677c0442052bcde5f27c8f37b51fe1debffb5ee 100644
 --- a/net/minecraft/world/entity/LivingEntity.java
 +++ b/net/minecraft/world/entity/LivingEntity.java
-@@ -2150,11 +2150,18 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+@@ -2158,11 +2158,18 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
      }
  
      public Optional<BlockPos> getLastClimbablePos() {
@@ -364,7 +334,7 @@ index 3a4da514c163e7565fc241835db52c464a5c4734..b3cdc10c2dd65c61d33d14a49bb62089
              return false;
          } else {
              BlockPos ladderCheckPos = this.blockPosition();
-@@ -3771,7 +3778,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+@@ -3768,7 +3775,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
          AABB beforeTravelBox = this.getBoundingBox();
          Vec3 input = new Vec3(this.xxa, this.yya, this.zza);
          if (this.hasEffect(MobEffects.SLOW_FALLING) || this.hasEffect(MobEffects.LEVITATION)) {
@@ -373,7 +343,7 @@ index 3a4da514c163e7565fc241835db52c464a5c4734..b3cdc10c2dd65c61d33d14a49bb62089
          }
  
          if (this.getControllingPassenger() instanceof Player controller && this.isAlive()) {
-@@ -3996,7 +4003,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+@@ -3993,7 +4000,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
      @Override
      public void rideTick() {
          super.rideTick();
@@ -383,7 +353,7 @@ index 3a4da514c163e7565fc241835db52c464a5c4734..b3cdc10c2dd65c61d33d14a49bb62089
  
      @Override
 diff --git a/net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownEnderpearl.java b/net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownEnderpearl.java
-index 8d3c6abd387acc4cec27a33b96bcd24255fd01ac..234f0c81b19db3b378d87af24362c3792e14315c 100644
+index 4abbb6a8029f6c77fdbeda9376d3d5cc5970896d..dfe0524f57c4d847a5e406b127188082ddcc37ff 100644
 --- a/net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownEnderpearl.java
 +++ b/net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownEnderpearl.java
 @@ -103,6 +103,7 @@ public class ThrownEnderpearl extends ThrowableItemProjectile {
@@ -394,7 +364,7 @@ index 8d3c6abd387acc4cec27a33b96bcd24255fd01ac..234f0c81b19db3b378d87af24362c379
                      if (player.connection.isAcceptingMessages()) {
                          // CraftBukkit start
                          // Store pre teleportation position as the teleport has been moved up.
-@@ -135,7 +136,11 @@ public class ThrownEnderpearl extends ThrowableItemProjectile {
+@@ -133,7 +134,11 @@ public class ThrownEnderpearl extends ThrowableItemProjectile {
                          // );
                          // CraftBukkit end - moved up
                          if (newOwner != null) {
@@ -407,8 +377,8 @@ index 8d3c6abd387acc4cec27a33b96bcd24255fd01ac..234f0c81b19db3b378d87af24362c379
                              newOwner.resetCurrentImpulseContext();
                              newOwner.hurtServer(player.level(), this.damageSources().enderPearl().eventEntityDamager(this), 5.0F); // CraftBukkit // Paper - fix DamageSource API
                          }
-@@ -147,7 +152,7 @@ public class ThrownEnderpearl extends ThrowableItemProjectile {
-                         new TeleportTransition(level, teleportPos, owner.getDeltaMovement(), owner.getYRot(), owner.getXRot(), TeleportTransition.DO_NOTHING)
+@@ -145,7 +150,7 @@ public class ThrownEnderpearl extends ThrowableItemProjectile {
+                         new TeleportTransition(level, teleportPos, Vec3.ZERO, owner.getYRot(), owner.getXRot(), TeleportTransition.DO_NOTHING)
                      );
                      if (newOwner != null) {
 -                        newOwner.resetFallDistance();
@@ -417,10 +387,10 @@ index 8d3c6abd387acc4cec27a33b96bcd24255fd01ac..234f0c81b19db3b378d87af24362c379
  
                      if (newOwner instanceof LivingEntity livingEntity) {
 diff --git a/net/minecraft/world/entity/vehicle/boat/AbstractBoat.java b/net/minecraft/world/entity/vehicle/boat/AbstractBoat.java
-index 3fcd534cee1f605a710ffc43eff4b5106c7dd40c..189f8b77e77bb7943fc925be057b510d9030f26b 100644
+index 12a3c8f1d325e545b52cf4d45536f3fbbf1a2df0..0979b1213a0db4d172532e94ea8f1eee4a5075fa 100644
 --- a/net/minecraft/world/entity/vehicle/boat/AbstractBoat.java
 +++ b/net/minecraft/world/entity/vehicle/boat/AbstractBoat.java
-@@ -767,11 +767,15 @@ public abstract class AbstractBoat extends VehicleEntity implements Leashable {
+@@ -803,11 +803,15 @@ public abstract class AbstractBoat extends VehicleEntity implements Leashable {
      protected void checkFallDamage(final double ya, final boolean onGround, final BlockState onState, final BlockPos pos) {
          this.lastYd = this.getDeltaMovement().y;
          if (!this.isPassenger()) {
@@ -453,10 +423,10 @@ index eacf2358d0eeb9a4b07181bb01e78e781c2d069d..d4fe5ada98ad4cdb323283ad91eb87b4
                  if (currentState.is(Blocks.ACTIVATOR_RAIL)) {
                      this.minecart
 diff --git a/net/minecraft/world/entity/vehicle/minecart/OldMinecartBehavior.java b/net/minecraft/world/entity/vehicle/minecart/OldMinecartBehavior.java
-index 3c8694e75cabd68690d9139ecedc9e079db482c5..75f3d6bea34f8cfd81d4d0c42828678f818210e0 100644
+index eece08119c52628d0918d90b595276210062b5ed..fa29d5e64cfad01501ec98e2e7c9ecc16a8c8959 100644
 --- a/net/minecraft/world/entity/vehicle/minecart/OldMinecartBehavior.java
 +++ b/net/minecraft/world/entity/vehicle/minecart/OldMinecartBehavior.java
-@@ -104,7 +104,10 @@ public class OldMinecartBehavior extends MinecartBehavior {
+@@ -96,7 +96,10 @@ public class OldMinecartBehavior extends MinecartBehavior {
      public void moveAlongTrack(final ServerLevel level) {
          BlockPos pos = this.minecart.getCurrentBlockPosOrRailBelow();
          BlockState state = this.level().getBlockState(pos);
@@ -468,7 +438,7 @@ index 3c8694e75cabd68690d9139ecedc9e079db482c5..75f3d6bea34f8cfd81d4d0c42828678f
          double y = this.minecart.getY();
          double z = this.minecart.getZ();
 diff --git a/net/minecraft/world/item/MaceItem.java b/net/minecraft/world/item/MaceItem.java
-index 681ef7b4f6f987b1779859ed1d9bcd6e5670adab..5b38149cdc685c32a4c3ef7314557d733bb8e2c5 100644
+index 88eb1c885850d1c4f5b0a7a013038f1de7851898..aaf5659080b09dafe68a7431f05cc9a9aec4097c 100644
 --- a/net/minecraft/world/item/MaceItem.java
 +++ b/net/minecraft/world/item/MaceItem.java
 @@ -63,7 +63,7 @@ public class MaceItem extends Item {
@@ -490,37 +460,40 @@ index 681ef7b4f6f987b1779859ed1d9bcd6e5670adab..5b38149cdc685c32a4c3ef7314557d73
      }
  
 diff --git a/net/minecraft/world/item/consume_effects/TeleportRandomlyConsumeEffect.java b/net/minecraft/world/item/consume_effects/TeleportRandomlyConsumeEffect.java
-index 23ba133fea6e44dfd31e564d9544ec43800d426b..7dfc684cb82ee6b85d77533cd0480f8010f37ec3 100644
+index 438af6925200f8fbaf432ca55ae273cdfb3e1f4e..12eab87fb2f66668fd6befb2fd4c486d91d00631 100644
 --- a/net/minecraft/world/item/consume_effects/TeleportRandomlyConsumeEffect.java
 +++ b/net/minecraft/world/item/consume_effects/TeleportRandomlyConsumeEffect.java
-@@ -73,7 +73,7 @@ public record TeleportRandomlyConsumeEffect(float diameter) implements ConsumeEf
+@@ -91,7 +91,7 @@ public record TeleportRandomlyConsumeEffect(float diameter, boolean directionalP
+                     );
                  }
  
-                 level.playSound(null, user.getX(), user.getY(), user.getZ(), soundEvent, soundSource);
 -                user.resetFallDistance();
 +                //user.resetFallDistance(); // Cartridge - chorus teleports no longer negate fall damage
-                 teleported = true;
-                 break;
+                 user.resetCurrentImpulseContext();
+                 return true;
              }
 diff --git a/net/minecraft/world/level/block/BedBlock.java b/net/minecraft/world/level/block/BedBlock.java
-index 543380cacff68f74bbf00330544a159c15b59211..1cf591ff871d614324e9877984c4d0957bf9cb4b 100644
+index 1b6c792f39ee909120261f5dfc43a9130f7fd7ee..dfd5677d93d301b6f9154e511b3b95cf7f6558cb 100644
 --- a/net/minecraft/world/level/block/BedBlock.java
 +++ b/net/minecraft/world/level/block/BedBlock.java
-@@ -168,7 +168,7 @@ public class BedBlock extends HorizontalDirectionalBlock {
- 
-     @Override
-     public void fallOn(final Level level, final BlockState state, final BlockPos pos, final Entity entity, final double fallDistance) {
--        super.fallOn(level, state, pos, entity, fallDistance * 0.5);
-+        super.fallOn(level, state, pos, entity, fallDistance); // Cartridge - beds no longer reduce fall damage
+@@ -61,6 +61,11 @@ public class BedBlock extends AbstractBedBlock {
+     protected void destroyOnLeave(final Level level, final BlockPos pos) {
      }
  
-     @Override
++    @Override
++    public float getFallDistanceReduction() {
++        return 0.0F; // Cartridge - beds no longer reduce fall damage
++    }
++
+     public DyeColor getColor() {
+         return this.color;
+     }
 diff --git a/net/minecraft/world/level/block/CoralBlock.java b/net/minecraft/world/level/block/CoralBlock.java
-index 1a4aa90f3f82a817166eed396360a518bfd374bd..8da9494257289798ff2248ee03b36457a7bf7fba 100644
+index ff0a318ff6c0e2f22a807dd32306f5c5d0bdcaab..707fddf23064938b80981aa718d3e1b0466b92de 100644
 --- a/net/minecraft/world/level/block/CoralBlock.java
 +++ b/net/minecraft/world/level/block/CoralBlock.java
-@@ -34,17 +34,19 @@ public class CoralBlock extends Block {
-         return CODEC;
+@@ -22,17 +22,19 @@ public class CoralBlock extends Block {
+         this.deadBlock = deadBlock;
      }
  
 -    @Override
@@ -551,10 +524,10 @@ index 1a4aa90f3f82a817166eed396360a518bfd374bd..8da9494257289798ff2248ee03b36457
      @Override
      protected BlockState updateShape(
 diff --git a/net/minecraft/world/level/block/CoralFanBlock.java b/net/minecraft/world/level/block/CoralFanBlock.java
-index 7a8cd7a7bf00cc0b29b0d4ee9b2241bf3a0f9905..857c623ab1ac90a5463bdb58549c9e25cfc983a3 100644
+index b9db4321f1f206dc2d3b223d50518fbe74351d65..773d5bd145bd5c334100861176fc2bafdcbd1cd5 100644
 --- a/net/minecraft/world/level/block/CoralFanBlock.java
 +++ b/net/minecraft/world/level/block/CoralFanBlock.java
-@@ -34,17 +34,19 @@ public class CoralFanBlock extends BaseCoralFanBlock {
+@@ -24,17 +24,19 @@ public class CoralFanBlock extends BaseCoralFanBlock {
          this.tryScheduleDieTick(state, level, level, level.getRandom(), pos);
      }
  
@@ -586,10 +559,10 @@ index 7a8cd7a7bf00cc0b29b0d4ee9b2241bf3a0f9905..857c623ab1ac90a5463bdb58549c9e25
      @Override
      protected BlockState updateShape(
 diff --git a/net/minecraft/world/level/block/CoralPlantBlock.java b/net/minecraft/world/level/block/CoralPlantBlock.java
-index 4111ec67b81e05b59d1ad2e55723356f0c9474f5..7b8b2d27541b53532779f28604f6de60c549f843 100644
+index 9a17b41db60be75f2d7dce7fb184249061fb0436..94c004072c5782a5e61e5b154a6d2862c6f827e4 100644
 --- a/net/minecraft/world/level/block/CoralPlantBlock.java
 +++ b/net/minecraft/world/level/block/CoralPlantBlock.java
-@@ -38,17 +38,19 @@ public class CoralPlantBlock extends BaseCoralPlantTypeBlock {
+@@ -28,17 +28,19 @@ public class CoralPlantBlock extends BaseCoralPlantTypeBlock {
          this.tryScheduleDieTick(state, level, level, level.getRandom(), pos);
      }
  
@@ -621,10 +594,10 @@ index 4111ec67b81e05b59d1ad2e55723356f0c9474f5..7b8b2d27541b53532779f28604f6de60
      @Override
      protected BlockState updateShape(
 diff --git a/net/minecraft/world/level/block/CoralWallFanBlock.java b/net/minecraft/world/level/block/CoralWallFanBlock.java
-index 8e58e5d5f3b32323f28fc668eeebe59b320cce34..5e2a502a7d32cc0a35aa63b9e5fb7270dc7b1603 100644
+index 90d09065fd946ba882cd7421f29ba25b39a4fc22..412db783cb2c9e3db4e56796ad98f2442a8cd8ea 100644
 --- a/net/minecraft/world/level/block/CoralWallFanBlock.java
 +++ b/net/minecraft/world/level/block/CoralWallFanBlock.java
-@@ -34,17 +34,19 @@ public class CoralWallFanBlock extends BaseCoralWallFanBlock {
+@@ -24,17 +24,19 @@ public class CoralWallFanBlock extends BaseCoralWallFanBlock {
          this.tryScheduleDieTick(state, level, level, level.getRandom(), pos);
      }
  
@@ -656,10 +629,10 @@ index 8e58e5d5f3b32323f28fc668eeebe59b320cce34..5e2a502a7d32cc0a35aa63b9e5fb7270
      @Override
      protected BlockState updateShape(
 diff --git a/net/minecraft/world/level/block/FarmlandBlock.java b/net/minecraft/world/level/block/FarmlandBlock.java
-index 902735a0ae76c0a8b3397c00bb8e4480b4120c6e..0436e3eeaf9b95337b42123ef50c34fdb8cbd913 100644
+index 5437f62ff44d3aa59bfa671dc5aaed14a646a7bc..b7952689d3b9b75e35ac5d6a70c7dd6eea3d8abf 100644
 --- a/net/minecraft/world/level/block/FarmlandBlock.java
 +++ b/net/minecraft/world/level/block/FarmlandBlock.java
-@@ -107,7 +107,8 @@ public class FarmlandBlock extends Block {
+@@ -102,7 +102,8 @@ public class FarmlandBlock extends Block {
          }
      }
  
@@ -668,8 +641,8 @@ index 902735a0ae76c0a8b3397c00bb8e4480b4120c6e..0436e3eeaf9b95337b42123ef50c34fd
 +    /*@Override
      public void fallOn(final Level level, final BlockState state, final BlockPos pos, final Entity entity, final double fallDistance) {
          super.fallOn(level, state, pos, entity, fallDistance); // CraftBukkit - moved here as game rules / events shouldn't affect fall damage.
-         if (level instanceof ServerLevel serverLevel
-@@ -136,7 +137,8 @@ public class FarmlandBlock extends Block {
+         if (level instanceof ServerLevel serverLevel && level.getRandom().nextFloat() < fallDistance - 0.5 && entity instanceof LivingEntity) {
+@@ -132,7 +133,8 @@ public class FarmlandBlock extends Block {
          }
  
          // super.fallOn(level, state, pos, entity, fallDistance); // CraftBukkit - moved up
@@ -677,13 +650,13 @@ index 902735a0ae76c0a8b3397c00bb8e4480b4120c6e..0436e3eeaf9b95337b42123ef50c34fd
 +    }*/
 +    // Cartridge end - Disable jumping on farmland converting to dirt
  
-     public static void turnToDirt(final @Nullable Entity sourceEntity, final BlockState state, final Level level, final BlockPos pos) {
+     public void turnToBaseBlock(final @Nullable Entity sourceEntity, final BlockState state, final Level level, final BlockPos pos) {
          // CraftBukkit start
 diff --git a/net/minecraft/world/level/block/HayBlock.java b/net/minecraft/world/level/block/HayBlock.java
-index 6563ec1427f7307d0f5ec753bd1015a076cdfcc3..812168586b4c39433b3264d133d5f9a3226f8dfc 100644
+index 07141d81335d8a82f71498f66788d555beb287ae..60f1de0d52f658a318d6882e78d50e16b9bc176c 100644
 --- a/net/minecraft/world/level/block/HayBlock.java
 +++ b/net/minecraft/world/level/block/HayBlock.java
-@@ -23,6 +23,6 @@ public class HayBlock extends RotatedPillarBlock {
+@@ -15,6 +15,6 @@ public class HayBlock extends RotatedPillarBlock {
  
      @Override
      public void fallOn(final Level level, final BlockState state, final BlockPos pos, final Entity entity, final double fallDistance) {
@@ -692,10 +665,10 @@ index 6563ec1427f7307d0f5ec753bd1015a076cdfcc3..812168586b4c39433b3264d133d5f9a3
      }
  }
 diff --git a/net/minecraft/world/level/block/HoneyBlock.java b/net/minecraft/world/level/block/HoneyBlock.java
-index 2e0dc3c38a700293ec3c199c3fdaa8dd5885e225..1ae725bd3e9e148ad62b1bc517eef3e30b1e6b8a 100644
+index bea46ac07e1f316c2361bd5e91e941fe9bccc2e5..ea798eebca12b36c8bb5c736815a66134ede00c5 100644
 --- a/net/minecraft/world/level/block/HoneyBlock.java
 +++ b/net/minecraft/world/level/block/HoneyBlock.java
-@@ -56,7 +56,7 @@ public class HoneyBlock extends HalfTransparentBlock {
+@@ -49,7 +49,7 @@ public class HoneyBlock extends HalfTransparentBlock {
              level.broadcastEntityEvent(entity, EntityEvent.HONEY_JUMP);
          }
  
@@ -704,7 +677,7 @@ index 2e0dc3c38a700293ec3c199c3fdaa8dd5885e225..1ae725bd3e9e148ad62b1bc517eef3e3
              entity.playSound(this.soundType.getFallSound(), this.soundType.getVolume() * 0.5F, this.soundType.getPitch() * 0.75F);
          }
      }
-@@ -122,7 +122,7 @@ public class HoneyBlock extends HalfTransparentBlock {
+@@ -115,7 +115,7 @@ public class HoneyBlock extends HalfTransparentBlock {
              entity.setDeltaMovement(new Vec3(deltaMovement.x, getNewDeltaY(-0.05), deltaMovement.z));
          }
  
@@ -714,10 +687,10 @@ index 2e0dc3c38a700293ec3c199c3fdaa8dd5885e225..1ae725bd3e9e148ad62b1bc517eef3e3
  
      private void maybeDoSlideEffects(final Level level, final Entity entity) {
 diff --git a/net/minecraft/world/level/block/IceBlock.java b/net/minecraft/world/level/block/IceBlock.java
-index 3565048e9702819d4ee5cca82eca2535f2597cad..28e0ca90a49e6733548484051538939f972b1c40 100644
+index 6bfa12fa60721cb4e50b0a3da88598a743c7580f..48b648529a056811ec2f365e7ca38171f7a590da 100644
 --- a/net/minecraft/world/level/block/IceBlock.java
 +++ b/net/minecraft/world/level/block/IceBlock.java
-@@ -61,12 +61,13 @@ public class IceBlock extends HalfTransparentBlock {
+@@ -55,12 +55,13 @@ public class IceBlock extends HalfTransparentBlock {
          }
      }
  
@@ -738,10 +711,10 @@ index 3565048e9702819d4ee5cca82eca2535f2597cad..28e0ca90a49e6733548484051538939f
      protected void melt(final BlockState state, final Level level, final BlockPos pos) {
          // Paper start - call BlockFadeEvent
 diff --git a/net/minecraft/world/level/block/NoteBlock.java b/net/minecraft/world/level/block/NoteBlock.java
-index 47d00e302f49193ea95128c0d6d2176b77006203..a850136a02e3d3d814babf05d3f10ff15dd1dba7 100644
+index fab033a193debf323d198abcca347ef71e7c2b7b..2ee1414a9fd4846fa1f65aadd911616b2328b6af 100644
 --- a/net/minecraft/world/level/block/NoteBlock.java
 +++ b/net/minecraft/world/level/block/NoteBlock.java
-@@ -64,8 +64,7 @@ public class NoteBlock extends Block {
+@@ -57,8 +57,7 @@ public class NoteBlock extends Block {
  
      @Override
      public BlockState getStateForPlacement(final BlockPlaceContext context) {
@@ -751,7 +724,7 @@ index 47d00e302f49193ea95128c0d6d2176b77006203..a850136a02e3d3d814babf05d3f10ff1
      }
  
      @Override
-@@ -79,33 +78,31 @@ public class NoteBlock extends Block {
+@@ -72,33 +71,31 @@ public class NoteBlock extends Block {
          final BlockState neighbourState,
          final RandomSource random
      ) {
@@ -780,7 +753,7 @@ index 47d00e302f49193ea95128c0d6d2176b77006203..a850136a02e3d3d814babf05d3f10ff1
 -                state = level.getBlockState(pos); // CraftBukkit - SPIGOT-5617: update in case changed in event
 -            }
 -
--            level.setBlock(pos, state.setValue(POWERED, signal), Block.UPDATE_ALL);
+-            level.setBlockAndUpdate(pos, state.setValue(POWERED, signal));
 -        }
 -    }
 +    // Cartridge start - prevent noteblock powered-state from updating
@@ -801,7 +774,7 @@ index 47d00e302f49193ea95128c0d6d2176b77006203..a850136a02e3d3d814babf05d3f10ff1
 +//                state = level.getBlockState(pos); // CraftBukkit - SPIGOT-5617: update in case changed in event
 +//            }
 +
-+//            level.setBlock(pos, state.setValue(POWERED, signal), Block.UPDATE_ALL);
++//            level.setBlockAndUpdate(pos, state.setValue(POWERED, signal));
 +//        }
 +//    }
 +    // Cartridge end - prevent noteblock powered-state from updating
@@ -809,7 +782,7 @@ index 47d00e302f49193ea95128c0d6d2176b77006203..a850136a02e3d3d814babf05d3f10ff1
      private void playNote(final @Nullable Entity source, final BlockState state, final Level level, final BlockPos pos) {
          if (state.getValue(INSTRUMENT).worksAboveNoteBlock() || level.getBlockState(pos.above()).isAir()) {
 diff --git a/net/minecraft/world/level/block/PowderSnowBlock.java b/net/minecraft/world/level/block/PowderSnowBlock.java
-index e62a9b0ffe7ba44fc5edd5d584b7c114699d8e58..f8a14d8434e83317fcc301d16bec155ec569508e 100644
+index fcc07616a72ff6921f1a21459300bdef658e6408..1c2560cb7c8406696e38548906bc216ca1b3fcca 100644
 --- a/net/minecraft/world/level/block/PowderSnowBlock.java
 +++ b/net/minecraft/world/level/block/PowderSnowBlock.java
 @@ -117,6 +117,7 @@ public class PowderSnowBlock extends Block implements BucketPickup {
@@ -820,11 +793,27 @@ index e62a9b0ffe7ba44fc5edd5d584b7c114699d8e58..f8a14d8434e83317fcc301d16bec155e
          if (!(fallDistance < 4.0) && entity instanceof LivingEntity livingEntity) {
              LivingEntity.Fallsounds entityFallsounds = livingEntity.getFallSounds();
              SoundEvent fallSound = fallDistance < 7.0 ? entityFallsounds.small() : entityFallsounds.big();
+diff --git a/net/minecraft/world/level/block/ShelfMushroomBlock.java b/net/minecraft/world/level/block/ShelfMushroomBlock.java
+index c9ea3b46e414a778a1f98ea116b3bc203cf3f621..5749df2be92d9c0a1c60361e2a12f74b5e52d6f6 100644
+--- a/net/minecraft/world/level/block/ShelfMushroomBlock.java
++++ b/net/minecraft/world/level/block/ShelfMushroomBlock.java
+@@ -60,6 +60,11 @@ public class ShelfMushroomBlock extends HorizontalDirectionalBlock implements Bo
+         return SHAPES.get(state.getValue(AGE)).get(state.getValue(FACING));
+     }
+ 
++    @Override
++    public float getFallDistanceReduction() {
++        return 0.0F; // Cartridge - shelf mushrooms no longer reduce fall damage
++    }
++
+     @Override
+     public @Nullable BlockState getStateForPlacement(final BlockPlaceContext context) {
+         BlockState state = this.defaultBlockState();
 diff --git a/net/minecraft/world/level/block/SlimeBlock.java b/net/minecraft/world/level/block/SlimeBlock.java
-index c505eb80677d33ae8c97bff7076f01200685dab8..1fb93f93781fa578a5cf8fe50c70747812238de2 100644
+index ef6ba4ca7513c25e380f050a172f0f09a4bcabbd..dd8cd22e6c5aa6999698994c3c34752238681d9b 100644
 --- a/net/minecraft/world/level/block/SlimeBlock.java
 +++ b/net/minecraft/world/level/block/SlimeBlock.java
-@@ -21,9 +21,7 @@ public class SlimeBlock extends HalfTransparentBlock {
+@@ -13,9 +13,7 @@ public class SlimeBlock extends HalfTransparentBlock {
  
      @Override
      public void fallOn(final Level level, final BlockState state, final BlockPos pos, final Entity entity, final double fallDistance) {
@@ -836,10 +825,10 @@ index c505eb80677d33ae8c97bff7076f01200685dab8..1fb93f93781fa578a5cf8fe50c707478
  
      @Override
 diff --git a/net/minecraft/world/level/block/SweetBerryBushBlock.java b/net/minecraft/world/level/block/SweetBerryBushBlock.java
-index a7620f67e95eef30bed4dfbe19afbe1c995f694f..d45116ced51493840b903c8ab17cf59f1f836fe6 100644
+index 3865af609541eb29056fb1eaa915840b60f83dcb..efc5791042f75dee89904632a0cc3a0674117f0a 100644
 --- a/net/minecraft/world/level/block/SweetBerryBushBlock.java
 +++ b/net/minecraft/world/level/block/SweetBerryBushBlock.java
-@@ -88,19 +88,21 @@ public class SweetBerryBushBlock extends VegetationBlock implements Bonemealable
+@@ -81,19 +81,21 @@ public class SweetBerryBushBlock extends VegetationBlock implements Bonemealable
          final boolean isPrecise
      ) {
          if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(level, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
@@ -875,10 +864,10 @@ index a7620f67e95eef30bed4dfbe19afbe1c995f694f..d45116ced51493840b903c8ab17cf59f
  
      @Override
 diff --git a/net/minecraft/world/level/block/TurtleEggBlock.java b/net/minecraft/world/level/block/TurtleEggBlock.java
-index ff31a31109b149eeb1ebde10292db1675328e1d0..e84d4a06be4a5da7e5a9b046f3906a9285968372 100644
+index 47d4673aa97f2a087d3ca29498a8d1468fe9d192..7ae91486911c566a8fac7adeb64827f698a97257 100644
 --- a/net/minecraft/world/level/block/TurtleEggBlock.java
 +++ b/net/minecraft/world/level/block/TurtleEggBlock.java
-@@ -61,14 +61,15 @@ public class TurtleEggBlock extends Block {
+@@ -55,14 +55,15 @@ public class TurtleEggBlock extends Block {
          super.stepOn(level, pos, onState, entity);
      }
  
@@ -903,10 +892,10 @@ index ff31a31109b149eeb1ebde10292db1675328e1d0..e84d4a06be4a5da7e5a9b046f3906a92
      private void destroyEgg(final Level level, final BlockState state, final BlockPos pos, final Entity entity, final int randomness) {
          if (state.is(Blocks.TURTLE_EGG)
 diff --git a/net/minecraft/world/level/material/FlowingFluid.java b/net/minecraft/world/level/material/FlowingFluid.java
-index e93c900385994d391242def7d022d06e6ef23861..4c87b0ad4611b2a97a0732638f1f58aeec27976a 100644
+index 660a8785fca8dd885318e05cb19255fa493151d0..af5dca1ad524fc0a726ebd242dbc88e147502563 100644
 --- a/net/minecraft/world/level/material/FlowingFluid.java
 +++ b/net/minecraft/world/level/material/FlowingFluid.java
-@@ -492,39 +492,41 @@ public abstract class FlowingFluid extends Fluid {
+@@ -481,39 +481,41 @@ public abstract class FlowingFluid extends Fluid {
          return this.getTickDelay(level);
      }
  
@@ -925,7 +914,7 @@ index e93c900385994d391242def7d022d06e6ef23861..4c87b0ad4611b2a97a0732638f1f58ae
 -                }
 -                blockState = ((org.bukkit.craftbukkit.block.data.CraftBlockData) event.getNewData()).getState();
 -                // CraftBukkit end
--                level.setBlock(pos, blockState, Block.UPDATE_ALL);
+-                level.setBlockAndUpdate(pos, blockState);
 -            } else if (newFluidState != fluidState) {
 -                fluidState = newFluidState;
 -                blockState = fluidState.createLegacyBlock();
@@ -936,7 +925,7 @@ index e93c900385994d391242def7d022d06e6ef23861..4c87b0ad4611b2a97a0732638f1f58ae
 -                }
 -                blockState = ((org.bukkit.craftbukkit.block.data.CraftBlockData) event.getNewData()).getState();
 -                // CraftBukkit end
--                level.setBlock(pos, blockState, Block.UPDATE_ALL);
+-                level.setBlockAndUpdate(pos, blockState);
 -                level.scheduleTick(pos, fluidState.getType(), tickDelay);
 -            }
 -        }
@@ -959,7 +948,7 @@ index e93c900385994d391242def7d022d06e6ef23861..4c87b0ad4611b2a97a0732638f1f58ae
 +//                }
 +//                blockState = ((org.bukkit.craftbukkit.block.data.CraftBlockData) event.getNewData()).getState();
 +//                // CraftBukkit end
-+//                level.setBlock(pos, blockState, Block.UPDATE_ALL);
++//                level.setBlockAndUpdate(pos, blockState);
 +//            } else if (newFluidState != fluidState) {
 +//                fluidState = newFluidState;
 +//                blockState = fluidState.createLegacyBlock();
@@ -970,7 +959,7 @@ index e93c900385994d391242def7d022d06e6ef23861..4c87b0ad4611b2a97a0732638f1f58ae
 +//                }
 +//                blockState = ((org.bukkit.craftbukkit.block.data.CraftBlockData) event.getNewData()).getState();
 +//                // CraftBukkit end
-+//                level.setBlock(pos, blockState, Block.UPDATE_ALL);
++//                level.setBlockAndUpdate(pos, blockState);
 +//                level.scheduleTick(pos, fluidState.getType(), tickDelay);
 +//            }
 +//        }

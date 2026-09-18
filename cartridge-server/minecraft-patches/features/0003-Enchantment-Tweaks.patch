@@ -5,40 +5,40 @@ Subject: [PATCH] Enchantment Tweaks
 
 
 diff --git a/net/minecraft/data/loot/packs/VanillaChestLoot.java b/net/minecraft/data/loot/packs/VanillaChestLoot.java
-index da21f84d84f552e9287d3115c0ab2db1f6fa4fdd..2ce9572606dfe822d20e9bcdc8622e14ebf26ca1 100644
+index 0c5e18c03cbb054b2b1ad3da9af49a1caf2bbb07..920dd0c4042011a8650c940aeb398e80a5c9a398 100644
 --- a/net/minecraft/data/loot/packs/VanillaChestLoot.java
 +++ b/net/minecraft/data/loot/packs/VanillaChestLoot.java
-@@ -1173,7 +1173,7 @@ public record VanillaChestLoot(HolderLookup.Provider registries) implements Loot
-                                         .withOneOf(
-                                             HolderSet.direct(
-                                                 enchantments.getOrThrow(Enchantments.SHARPNESS),
--                                                enchantments.getOrThrow(Enchantments.BANE_OF_ARTHROPODS),
-+                                                //enchantments.getOrThrow(Enchantments.BANE_OF_ARTHROPODS), // Cartridge - tweak enchantments
-                                                 enchantments.getOrThrow(Enchantments.EFFICIENCY),
-                                                 enchantments.getOrThrow(Enchantments.FORTUNE),
-                                                 enchantments.getOrThrow(Enchantments.SILK_TOUCH),
-@@ -1304,7 +1304,7 @@ public record VanillaChestLoot(HolderLookup.Provider registries) implements Loot
-                                             HolderSet.direct(
-                                                 enchantments.getOrThrow(Enchantments.KNOCKBACK),
-                                                 enchantments.getOrThrow(Enchantments.PUNCH),
--                                                enchantments.getOrThrow(Enchantments.SMITE),
-+                                                //enchantments.getOrThrow(Enchantments.SMITE), // Cartridge - tweak enchantments
-                                                 enchantments.getOrThrow(Enchantments.LOOTING),
-                                                 enchantments.getOrThrow(Enchantments.MULTISHOT)
-                                             )
+@@ -1333,7 +1333,7 @@ public class VanillaChestLoot implements LootTableSubProvider {
+                                             .withOneOf(
+                                                 HolderSet.direct(
+                                                     this.enchantments.getOrThrow(Enchantments.SHARPNESS),
+-                                                    this.enchantments.getOrThrow(Enchantments.BANE_OF_ARTHROPODS),
++                                                    //this.enchantments.getOrThrow(Enchantments.BANE_OF_ARTHROPODS), // Cartridge - tweak enchantments
+                                                     this.enchantments.getOrThrow(Enchantments.EFFICIENCY),
+                                                     this.enchantments.getOrThrow(Enchantments.FORTUNE),
+                                                     this.enchantments.getOrThrow(Enchantments.SILK_TOUCH),
+@@ -1470,7 +1470,7 @@ public class VanillaChestLoot implements LootTableSubProvider {
+                                                 HolderSet.direct(
+                                                     this.enchantments.getOrThrow(Enchantments.KNOCKBACK),
+                                                     this.enchantments.getOrThrow(Enchantments.PUNCH),
+-                                                    this.enchantments.getOrThrow(Enchantments.SMITE),
++                                                    //this.enchantments.getOrThrow(Enchantments.SMITE), // Cartridge - tweak enchantments
+                                                     this.enchantments.getOrThrow(Enchantments.LOOTING),
+                                                     this.enchantments.getOrThrow(Enchantments.MULTISHOT)
+                                                 )
 diff --git a/net/minecraft/data/loot/packs/VanillaGiftLoot.java b/net/minecraft/data/loot/packs/VanillaGiftLoot.java
-index db6430c67908e979c99ffe63dbed84f08163761d..5a600fe192aa18e0649bae0e4d7375825e432c55 100644
+index 70c83d716c87bc7b0a0a3689e6ae8924d0d25fd4..3fcf1da4f063c3a03bc54c280010ef3af6966ceb 100644
 --- a/net/minecraft/data/loot/packs/VanillaGiftLoot.java
 +++ b/net/minecraft/data/loot/packs/VanillaGiftLoot.java
-@@ -42,7 +42,7 @@ public record VanillaGiftLoot(HolderLookup.Provider registries) implements LootT
-                         .add(LootItem.lootTableItem(Items.FEATHER).setWeight(10))
-                         .add(LootItem.lootTableItem(Items.ROTTEN_FLESH).setWeight(10))
-                         .add(LootItem.lootTableItem(Items.STRING).setWeight(10))
--                        .add(LootItem.lootTableItem(Items.PHANTOM_MEMBRANE).setWeight(2))
-+                        //.add(LootItem.lootTableItem(Items.PHANTOM_MEMBRANE).setWeight(2))
-                 )
-         );
-         output.accept(
+@@ -46,7 +46,7 @@ public class VanillaGiftLoot implements LootTableSubProvider {
+                             .add(LootItem.lootTableItem(Items.FEATHER).setWeight(10))
+                             .add(LootItem.lootTableItem(Items.ROTTEN_FLESH).setWeight(10))
+                             .add(LootItem.lootTableItem(Items.STRING).setWeight(10))
+-                            .add(LootItem.lootTableItem(Items.PHANTOM_MEMBRANE).setWeight(2))
++                            //.add(LootItem.lootTableItem(Items.PHANTOM_MEMBRANE).setWeight(2))
+                     )
+             );
+         this.output
 diff --git a/net/minecraft/data/tags/TradeRebalanceEnchantmentTagsProvider.java b/net/minecraft/data/tags/TradeRebalanceEnchantmentTagsProvider.java
 index 9300b29cc200a21d844e29cfa76b549356b52425..85c642aa3fdbbed3b0b5901a81f5e7de9be68366 100644
 --- a/net/minecraft/data/tags/TradeRebalanceEnchantmentTagsProvider.java

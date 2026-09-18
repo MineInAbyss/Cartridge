@@ -1,10 +1,10 @@
 --- a/data/minecraft/loot_table/chests/trial_chambers/reward_ominous_rare.json
 +++ b/data/minecraft/loot_table/chests/trial_chambers/reward_ominous_rare.json
-@@ -74,7 +_,6 @@
-               "options": [
-                 "minecraft:knockback",
-                 "minecraft:punch",
--                "minecraft:smite",
-                 "minecraft:looting",
-                 "minecraft:multishot"
-               ]
+@@ -67,7 +_,6 @@
+             "options": [
+               "minecraft:knockback",
+               "minecraft:punch",
+-              "minecraft:smite",
+               "minecraft:looting",
+               "minecraft:multishot"
+             ]

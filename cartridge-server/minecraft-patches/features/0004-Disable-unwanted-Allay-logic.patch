@@ -5,7 +5,7 @@ Subject: [PATCH] Disable unwanted Allay logic
 
 
 diff --git a/net/minecraft/world/entity/animal/allay/Allay.java b/net/minecraft/world/entity/animal/allay/Allay.java
-index 69d8a10f524dd4db683a00f194e8d1a26c996f43..f598a7eb2ac005da94c71d9664183519cc28f53d 100644
+index 2613bd150fb8f76bc406f0a9e164820a75b3079a..2e4c5d4390c6787ea51d53ca9574067909d7f77b 100644
 --- a/net/minecraft/world/entity/animal/allay/Allay.java
 +++ b/net/minecraft/world/entity/animal/allay/Allay.java
 @@ -16,6 +16,7 @@ import net.minecraft.network.syncher.EntityDataAccessor;
@@ -163,10 +163,10 @@ index 69d8a10f524dd4db683a00f194e8d1a26c996f43..f598a7eb2ac005da94c71d9664183519
          if (!itemInHand.isEmpty() && hand == InteractionHand.MAIN_HAND && interactionItem.isEmpty()) {
 -            this.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
 -            this.level().playSound(player, this, SoundEvents.ALLAY_ITEM_TAKEN, SoundSource.NEUTRAL, 2.0F, 1.0F);
--            this.swing(InteractionHand.MAIN_HAND);
+-            this.swing(InteractionHand.MAIN_HAND, itemInHand.getInteractAnimation());
 +            //this.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
 +            //this.level().playSound(player, this, SoundEvents.ALLAY_ITEM_TAKEN, SoundSource.NEUTRAL, 2.0F, 1.0F);
-+            //this.swing(InteractionHand.MAIN_HAND);
++            //this.swing(InteractionHand.MAIN_HAND, itemInHand.getInteractAnimation());
  
              for (ItemStack itemStack : this.getInventory().removeAllItems()) {
 -                BehaviorUtils.throwItem(this, itemStack, this.position());
@@ -334,7 +334,7 @@ index 69d8a10f524dd4db683a00f194e8d1a26c996f43..f598a7eb2ac005da94c71d9664183519
      }
  
 -    @Override
--    public void handleEntityEvent(final byte id) {
+-    public void handleEntityEvent(final @EntityEvent.Value byte id) {
 -        if (id == EntityEvent.IN_LOVE_HEARTS) {
 -            for (int i = 0; i < 3; i++) {
 -                this.spawnHeartParticle();
@@ -433,7 +433,7 @@ index 69d8a10f524dd4db683a00f194e8d1a26c996f43..f598a7eb2ac005da94c71d9664183519
 -            final float receivingDistance
 -        ) {
 -            if (event.is(GameEvent.NOTE_BLOCK_PLAY)) {
--                AllayAi.hearNoteblock(Allay.this, new BlockPos(pos));
+-                AllayAi.hearNoteblock(Allay.this, pos.immutable());
 -            }
 -        }
 -
@@ -443,7 +443,7 @@ index 69d8a10f524dd4db683a00f194e8d1a26c996f43..f598a7eb2ac005da94c71d9664183519
 -        }
 -    }
 +//    @Override
-+//    public void handleEntityEvent(final byte id) {
++//    public void handleEntityEvent(final @EntityEvent.Value byte id) {
 +//        if (id == EntityEvent.IN_LOVE_HEARTS) {
 +//            for (int i = 0; i < 3; i++) {
 +//                this.spawnHeartParticle();
@@ -542,7 +542,7 @@ index 69d8a10f524dd4db683a00f194e8d1a26c996f43..f598a7eb2ac005da94c71d9664183519
 +//            final float receivingDistance
 +//        ) {
 +//            if (event.is(GameEvent.NOTE_BLOCK_PLAY)) {
-+//                AllayAi.hearNoteblock(Allay.this, new BlockPos(pos));
++//                AllayAi.hearNoteblock(Allay.this, pos.immutable());
 +//            }
 +//        }
 +
