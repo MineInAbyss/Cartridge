@@ -69,10 +69,10 @@ index 6da0352bff6d76779aa01655fac98b6b9b319a66..10f1782f9f88a82b98cd87c187fcef9d
 +    // Cartridge end
  }
 diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
-index cbd379d29d2b90b2b6fca8cd42301d12598760a8..9ee6758747269a19c3232e90d4b7e41943bc8fff 100644
+index 4227d7b652b989bb86bff6960545c323dc535e46..07fe48f6e4f1c9dd2354d60a8589c8c7f65fc30e 100644
 --- a/net/minecraft/server/level/ServerPlayer.java
 +++ b/net/minecraft/server/level/ServerPlayer.java
-@@ -472,6 +472,11 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -477,6 +477,11 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
      }
      // Paper end - rewrite chunk system
  
@@ -84,7 +84,7 @@ index cbd379d29d2b90b2b6fca8cd42301d12598760a8..9ee6758747269a19c3232e90d4b7e419
      public ServerPlayer(final MinecraftServer server, final ServerLevel level, final GameProfile gameProfile, final ClientInformation clientInformation) {
          super(level, gameProfile);
          this.server = server;
-@@ -765,6 +770,19 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -770,6 +775,19 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
          }
  
          this.trackStartFallingPosition();
@@ -104,7 +104,7 @@ index cbd379d29d2b90b2b6fca8cd42301d12598760a8..9ee6758747269a19c3232e90d4b7e419
          this.trackEnteredOrExitedLavaOnVehicle();
          this.updatePlayerAttributes();
          this.advancements.flushDirty(this, true);
-@@ -1820,7 +1838,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -1825,7 +1843,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
          super.onExplosionHit(explosionCausedBy);
          this.currentExplosionImpactPos = this.position();
          this.currentExplosionCause = explosionCausedBy;
@@ -114,7 +114,7 @@ index cbd379d29d2b90b2b6fca8cd42301d12598760a8..9ee6758747269a19c3232e90d4b7e419
  
      @Override
 diff --git a/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index f01fede96872749f1ac664d0c53c2ef3617bed0e..0f4d4905e6abc3ad9a1674b35f6ec6b6ce60f0e3 100644
+index 572b28fa8df0f441c07c5728e5b95c0337b189c0..55a8abbdb6a6aaafb87be4876c34af5f4a2ae3fd 100644
 --- a/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 @@ -149,6 +149,7 @@ import net.minecraft.server.level.ServerLevel;
@@ -144,8 +144,8 @@ index f01fede96872749f1ac664d0c53c2ef3617bed0e..0f4d4905e6abc3ad9a1674b35f6ec6b6
 +                // Cartridge end
  
                  vehicle.move(MoverType.PLAYER, new Vec3(xDist, yDist, zDist));
-                 double oyDist = yDist;
-@@ -736,6 +745,7 @@ public class ServerGamePacketListenerImpl
+                 final boolean didCollide = targetX != vehicle.getX() || targetY != vehicle.getY() || targetZ != vehicle.getZ(); // Paper - needed here as the difference in Y can be reset - also note: this is only a guess at whether collisions took place, floating point errors can make this true when it shouldn't be...
+@@ -747,6 +756,7 @@ public class ServerGamePacketListenerImpl
                  this.vehicleLastGoodX = vehicle.getX();
                  this.vehicleLastGoodY = vehicle.getY();
                  this.vehicleLastGoodZ = vehicle.getZ();
@@ -153,7 +153,7 @@ index f01fede96872749f1ac664d0c53c2ef3617bed0e..0f4d4905e6abc3ad9a1674b35f6ec6b6
              } else if (vehicle != this.player
                  && vehicle.getControllingPassenger() != this.player
                  && (this.tickCount - this.vehiclePositionLastResetAt > 20 || vehicle.distanceToSqr(movingToPos) > Mth.square(1))) {
-@@ -1713,7 +1723,7 @@ public class ServerGamePacketListenerImpl
+@@ -1759,7 +1769,7 @@ public class ServerGamePacketListenerImpl
                      this.player.doCheckFallDamage(clientDeltaMovement.x, clientDeltaMovement.y, clientDeltaMovement.z, isOnGround);
                      this.handlePlayerKnownMovement(clientDeltaMovement);
                      if (movedUpwards) {
