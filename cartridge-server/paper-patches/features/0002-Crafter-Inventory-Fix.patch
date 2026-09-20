@@ -5,22 +5,22 @@ Subject: [PATCH] Crafter Inventory Fix
 
 
 diff --git a/src/main/java/org/bukkit/craftbukkit/inventory/view/CraftCrafterView.java b/src/main/java/org/bukkit/craftbukkit/inventory/view/CraftCrafterView.java
-index f8bc61ba35d687758030723211183cdf7217c862..10229423ec0a21155181d6c72ed66dff643f0b0e 100644
+index dc0bfeb424bfb278fb1d4d83a629c7744558110b..4ca44cccaa20cd431dcd10f30a42984275cb6ed3 100644
 --- a/src/main/java/org/bukkit/craftbukkit/inventory/view/CraftCrafterView.java
 +++ b/src/main/java/org/bukkit/craftbukkit/inventory/view/CraftCrafterView.java
-@@ -4,8 +4,11 @@ import com.google.common.base.Preconditions;
+@@ -4,9 +4,11 @@ import com.google.common.base.Preconditions;
  import net.minecraft.world.inventory.CrafterMenu;
  import org.bukkit.craftbukkit.inventory.CraftInventoryView;
  import org.bukkit.entity.HumanEntity;
 +import org.bukkit.event.inventory.InventoryType;
  import org.bukkit.inventory.CrafterInventory;
-+import org.bukkit.inventory.Inventory;
+ import org.bukkit.inventory.Inventory;
  import org.bukkit.inventory.view.CrafterView;
 +import org.jetbrains.annotations.NotNull;
  
  public class CraftCrafterView extends CraftInventoryView<CrafterMenu, CrafterInventory> implements CrafterView {
  
-@@ -29,4 +32,36 @@ public class CraftCrafterView extends CraftInventoryView<CrafterMenu, CrafterInv
+@@ -77,4 +79,36 @@ public class CraftCrafterView extends CraftInventoryView<CrafterMenu, CrafterInv
  
          this.container.setSlotState(slot, !disabled);
      }
