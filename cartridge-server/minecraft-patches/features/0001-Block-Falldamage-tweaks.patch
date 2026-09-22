@@ -69,7 +69,7 @@ index 6da0352bff6d76779aa01655fac98b6b9b319a66..10f1782f9f88a82b98cd87c187fcef9d
 +    // Cartridge end
  }
 diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
-index 4227d7b652b989bb86bff6960545c323dc535e46..07fe48f6e4f1c9dd2354d60a8589c8c7f65fc30e 100644
+index 23b3a82ab3e1c6abc85000d9285470cb12300a6b..d5d5cc8e627eabb0488de96bfd6cf29baf716489 100644
 --- a/net/minecraft/server/level/ServerPlayer.java
 +++ b/net/minecraft/server/level/ServerPlayer.java
 @@ -477,6 +477,11 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
@@ -104,7 +104,7 @@ index 4227d7b652b989bb86bff6960545c323dc535e46..07fe48f6e4f1c9dd2354d60a8589c8c7
          this.trackEnteredOrExitedLavaOnVehicle();
          this.updatePlayerAttributes();
          this.advancements.flushDirty(this, true);
-@@ -1825,7 +1843,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -1838,7 +1856,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
          super.onExplosionHit(explosionCausedBy);
          this.currentExplosionImpactPos = this.position();
          this.currentExplosionCause = explosionCausedBy;
