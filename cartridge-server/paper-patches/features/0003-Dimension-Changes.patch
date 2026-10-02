@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Boy0000 <sivertpaulsen2@gmail.com>
+Date: Fri, 2 Oct 2026 15:06:55 +0200
+Subject: [PATCH] Dimension Changes
+
+
+diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+index 478f4461ab3fb21b288aa2f6079860f23832e622..4eb3beefb304c3109d72c43deb03593e16829a6c 100644
+--- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
++++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+@@ -786,12 +786,12 @@ public final class CraftServer implements Server {
+ 
+     @Override
+     public boolean getAllowEnd() {
+-        return this.configuration.getBoolean("settings.allow-end");
++        return false;
+     }
+ 
+     @Override
+     public boolean getAllowNether() {
+-        return GlobalConfiguration.get().misc.enableNether;
++        return false;
+     }
+ 
+     @Override
