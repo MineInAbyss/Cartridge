@@ -114,7 +114,7 @@ index 23b3a82ab3e1c6abc85000d9285470cb12300a6b..d5d5cc8e627eabb0488de96bfd6cf29b
  
      @Override
 diff --git a/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index 572b28fa8df0f441c07c5728e5b95c0337b189c0..55a8abbdb6a6aaafb87be4876c34af5f4a2ae3fd 100644
+index ee52233d15df9de9f5a0a85dcac7f7f38f8c004d..f61df5922cb05a8d448539d3feded88c259d78d3 100644
 --- a/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 @@ -149,6 +149,7 @@ import net.minecraft.server.level.ServerLevel;
@@ -153,7 +153,7 @@ index 572b28fa8df0f441c07c5728e5b95c0337b189c0..55a8abbdb6a6aaafb87be4876c34af5f
              } else if (vehicle != this.player
                  && vehicle.getControllingPassenger() != this.player
                  && (this.tickCount - this.vehiclePositionLastResetAt > 20 || vehicle.distanceToSqr(movingToPos) > Mth.square(1))) {
-@@ -1759,7 +1769,7 @@ public class ServerGamePacketListenerImpl
+@@ -1765,7 +1775,7 @@ public class ServerGamePacketListenerImpl
                      this.player.doCheckFallDamage(clientDeltaMovement.x, clientDeltaMovement.y, clientDeltaMovement.z, isOnGround);
                      this.handlePlayerKnownMovement(clientDeltaMovement);
                      if (movedUpwards) {
@@ -311,7 +311,7 @@ index cf3619b6de23f32e9e5a81fbe287fb438ecfcabc..88a6216a3106862919339c3ec196a900
      }
  
 diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
-index f332edbc4dad82cbdc02a58aa9ec21faf1f2db89..f677c0442052bcde5f27c8f37b51fe1debffb5ee 100644
+index d32b58dfd7439f253e48f7a3f059f9154596cc02..f24d62600fe460a1ac50fad1b535e3d0cd29afcf 100644
 --- a/net/minecraft/world/entity/LivingEntity.java
 +++ b/net/minecraft/world/entity/LivingEntity.java
 @@ -2158,11 +2158,18 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
