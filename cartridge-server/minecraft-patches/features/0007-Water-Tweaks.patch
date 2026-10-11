@@ -1,0 +1,120 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Boy0000 <sivertpaulsen2@gmail.com>
+Date: Sun, 11 Oct 2026 15:41:49 +0200
+Subject: [PATCH] Water Tweaks
+
+
+diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
+index 3a74e55053c4eae8d6534e4873667e18db624440..5e39b756c7cbe7285980ebd76dfb3e2705373f4b 100644
+--- a/net/minecraft/server/level/ServerPlayer.java
++++ b/net/minecraft/server/level/ServerPlayer.java
+@@ -479,6 +479,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+ 
+     // Cartridge start
+     public volatile boolean hasClientSideClimbable = true; // volatile, written from the netty thread on tag sync
++    public int flowingWaterHurtCooldown = 0;
+     // Cartridge end
+ 
+     public ServerPlayer(final MinecraftServer server, final ServerLevel level, final GameProfile gameProfile, final ClientInformation clientInformation) {
+@@ -774,6 +775,19 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+         }
+ 
+         this.trackStartFallingPosition();
++        // Cartridge start - flowing water and bubble columns batter anyone swimming in them
++        if (this.flowingWaterHurtCooldown > 0) this.flowingWaterHurtCooldown--;
++        if (this.flowingWaterHurtCooldown <= 0 && this.isInHazardousWater()) {
++            DamageSource hazardSource = this.damageSources().generic();
++            if (this.hurtServer(this.level(), hazardSource, 4.0F)) {
++                // shove in a random horizontal direction so the current cannot be ridden calmly
++                double angle = this.random.nextDouble() * Math.PI * 2.0;
++                this.knockback(0.4, Math.cos(angle), Math.sin(angle), hazardSource, 4.0F, false);
++                this.markHurt();
++            }
++            this.flowingWaterHurtCooldown = 20;
++        }
++        // Cartridge end
+         this.trackEnteredOrExitedLavaOnVehicle();
+         this.updatePlayerAttributes();
+         this.advancements.flushDirty(this, true);
+diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
+index 9c48c8cc25fa27a4c8c518e7bd5775d1681b3b75..2d0bee05d38d10e1e757f49440669a979c5cc1c9 100644
+--- a/net/minecraft/world/entity/Entity.java
++++ b/net/minecraft/world/entity/Entity.java
+@@ -1222,7 +1222,7 @@ public abstract class Entity
+                     BlockHitResult hitResult = this.level()
+                         .clip(new ClipContext(this.position(), checkTo, ClipContext.Block.FALLDAMAGE_RESETTING, ClipContext.Fluid.WATER, this));
+                     if (hitResult.getType() != HitResult.Type.MISS) {
+-                        this.resetFallDistance();
++                        //this.resetFallDistance(); // Cartridge - Make water not negate falldamage
+                     }
+                 }
+ 
+@@ -2178,6 +2178,14 @@ public abstract class Entity
+         return this.fluidInteraction.isInFluid(FluidTags.ENTITY_FLOATABLE);
+     }
+ 
++    // Cartridge start - flowing water (waterfalls etc) and bubble columns batter anyone swimming in them
++    public boolean isInHazardousWater() {
++        if (this.getInBlockState().is(Blocks.BUBBLE_COLUMN)) return true;
++        FluidState fluidState = this.level().getFluidState(this.blockPosition());
++        return fluidState.is(FluidTags.WATER) && !fluidState.isSource();
++    }
++    // Cartridge end
++
+     public boolean isUnderWater() {
+         return this.wasEyeInWater && this.isInWater();
+     }
+@@ -2215,10 +2223,22 @@ public abstract class Entity
+         boolean inWater = this.fluidInteraction.isInFluid(FluidTags.WATER);
+         boolean inLava = this.fluidInteraction.isInFluid(FluidTags.LAVA);
+         if (inWater) {
+-            this.resetFallDistance();
+             if (!this.wasTouchingWater && !this.firstTick) {
+                 this.doWaterSplashEffect();
+             }
++
++            // Cartridge start - water surfaces act like ground: falling onto water hurts on first contact.
++            // Players and boats pay the accumulated fall once, boats propagate it to their passengers,
++            // other entities keep the vanilla reset
++            if (this instanceof ServerPlayer || this instanceof net.minecraft.world.entity.vehicle.boat.AbstractBoat) {
++                if (!this.wasTouchingWater && this.fallDistance > 0.0) {
++                    this.causeFallDamage(this.fallDistance, 1.0F, this.damageSources().fall());
++                    this.resetFallDistance();
++                }
++            } else {
++                this.resetFallDistance();
++            }
++            // Cartridge end
+         }
+ 
+         this.wasTouchingWater = inWater;
+@@ -4023,7 +4043,7 @@ public abstract class Entity
+             entity.setDeltaMovement(movement.x, yd, movement.z);
+         }
+ 
+-        entity.resetFallDistance();
++        if (!(entity instanceof ServerPlayer)) entity.resetFallDistance(); // Cartridge - bubble columns no longer negate fall damage
+     }
+ 
+     // Paper start
+diff --git a/net/minecraft/world/entity/vehicle/boat/AbstractBoat.java b/net/minecraft/world/entity/vehicle/boat/AbstractBoat.java
+index 6c9ec44a46b6f40a2b8b008cc50c0cafe5e909e6..5b6310e9ec87253ae87d59ee009dec3b526aeed1 100644
+--- a/net/minecraft/world/entity/vehicle/boat/AbstractBoat.java
++++ b/net/minecraft/world/entity/vehicle/boat/AbstractBoat.java
+@@ -803,11 +803,15 @@ public abstract class AbstractBoat extends VehicleEntity implements Leashable {
+     protected void checkFallDamage(final double ya, final boolean onGround, final BlockState onState, final BlockPos pos) {
+         this.lastYd = this.getDeltaMovement().y;
+         if (!this.isPassenger()) {
+-            if (onGround) {
++            // Cartridge start - landing on ground or water applies the fall to passengers, then
++            // resets so old falls cannot linger and taint later riders
++            if (onGround || this.isInWater()) {
++                if (this.fallDistance > 0.0) this.causeFallDamage(this.fallDistance, 1.0F, this.damageSources().fall());
+                 this.resetFallDistance();
+             } else if (!this.level().getFluidState(this.blockPosition().below()).is(FluidTags.WATER) && ya < 0.0) {
+                 this.fallDistance -= (float)ya;
+             }
++            // Cartridge end
+         }
+     }
+ 

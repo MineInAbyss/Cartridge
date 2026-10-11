@@ -1,0 +1,225 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Boy0000 <sivertpaulsen2@gmail.com>
+Date: Sun, 11 Oct 2026 15:41:49 +0200
+Subject: [PATCH] Disable fluid spread and coral fading
+
+
+diff --git a/net/minecraft/world/level/block/CoralBlock.java b/net/minecraft/world/level/block/CoralBlock.java
+index ff0a318ff6c0e2f22a807dd32306f5c5d0bdcaab..707fddf23064938b80981aa718d3e1b0466b92de 100644
+--- a/net/minecraft/world/level/block/CoralBlock.java
++++ b/net/minecraft/world/level/block/CoralBlock.java
+@@ -22,17 +22,19 @@ public class CoralBlock extends Block {
+         this.deadBlock = deadBlock;
+     }
+ 
+-    @Override
+-    protected void tick(final BlockState state, final ServerLevel level, final BlockPos pos, final RandomSource random) {
+-        if (!this.scanForWater(level, pos)) {
+-            // CraftBukkit start
+-            if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, this.deadBlock.defaultBlockState()).isCancelled()) {
+-                return;
+-            }
+-            // CraftBukkit end
+-            level.setBlock(pos, this.deadBlock.defaultBlockState(), Block.UPDATE_CLIENTS);
+-        }
+-    }
++    // Cartridge start - Disable CoralBlocks from fading outside of water
++//    @Override
++//    protected void tick(final BlockState state, final ServerLevel level, final BlockPos pos, final RandomSource random) {
++//        if (!this.scanForWater(level, pos)) {
++//            // CraftBukkit start
++//            if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, this.deadBlock.defaultBlockState()).isCancelled()) {
++//                return;
++//            }
++//            // CraftBukkit end
++//            level.setBlock(pos, this.deadBlock.defaultBlockState(), Block.UPDATE_CLIENTS);
++//        }
++//    }
++    // Cartridge end - Disable CoralBlocks from fading outside of water
+ 
+     @Override
+     protected BlockState updateShape(
+diff --git a/net/minecraft/world/level/block/CoralFanBlock.java b/net/minecraft/world/level/block/CoralFanBlock.java
+index b9db4321f1f206dc2d3b223d50518fbe74351d65..773d5bd145bd5c334100861176fc2bafdcbd1cd5 100644
+--- a/net/minecraft/world/level/block/CoralFanBlock.java
++++ b/net/minecraft/world/level/block/CoralFanBlock.java
+@@ -24,17 +24,19 @@ public class CoralFanBlock extends BaseCoralFanBlock {
+         this.tryScheduleDieTick(state, level, level, level.getRandom(), pos);
+     }
+ 
+-    @Override
+-    protected void tick(final BlockState state, final ServerLevel level, final BlockPos pos, final RandomSource random) {
+-        if (!scanForWater(state, level, pos)) {
+-            // CraftBukkit start
+-            if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, this.deadBlock.defaultBlockState().setValue(CoralFanBlock.WATERLOGGED, false)).isCancelled()) {
+-                return;
+-            }
+-            // CraftBukkit end
+-            level.setBlock(pos, this.deadBlock.defaultBlockState().setValue(WATERLOGGED, false), Block.UPDATE_CLIENTS);
+-        }
+-    }
++    // Cartridge start - Disable CoralBlocks from fading outside of water
++//    @Override
++//    protected void tick(final BlockState state, final ServerLevel level, final BlockPos pos, final RandomSource random) {
++//        if (!scanForWater(state, level, pos)) {
++//            // CraftBukkit start
++//            if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, this.deadBlock.defaultBlockState().setValue(CoralFanBlock.WATERLOGGED, false)).isCancelled()) {
++//                return;
++//            }
++//            // CraftBukkit end
++//            level.setBlock(pos, this.deadBlock.defaultBlockState().setValue(WATERLOGGED, false), Block.UPDATE_CLIENTS);
++//        }
++//    }
++    // Cartridge end - Disable CoralBlocks from fading outside of water
+ 
+     @Override
+     protected BlockState updateShape(
+diff --git a/net/minecraft/world/level/block/CoralPlantBlock.java b/net/minecraft/world/level/block/CoralPlantBlock.java
+index 9a17b41db60be75f2d7dce7fb184249061fb0436..94c004072c5782a5e61e5b154a6d2862c6f827e4 100644
+--- a/net/minecraft/world/level/block/CoralPlantBlock.java
++++ b/net/minecraft/world/level/block/CoralPlantBlock.java
+@@ -28,17 +28,19 @@ public class CoralPlantBlock extends BaseCoralPlantTypeBlock {
+         this.tryScheduleDieTick(state, level, level, level.getRandom(), pos);
+     }
+ 
+-    @Override
+-    protected void tick(final BlockState state, final ServerLevel level, final BlockPos pos, final RandomSource random) {
+-        if (!scanForWater(state, level, pos)) {
+-            // CraftBukkit start
+-            if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, this.deadBlock.defaultBlockState().setValue(CoralPlantBlock.WATERLOGGED, false)).isCancelled()) {
+-                return;
+-            }
+-            // CraftBukkit end
+-            level.setBlock(pos, this.deadBlock.defaultBlockState().setValue(WATERLOGGED, false), Block.UPDATE_CLIENTS);
+-        }
+-    }
++    // Cartridge start - Disable CoralBlocks from fading outside of water
++//    @Override
++//    protected void tick(final BlockState state, final ServerLevel level, final BlockPos pos, final RandomSource random) {
++//        if (!scanForWater(state, level, pos)) {
++//            // CraftBukkit start
++//            if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, this.deadBlock.defaultBlockState().setValue(CoralPlantBlock.WATERLOGGED, false)).isCancelled()) {
++//                return;
++//            }
++//            // CraftBukkit end
++//            level.setBlock(pos, this.deadBlock.defaultBlockState().setValue(WATERLOGGED, false), Block.UPDATE_CLIENTS);
++//        }
++//    }
++    // Cartridge end - Disable CoralBlocks from fading outside of water
+ 
+     @Override
+     protected BlockState updateShape(
+diff --git a/net/minecraft/world/level/block/CoralWallFanBlock.java b/net/minecraft/world/level/block/CoralWallFanBlock.java
+index 90d09065fd946ba882cd7421f29ba25b39a4fc22..412db783cb2c9e3db4e56796ad98f2442a8cd8ea 100644
+--- a/net/minecraft/world/level/block/CoralWallFanBlock.java
++++ b/net/minecraft/world/level/block/CoralWallFanBlock.java
+@@ -24,17 +24,19 @@ public class CoralWallFanBlock extends BaseCoralWallFanBlock {
+         this.tryScheduleDieTick(state, level, level, level.getRandom(), pos);
+     }
+ 
+-    @Override
+-    protected void tick(final BlockState state, final ServerLevel level, final BlockPos pos, final RandomSource random) {
+-        if (!scanForWater(state, level, pos)) {
+-            // CraftBukkit start
+-            if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, this.deadBlock.defaultBlockState().setValue(CoralWallFanBlock.WATERLOGGED, false).setValue(CoralWallFanBlock.FACING, state.getValue(CoralWallFanBlock.FACING))).isCancelled()) {
+-                return;
+-            }
+-            // CraftBukkit end
+-            level.setBlock(pos, this.deadBlock.defaultBlockState().setValue(WATERLOGGED, false).setValue(FACING, state.getValue(FACING)), Block.UPDATE_CLIENTS);
+-        }
+-    }
++    // Cartridge start - Disable CoralBlocks from fading outside of water
++//    @Override
++//    protected void tick(final BlockState state, final ServerLevel level, final BlockPos pos, final RandomSource random) {
++//        if (!scanForWater(state, level, pos)) {
++//            // CraftBukkit start
++//            if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, this.deadBlock.defaultBlockState().setValue(CoralWallFanBlock.WATERLOGGED, false).setValue(CoralWallFanBlock.FACING, state.getValue(CoralWallFanBlock.FACING))).isCancelled()) {
++//                return;
++//            }
++//            // CraftBukkit end
++//            level.setBlock(pos, this.deadBlock.defaultBlockState().setValue(WATERLOGGED, false).setValue(FACING, state.getValue(FACING)), Block.UPDATE_CLIENTS);
++//        }
++//    }
++    // Cartridge end - Disable CoralBlocks from fading outside of water
+ 
+     @Override
+     protected BlockState updateShape(
+diff --git a/net/minecraft/world/level/material/FlowingFluid.java b/net/minecraft/world/level/material/FlowingFluid.java
+index 660a8785fca8dd885318e05cb19255fa493151d0..af5dca1ad524fc0a726ebd242dbc88e147502563 100644
+--- a/net/minecraft/world/level/material/FlowingFluid.java
++++ b/net/minecraft/world/level/material/FlowingFluid.java
+@@ -481,39 +481,41 @@ public abstract class FlowingFluid extends Fluid {
+         return this.getTickDelay(level);
+     }
+ 
+-    @Override
+-    public void tick(final ServerLevel level, final BlockPos pos, BlockState blockState, FluidState fluidState) {
+-        if (!fluidState.isSource()) {
+-            FluidState newFluidState = this.getNewLiquid(level, pos, level.getBlockState(pos));
+-            int tickDelay = this.getSpreadDelay(level, pos, fluidState, newFluidState);
+-            if (newFluidState.isEmpty()) {
+-                fluidState = newFluidState;
+-                blockState = Blocks.AIR.defaultBlockState();
+-                // CraftBukkit start
+-                org.bukkit.event.block.FluidLevelChangeEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callFluidLevelChangeEvent(level, pos, blockState);
+-                if (event.isCancelled()) {
+-                    return;
+-                }
+-                blockState = ((org.bukkit.craftbukkit.block.data.CraftBlockData) event.getNewData()).getState();
+-                // CraftBukkit end
+-                level.setBlockAndUpdate(pos, blockState);
+-            } else if (newFluidState != fluidState) {
+-                fluidState = newFluidState;
+-                blockState = fluidState.createLegacyBlock();
+-                // CraftBukkit start
+-                org.bukkit.event.block.FluidLevelChangeEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callFluidLevelChangeEvent(level, pos, blockState);
+-                if (event.isCancelled()) {
+-                    return;
+-                }
+-                blockState = ((org.bukkit.craftbukkit.block.data.CraftBlockData) event.getNewData()).getState();
+-                // CraftBukkit end
+-                level.setBlockAndUpdate(pos, blockState);
+-                level.scheduleTick(pos, fluidState.getType(), tickDelay);
+-            }
+-        }
+-
+-        this.spread(level, pos, blockState, fluidState);
+-    }
++    // Cartridge start - Disable liquid flow
++//    @Override
++//    public void tick(final ServerLevel level, final BlockPos pos, BlockState blockState, FluidState fluidState) {
++//        if (!fluidState.isSource()) {
++//            FluidState newFluidState = this.getNewLiquid(level, pos, level.getBlockState(pos));
++//            int tickDelay = this.getSpreadDelay(level, pos, fluidState, newFluidState);
++//            if (newFluidState.isEmpty()) {
++//                fluidState = newFluidState;
++//                blockState = Blocks.AIR.defaultBlockState();
++//                // CraftBukkit start
++//                org.bukkit.event.block.FluidLevelChangeEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callFluidLevelChangeEvent(level, pos, blockState);
++//                if (event.isCancelled()) {
++//                    return;
++//                }
++//                blockState = ((org.bukkit.craftbukkit.block.data.CraftBlockData) event.getNewData()).getState();
++//                // CraftBukkit end
++//                level.setBlockAndUpdate(pos, blockState);
++//            } else if (newFluidState != fluidState) {
++//                fluidState = newFluidState;
++//                blockState = fluidState.createLegacyBlock();
++//                // CraftBukkit start
++//                org.bukkit.event.block.FluidLevelChangeEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callFluidLevelChangeEvent(level, pos, blockState);
++//                if (event.isCancelled()) {
++//                    return;
++//                }
++//                blockState = ((org.bukkit.craftbukkit.block.data.CraftBlockData) event.getNewData()).getState();
++//                // CraftBukkit end
++//                level.setBlockAndUpdate(pos, blockState);
++//                level.scheduleTick(pos, fluidState.getType(), tickDelay);
++//            }
++//        }
++
++//        this.spread(level, pos, blockState, fluidState);
++//    }
++    // Cartridge end - Disable liquid flow
+ 
+     protected static int getLegacyLevel(final FluidState fluidState) {
+         return fluidState.isSource() ? 0 : 8 - Math.min(fluidState.getAmount(), 8) + (fluidState.getValue(FALLING) ? 8 : 0);

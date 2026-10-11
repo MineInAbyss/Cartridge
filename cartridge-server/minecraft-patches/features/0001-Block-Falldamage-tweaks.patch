@@ -69,42 +69,21 @@ index 6da0352bff6d76779aa01655fac98b6b9b319a66..10f1782f9f88a82b98cd87c187fcef9d
 +    // Cartridge end
  }
 diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
-index 23b3a82ab3e1c6abc85000d9285470cb12300a6b..d5d5cc8e627eabb0488de96bfd6cf29baf716489 100644
+index 56ee7ed4bdedbc5f7d12b9ccd547ff3984158b1d..3a74e55053c4eae8d6534e4873667e18db624440 100644
 --- a/net/minecraft/server/level/ServerPlayer.java
 +++ b/net/minecraft/server/level/ServerPlayer.java
-@@ -477,6 +477,11 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -477,6 +477,10 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
      }
      // Paper end - rewrite chunk system
  
 +    // Cartridge start
 +    public volatile boolean hasClientSideClimbable = true; // volatile, written from the netty thread on tag sync
-+    public int flowingWaterHurtCooldown = 0;
 +    // Cartridge end
 +
      public ServerPlayer(final MinecraftServer server, final ServerLevel level, final GameProfile gameProfile, final ClientInformation clientInformation) {
          super(level, gameProfile);
          this.server = server;
-@@ -770,6 +775,19 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
-         }
- 
-         this.trackStartFallingPosition();
-+        // Cartridge start - flowing water and bubble columns batter anyone swimming in them
-+        if (this.flowingWaterHurtCooldown > 0) this.flowingWaterHurtCooldown--;
-+        if (this.flowingWaterHurtCooldown <= 0 && this.isInHazardousWater()) {
-+            DamageSource hazardSource = this.damageSources().generic();
-+            if (this.hurtServer(this.level(), hazardSource, 4.0F)) {
-+                // shove in a random horizontal direction so the current cannot be ridden calmly
-+                double angle = this.random.nextDouble() * Math.PI * 2.0;
-+                this.knockback(0.4, Math.cos(angle), Math.sin(angle), hazardSource, 4.0F, false);
-+                this.markHurt();
-+            }
-+            this.flowingWaterHurtCooldown = 20;
-+        }
-+        // Cartridge end
-         this.trackEnteredOrExitedLavaOnVehicle();
-         this.updatePlayerAttributes();
-         this.advancements.flushDirty(this, true);
-@@ -1838,7 +1856,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -1838,7 +1842,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
          super.onExplosionHit(explosionCausedBy);
          this.currentExplosionImpactPos = this.position();
          this.currentExplosionCause = explosionCausedBy;
@@ -114,7 +93,7 @@ index 23b3a82ab3e1c6abc85000d9285470cb12300a6b..d5d5cc8e627eabb0488de96bfd6cf29b
  
      @Override
 diff --git a/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index ee52233d15df9de9f5a0a85dcac7f7f38f8c004d..f61df5922cb05a8d448539d3feded88c259d78d3 100644
+index ee455011ff5d35466c1ee2f720c03ecef8d5237a..622a2fe7319ed3646f9450bc794b1b7f61028e04 100644
 --- a/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 @@ -149,6 +149,7 @@ import net.minecraft.server.level.ServerLevel;
@@ -163,7 +142,7 @@ index ee52233d15df9de9f5a0a85dcac7f7f38f8c004d..f61df5922cb05a8d448539d3feded88c
  
                      if (isOnGround
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index cf3619b6de23f32e9e5a81fbe287fb438ecfcabc..88a6216a3106862919339c3ec196a900fa2d9a53 100644
+index db60944f47d99ec8b213066f4939418a87d8c26e..9c48c8cc25fa27a4c8c518e7bd5775d1681b3b75 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
 @@ -95,6 +95,7 @@ import net.minecraft.world.Nameable;
@@ -183,15 +162,6 @@ index cf3619b6de23f32e9e5a81fbe287fb438ecfcabc..88a6216a3106862919339c3ec196a900
              // CraftBukkit start
          } else {
              this.lastLavaContact = null;
-@@ -1221,7 +1222,7 @@ public abstract class Entity
-                     BlockHitResult hitResult = this.level()
-                         .clip(new ClipContext(this.position(), checkTo, ClipContext.Block.FALLDAMAGE_RESETTING, ClipContext.Fluid.WATER, this));
-                     if (hitResult.getType() != HitResult.Type.MISS) {
--                        this.resetFallDistance();
-+                        //this.resetFallDistance(); // Cartridge - Make water not negate falldamage
-                     }
-                 }
- 
 @@ -1494,7 +1495,7 @@ public abstract class Entity
      }
  
@@ -226,46 +196,7 @@ index cf3619b6de23f32e9e5a81fbe287fb438ecfcabc..88a6216a3106862919339c3ec196a900
              }
          }
      }
-@@ -2176,6 +2178,14 @@ public abstract class Entity
-         return this.fluidInteraction.isInFluid(FluidTags.ENTITY_FLOATABLE);
-     }
- 
-+    // Cartridge start - flowing water (waterfalls etc) and bubble columns batter anyone swimming in them
-+    public boolean isInHazardousWater() {
-+        if (this.getInBlockState().is(Blocks.BUBBLE_COLUMN)) return true;
-+        FluidState fluidState = this.level().getFluidState(this.blockPosition());
-+        return fluidState.is(FluidTags.WATER) && !fluidState.isSource();
-+    }
-+    // Cartridge end
-+
-     public boolean isUnderWater() {
-         return this.wasEyeInWater && this.isInWater();
-     }
-@@ -2213,10 +2223,22 @@ public abstract class Entity
-         boolean inWater = this.fluidInteraction.isInFluid(FluidTags.WATER);
-         boolean inLava = this.fluidInteraction.isInFluid(FluidTags.LAVA);
-         if (inWater) {
--            this.resetFallDistance();
-             if (!this.wasTouchingWater && !this.firstTick) {
-                 this.doWaterSplashEffect();
-             }
-+
-+            // Cartridge start - water surfaces act like ground: falling onto water hurts on first contact.
-+            // Players and boats pay the accumulated fall once, boats propagate it to their passengers,
-+            // other entities keep the vanilla reset
-+            if (this instanceof ServerPlayer || this instanceof net.minecraft.world.entity.vehicle.boat.AbstractBoat) {
-+                if (!this.wasTouchingWater && this.fallDistance > 0.0) {
-+                    this.causeFallDamage(this.fallDistance, 1.0F, this.damageSources().fall());
-+                    this.resetFallDistance();
-+                }
-+            } else {
-+                this.resetFallDistance();
-+            }
-+            // Cartridge end
-         }
- 
-         this.wasTouchingWater = inWater;
-@@ -3440,6 +3462,12 @@ public abstract class Entity
+@@ -3440,6 +3442,12 @@ public abstract class Entity
                  this.stopRiding();
              }
  
@@ -278,7 +209,7 @@ index cf3619b6de23f32e9e5a81fbe287fb438ecfcabc..88a6216a3106862919339c3ec196a900
              this.setPose(Pose.STANDING);
              this.vehicle = entityToRide;
              this.vehicle.addPassenger(this);
-@@ -3456,9 +3484,12 @@ public abstract class Entity
+@@ -3456,9 +3464,12 @@ public abstract class Entity
          }
      }
  
@@ -292,16 +223,7 @@ index cf3619b6de23f32e9e5a81fbe287fb438ecfcabc..88a6216a3106862919339c3ec196a900
  
      public void ejectPassengers() {
          for (int i = this.passengers.size() - 1; i >= 0; i--) {
-@@ -4012,7 +4043,7 @@ public abstract class Entity
-             entity.setDeltaMovement(movement.x, yd, movement.z);
-         }
- 
--        entity.resetFallDistance();
-+        if (!(entity instanceof ServerPlayer)) entity.resetFallDistance(); // Cartridge - bubble columns no longer negate fall damage
-     }
- 
-     // Paper start
-@@ -4071,7 +4102,7 @@ public abstract class Entity
+@@ -4071,7 +4082,7 @@ public abstract class Entity
      }
  
      public void makeStuckInBlock(final BlockState blockState, final Vec3 speedMultiplier) {
@@ -311,7 +233,7 @@ index cf3619b6de23f32e9e5a81fbe287fb438ecfcabc..88a6216a3106862919339c3ec196a900
      }
  
 diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
-index d32b58dfd7439f253e48f7a3f059f9154596cc02..f24d62600fe460a1ac50fad1b535e3d0cd29afcf 100644
+index 23297b54c74684765f90e9e599d051a44357e9a5..6561be9f79d8c852fb9fb104f7b060efa959cb5c 100644
 --- a/net/minecraft/world/entity/LivingEntity.java
 +++ b/net/minecraft/world/entity/LivingEntity.java
 @@ -2158,11 +2158,18 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
@@ -386,27 +308,6 @@ index 4abbb6a8029f6c77fdbeda9376d3d5cc5970896d..dfe0524f57c4d847a5e406b127188082
                      }
  
                      if (newOwner instanceof LivingEntity livingEntity) {
-diff --git a/net/minecraft/world/entity/vehicle/boat/AbstractBoat.java b/net/minecraft/world/entity/vehicle/boat/AbstractBoat.java
-index 12a3c8f1d325e545b52cf4d45536f3fbbf1a2df0..0979b1213a0db4d172532e94ea8f1eee4a5075fa 100644
---- a/net/minecraft/world/entity/vehicle/boat/AbstractBoat.java
-+++ b/net/minecraft/world/entity/vehicle/boat/AbstractBoat.java
-@@ -803,11 +803,15 @@ public abstract class AbstractBoat extends VehicleEntity implements Leashable {
-     protected void checkFallDamage(final double ya, final boolean onGround, final BlockState onState, final BlockPos pos) {
-         this.lastYd = this.getDeltaMovement().y;
-         if (!this.isPassenger()) {
--            if (onGround) {
-+            // Cartridge start - landing on ground or water applies the fall to passengers, then
-+            // resets so old falls cannot linger and taint later riders
-+            if (onGround || this.isInWater()) {
-+                if (this.fallDistance > 0.0) this.causeFallDamage(this.fallDistance, 1.0F, this.damageSources().fall());
-                 this.resetFallDistance();
-             } else if (!this.level().getFluidState(this.blockPosition().below()).is(FluidTags.WATER) && ya < 0.0) {
-                 this.fallDistance -= (float)ya;
-             }
-+            // Cartridge end
-         }
-     }
- 
 diff --git a/net/minecraft/world/entity/vehicle/minecart/NewMinecartBehavior.java b/net/minecraft/world/entity/vehicle/minecart/NewMinecartBehavior.java
 index eacf2358d0eeb9a4b07181bb01e78e781c2d069d..d4fe5ada98ad4cdb323283ad91eb87b4fa8faf55 100644
 --- a/net/minecraft/world/entity/vehicle/minecart/NewMinecartBehavior.java
@@ -488,146 +389,6 @@ index 1b6c792f39ee909120261f5dfc43a9130f7fd7ee..dfd5677d93d301b6f9154e511b3b95cf
      public DyeColor getColor() {
          return this.color;
      }
-diff --git a/net/minecraft/world/level/block/CoralBlock.java b/net/minecraft/world/level/block/CoralBlock.java
-index ff0a318ff6c0e2f22a807dd32306f5c5d0bdcaab..707fddf23064938b80981aa718d3e1b0466b92de 100644
---- a/net/minecraft/world/level/block/CoralBlock.java
-+++ b/net/minecraft/world/level/block/CoralBlock.java
-@@ -22,17 +22,19 @@ public class CoralBlock extends Block {
-         this.deadBlock = deadBlock;
-     }
- 
--    @Override
--    protected void tick(final BlockState state, final ServerLevel level, final BlockPos pos, final RandomSource random) {
--        if (!this.scanForWater(level, pos)) {
--            // CraftBukkit start
--            if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, this.deadBlock.defaultBlockState()).isCancelled()) {
--                return;
--            }
--            // CraftBukkit end
--            level.setBlock(pos, this.deadBlock.defaultBlockState(), Block.UPDATE_CLIENTS);
--        }
--    }
-+    // Cartridge start - Disable CoralBlocks from fading outside of water
-+//    @Override
-+//    protected void tick(final BlockState state, final ServerLevel level, final BlockPos pos, final RandomSource random) {
-+//        if (!this.scanForWater(level, pos)) {
-+//            // CraftBukkit start
-+//            if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, this.deadBlock.defaultBlockState()).isCancelled()) {
-+//                return;
-+//            }
-+//            // CraftBukkit end
-+//            level.setBlock(pos, this.deadBlock.defaultBlockState(), Block.UPDATE_CLIENTS);
-+//        }
-+//    }
-+    // Cartridge end - Disable CoralBlocks from fading outside of water
- 
-     @Override
-     protected BlockState updateShape(
-diff --git a/net/minecraft/world/level/block/CoralFanBlock.java b/net/minecraft/world/level/block/CoralFanBlock.java
-index b9db4321f1f206dc2d3b223d50518fbe74351d65..773d5bd145bd5c334100861176fc2bafdcbd1cd5 100644
---- a/net/minecraft/world/level/block/CoralFanBlock.java
-+++ b/net/minecraft/world/level/block/CoralFanBlock.java
-@@ -24,17 +24,19 @@ public class CoralFanBlock extends BaseCoralFanBlock {
-         this.tryScheduleDieTick(state, level, level, level.getRandom(), pos);
-     }
- 
--    @Override
--    protected void tick(final BlockState state, final ServerLevel level, final BlockPos pos, final RandomSource random) {
--        if (!scanForWater(state, level, pos)) {
--            // CraftBukkit start
--            if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, this.deadBlock.defaultBlockState().setValue(CoralFanBlock.WATERLOGGED, false)).isCancelled()) {
--                return;
--            }
--            // CraftBukkit end
--            level.setBlock(pos, this.deadBlock.defaultBlockState().setValue(WATERLOGGED, false), Block.UPDATE_CLIENTS);
--        }
--    }
-+    // Cartridge start - Disable CoralBlocks from fading outside of water
-+//    @Override
-+//    protected void tick(final BlockState state, final ServerLevel level, final BlockPos pos, final RandomSource random) {
-+//        if (!scanForWater(state, level, pos)) {
-+//            // CraftBukkit start
-+//            if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, this.deadBlock.defaultBlockState().setValue(CoralFanBlock.WATERLOGGED, false)).isCancelled()) {
-+//                return;
-+//            }
-+//            // CraftBukkit end
-+//            level.setBlock(pos, this.deadBlock.defaultBlockState().setValue(WATERLOGGED, false), Block.UPDATE_CLIENTS);
-+//        }
-+//    }
-+    // Cartridge end - Disable CoralBlocks from fading outside of water
- 
-     @Override
-     protected BlockState updateShape(
-diff --git a/net/minecraft/world/level/block/CoralPlantBlock.java b/net/minecraft/world/level/block/CoralPlantBlock.java
-index 9a17b41db60be75f2d7dce7fb184249061fb0436..94c004072c5782a5e61e5b154a6d2862c6f827e4 100644
---- a/net/minecraft/world/level/block/CoralPlantBlock.java
-+++ b/net/minecraft/world/level/block/CoralPlantBlock.java
-@@ -28,17 +28,19 @@ public class CoralPlantBlock extends BaseCoralPlantTypeBlock {
-         this.tryScheduleDieTick(state, level, level, level.getRandom(), pos);
-     }
- 
--    @Override
--    protected void tick(final BlockState state, final ServerLevel level, final BlockPos pos, final RandomSource random) {
--        if (!scanForWater(state, level, pos)) {
--            // CraftBukkit start
--            if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, this.deadBlock.defaultBlockState().setValue(CoralPlantBlock.WATERLOGGED, false)).isCancelled()) {
--                return;
--            }
--            // CraftBukkit end
--            level.setBlock(pos, this.deadBlock.defaultBlockState().setValue(WATERLOGGED, false), Block.UPDATE_CLIENTS);
--        }
--    }
-+    // Cartridge start - Disable CoralBlocks from fading outside of water
-+//    @Override
-+//    protected void tick(final BlockState state, final ServerLevel level, final BlockPos pos, final RandomSource random) {
-+//        if (!scanForWater(state, level, pos)) {
-+//            // CraftBukkit start
-+//            if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, this.deadBlock.defaultBlockState().setValue(CoralPlantBlock.WATERLOGGED, false)).isCancelled()) {
-+//                return;
-+//            }
-+//            // CraftBukkit end
-+//            level.setBlock(pos, this.deadBlock.defaultBlockState().setValue(WATERLOGGED, false), Block.UPDATE_CLIENTS);
-+//        }
-+//    }
-+    // Cartridge end - Disable CoralBlocks from fading outside of water
- 
-     @Override
-     protected BlockState updateShape(
-diff --git a/net/minecraft/world/level/block/CoralWallFanBlock.java b/net/minecraft/world/level/block/CoralWallFanBlock.java
-index 90d09065fd946ba882cd7421f29ba25b39a4fc22..412db783cb2c9e3db4e56796ad98f2442a8cd8ea 100644
---- a/net/minecraft/world/level/block/CoralWallFanBlock.java
-+++ b/net/minecraft/world/level/block/CoralWallFanBlock.java
-@@ -24,17 +24,19 @@ public class CoralWallFanBlock extends BaseCoralWallFanBlock {
-         this.tryScheduleDieTick(state, level, level, level.getRandom(), pos);
-     }
- 
--    @Override
--    protected void tick(final BlockState state, final ServerLevel level, final BlockPos pos, final RandomSource random) {
--        if (!scanForWater(state, level, pos)) {
--            // CraftBukkit start
--            if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, this.deadBlock.defaultBlockState().setValue(CoralWallFanBlock.WATERLOGGED, false).setValue(CoralWallFanBlock.FACING, state.getValue(CoralWallFanBlock.FACING))).isCancelled()) {
--                return;
--            }
--            // CraftBukkit end
--            level.setBlock(pos, this.deadBlock.defaultBlockState().setValue(WATERLOGGED, false).setValue(FACING, state.getValue(FACING)), Block.UPDATE_CLIENTS);
--        }
--    }
-+    // Cartridge start - Disable CoralBlocks from fading outside of water
-+//    @Override
-+//    protected void tick(final BlockState state, final ServerLevel level, final BlockPos pos, final RandomSource random) {
-+//        if (!scanForWater(state, level, pos)) {
-+//            // CraftBukkit start
-+//            if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, this.deadBlock.defaultBlockState().setValue(CoralWallFanBlock.WATERLOGGED, false).setValue(CoralWallFanBlock.FACING, state.getValue(CoralWallFanBlock.FACING))).isCancelled()) {
-+//                return;
-+//            }
-+//            // CraftBukkit end
-+//            level.setBlock(pos, this.deadBlock.defaultBlockState().setValue(WATERLOGGED, false).setValue(FACING, state.getValue(FACING)), Block.UPDATE_CLIENTS);
-+//        }
-+//    }
-+    // Cartridge end - Disable CoralBlocks from fading outside of water
- 
-     @Override
-     protected BlockState updateShape(
 diff --git a/net/minecraft/world/level/block/FarmlandBlock.java b/net/minecraft/world/level/block/FarmlandBlock.java
 index 5437f62ff44d3aa59bfa671dc5aaed14a646a7bc..b7952689d3b9b75e35ac5d6a70c7dd6eea3d8abf 100644
 --- a/net/minecraft/world/level/block/FarmlandBlock.java
@@ -891,82 +652,3 @@ index 47d4673aa97f2a087d3ca29498a8d1468fe9d192..7ae91486911c566a8fac7adeb64827f6
  
      private void destroyEgg(final Level level, final BlockState state, final BlockPos pos, final Entity entity, final int randomness) {
          if (state.is(Blocks.TURTLE_EGG)
-diff --git a/net/minecraft/world/level/material/FlowingFluid.java b/net/minecraft/world/level/material/FlowingFluid.java
-index 660a8785fca8dd885318e05cb19255fa493151d0..af5dca1ad524fc0a726ebd242dbc88e147502563 100644
---- a/net/minecraft/world/level/material/FlowingFluid.java
-+++ b/net/minecraft/world/level/material/FlowingFluid.java
-@@ -481,39 +481,41 @@ public abstract class FlowingFluid extends Fluid {
-         return this.getTickDelay(level);
-     }
- 
--    @Override
--    public void tick(final ServerLevel level, final BlockPos pos, BlockState blockState, FluidState fluidState) {
--        if (!fluidState.isSource()) {
--            FluidState newFluidState = this.getNewLiquid(level, pos, level.getBlockState(pos));
--            int tickDelay = this.getSpreadDelay(level, pos, fluidState, newFluidState);
--            if (newFluidState.isEmpty()) {
--                fluidState = newFluidState;
--                blockState = Blocks.AIR.defaultBlockState();
--                // CraftBukkit start
--                org.bukkit.event.block.FluidLevelChangeEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callFluidLevelChangeEvent(level, pos, blockState);
--                if (event.isCancelled()) {
--                    return;
--                }
--                blockState = ((org.bukkit.craftbukkit.block.data.CraftBlockData) event.getNewData()).getState();
--                // CraftBukkit end
--                level.setBlockAndUpdate(pos, blockState);
--            } else if (newFluidState != fluidState) {
--                fluidState = newFluidState;
--                blockState = fluidState.createLegacyBlock();
--                // CraftBukkit start
--                org.bukkit.event.block.FluidLevelChangeEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callFluidLevelChangeEvent(level, pos, blockState);
--                if (event.isCancelled()) {
--                    return;
--                }
--                blockState = ((org.bukkit.craftbukkit.block.data.CraftBlockData) event.getNewData()).getState();
--                // CraftBukkit end
--                level.setBlockAndUpdate(pos, blockState);
--                level.scheduleTick(pos, fluidState.getType(), tickDelay);
--            }
--        }
--
--        this.spread(level, pos, blockState, fluidState);
--    }
-+    // Cartridge start - Disable liquid flow
-+//    @Override
-+//    public void tick(final ServerLevel level, final BlockPos pos, BlockState blockState, FluidState fluidState) {
-+//        if (!fluidState.isSource()) {
-+//            FluidState newFluidState = this.getNewLiquid(level, pos, level.getBlockState(pos));
-+//            int tickDelay = this.getSpreadDelay(level, pos, fluidState, newFluidState);
-+//            if (newFluidState.isEmpty()) {
-+//                fluidState = newFluidState;
-+//                blockState = Blocks.AIR.defaultBlockState();
-+//                // CraftBukkit start
-+//                org.bukkit.event.block.FluidLevelChangeEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callFluidLevelChangeEvent(level, pos, blockState);
-+//                if (event.isCancelled()) {
-+//                    return;
-+//                }
-+//                blockState = ((org.bukkit.craftbukkit.block.data.CraftBlockData) event.getNewData()).getState();
-+//                // CraftBukkit end
-+//                level.setBlockAndUpdate(pos, blockState);
-+//            } else if (newFluidState != fluidState) {
-+//                fluidState = newFluidState;
-+//                blockState = fluidState.createLegacyBlock();
-+//                // CraftBukkit start
-+//                org.bukkit.event.block.FluidLevelChangeEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callFluidLevelChangeEvent(level, pos, blockState);
-+//                if (event.isCancelled()) {
-+//                    return;
-+//                }
-+//                blockState = ((org.bukkit.craftbukkit.block.data.CraftBlockData) event.getNewData()).getState();
-+//                // CraftBukkit end
-+//                level.setBlockAndUpdate(pos, blockState);
-+//                level.scheduleTick(pos, fluidState.getType(), tickDelay);
-+//            }
-+//        }
-+
-+//        this.spread(level, pos, blockState, fluidState);
-+//    }
-+    // Cartridge end - Disable liquid flow
- 
-     protected static int getLegacyLevel(final FluidState fluidState) {
-         return fluidState.isSource() ? 0 : 8 - Math.min(fluidState.getAmount(), 8) + (fluidState.getValue(FALLING) ? 8 : 0);
