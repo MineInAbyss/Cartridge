@@ -5,18 +5,20 @@ Subject: [PATCH] Water Tweaks
 
 
 diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
-index 3a74e55053c4eae8d6534e4873667e18db624440..5e39b756c7cbe7285980ebd76dfb3e2705373f4b 100644
+index 3a74e55053c4eae8d6534e4873667e18db624440..4c3ecad8a6316922f56ebce46839f6c9e3a97d43 100644
 --- a/net/minecraft/server/level/ServerPlayer.java
 +++ b/net/minecraft/server/level/ServerPlayer.java
-@@ -479,6 +479,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -479,6 +479,9 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
  
      // Cartridge start
      public volatile boolean hasClientSideClimbable = true; // volatile, written from the netty thread on tag sync
 +    public int flowingWaterHurtCooldown = 0;
++    public double waterFallChainY = Double.NaN; // feet Y at the last water entry of the current fall chain, NaN outside a chain
++    public boolean safeFallDistanceSpent = false;
      // Cartridge end
  
      public ServerPlayer(final MinecraftServer server, final ServerLevel level, final GameProfile gameProfile, final ClientInformation clientInformation) {
-@@ -774,6 +775,19 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -774,6 +777,19 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
          }
  
          this.trackStartFallingPosition();
@@ -36,8 +38,54 @@ index 3a74e55053c4eae8d6534e4873667e18db624440..5e39b756c7cbe7285980ebd76dfb3e27
          this.trackEnteredOrExitedLavaOnVehicle();
          this.updatePlayerAttributes();
          this.advancements.flushDirty(this, true);
+@@ -1063,9 +1079,45 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+         }
+ 
+         this.startingToFallPosition = null;
++        // Cartridge start
++        this.waterFallChainY = Double.NaN;
++        this.safeFallDistanceSpent = false;
++        // Cartridge end
+         super.resetFallDistance();
+     }
+ 
++    // Cartridge start
++    @Override
++    public int calculateFallDamage(final double fallDistance, final float damageModifier) {
++        double safeFallDistanceRefund = this.safeFallDistanceSpent ? this.getAttributeValue(Attributes.SAFE_FALL_DISTANCE) : 0.0;
++        return super.calculateFallDamage(fallDistance + safeFallDistanceRefund, damageModifier);
++    }
++
++    @Override
++    public void teleportSetPosition(final PositionMoveRotation currentValues, final PositionMoveRotation destination, final Set<Relative> relatives) {
++        double startY = this.getY();
++        super.teleportSetPosition(currentValues, destination, relatives);
++        // Teleports such as DeeperWorld section transitions keep the fall, so the chain's water entry height must move with the player
++        this.waterFallChainY += this.getY() - startY;
++    }
++
++    // Water only cushions a fall where it is at least two blocks deep at the feet.
++    // In thinner water the fall follows the net drop, so water and air stacks cost their full height while bobbing nets out
++    public void accumulateFallDistance(final double ya) {
++        BlockPos feet = this.blockPosition();
++        boolean cushioned = this.isInWater()
++            && this.level().getFluidState(feet).is(FluidTags.WATER)
++            && this.level().getFluidState(feet.below()).is(FluidTags.WATER);
++        if (cushioned) return;
++
++        if (ya < 0.0) {
++            this.fallDistance -= (float)ya;
++        } else if (this.isInWater()) {
++            this.fallDistance = Math.max(0.0, this.fallDistance - (float)ya);
++        }
++    }
++    // Cartridge end
++
+     public void trackStartFallingPosition() {
+         if (this.fallDistance > 0.0 && this.startingToFallPosition == null) {
+             this.startingToFallPosition = this.position();
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index 9c48c8cc25fa27a4c8c518e7bd5775d1681b3b75..2d0bee05d38d10e1e757f49440669a979c5cc1c9 100644
+index 9c48c8cc25fa27a4c8c518e7bd5775d1681b3b75..b9e32f410fe8639226d57bc0070abee08cd942d2 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
 @@ -1222,7 +1222,7 @@ public abstract class Entity
@@ -48,6 +96,15 @@ index 9c48c8cc25fa27a4c8c518e7bd5775d1681b3b75..2d0bee05d38d10e1e757f49440669a97
 +                        //this.resetFallDistance(); // Cartridge - Make water not negate falldamage
                      }
                  }
+ 
+@@ -2114,7 +2114,7 @@ public abstract class Entity
+     }
+ 
+     protected void checkFallDamage(final double ya, final boolean onGround, final BlockState onState, final BlockPos pos) {
+-        if (!this.isInWater() && ya < 0.0) {
++        if (!(this instanceof ServerPlayer) && !this.isInWater() && ya < 0.0) { // Cartridge - players accumulate in ServerPlayer.accumulateFallDistance
+             this.fallDistance -= (float)ya;
+         }
  
 @@ -2178,6 +2178,14 @@ public abstract class Entity
          return this.fluidInteraction.isInFluid(FluidTags.ENTITY_FLOATABLE);
@@ -64,7 +121,7 @@ index 9c48c8cc25fa27a4c8c518e7bd5775d1681b3b75..2d0bee05d38d10e1e757f49440669a97
      public boolean isUnderWater() {
          return this.wasEyeInWater && this.isInWater();
      }
-@@ -2215,10 +2223,22 @@ public abstract class Entity
+@@ -2215,11 +2223,41 @@ public abstract class Entity
          boolean inWater = this.fluidInteraction.isInFluid(FluidTags.WATER);
          boolean inLava = this.fluidInteraction.isInFluid(FluidTags.LAVA);
          if (inWater) {
@@ -76,7 +133,19 @@ index 9c48c8cc25fa27a4c8c518e7bd5775d1681b3b75..2d0bee05d38d10e1e757f49440669a97
 +            // Cartridge start - water surfaces act like ground: falling onto water hurts on first contact.
 +            // Players and boats pay the accumulated fall once, boats propagate it to their passengers,
 +            // other entities keep the vanilla reset
-+            if (this instanceof ServerPlayer || this instanceof net.minecraft.world.entity.vehicle.boat.AbstractBoat) {
++            if (this instanceof ServerPlayer player) {
++                if (!this.wasTouchingWater && this.fallDistance > 0.0) {
++                    // A harmless splash keeps the fall instead of resetting it, so stacked water layers cannot chain safe drops.
++                    // After the first damaging splash the rest of the chain gets no safe fall distance
++                    if (player.calculateFallDamage(this.fallDistance, 1.0F) > 0) {
++                        player.damageCooldownTime = 0; // splashes in quick succession would otherwise only deal the difference to the last hit
++                        this.causeFallDamage(this.fallDistance, 1.0F, this.damageSources().fall());
++                        this.resetFallDistance();
++                        player.safeFallDistanceSpent = true;
++                    }
++                    player.waterFallChainY = this.getY();
++                }
++            } else if (this instanceof net.minecraft.world.entity.vehicle.boat.AbstractBoat) {
 +                if (!this.wasTouchingWater && this.fallDistance > 0.0) {
 +                    this.causeFallDamage(this.fallDistance, 1.0F, this.damageSources().fall());
 +                    this.resetFallDistance();
@@ -85,10 +154,17 @@ index 9c48c8cc25fa27a4c8c518e7bd5775d1681b3b75..2d0bee05d38d10e1e757f49440669a97
 +                this.resetFallDistance();
 +            }
 +            // Cartridge end
++        }
++
++        // Cartridge start - a water fall chain only ends by leaving the water above where it was entered, sinking out the bottom keeps it
++        if (!inWater && this instanceof ServerPlayer player && this.getY() >= player.waterFallChainY) {
++            this.resetFallDistance();
          }
++        // Cartridge end
  
          this.wasTouchingWater = inWater;
-@@ -4023,7 +4043,7 @@ public abstract class Entity
+         if (this.isPushedByFluid()) {
+@@ -4023,7 +4061,7 @@ public abstract class Entity
              entity.setDeltaMovement(movement.x, yd, movement.z);
          }
  
@@ -97,6 +173,26 @@ index 9c48c8cc25fa27a4c8c518e7bd5775d1681b3b75..2d0bee05d38d10e1e757f49440669a97
      }
  
      // Paper start
+@@ -4041,6 +4079,7 @@ public abstract class Entity
+     }
+ 
+     public void checkFallDistanceAccumulation() {
++        if (this instanceof ServerPlayer) return; // Cartridge - no elytras, and the clamp erased falls carried through water
+         if (this.getDeltaMovement().y() > -0.5 && this.fallDistance > 1.0) {
+             this.fallDistance = 1.0;
+         }
+diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
+index 6561be9f79d8c852fb9fb104f7b060efa959cb5c..aa989bb022e66050136c55735eea209069e93b31 100644
+--- a/net/minecraft/world/entity/LivingEntity.java
++++ b/net/minecraft/world/entity/LivingEntity.java
+@@ -386,6 +386,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+ 
+     @Override
+     protected void checkFallDamage(final double ya, final boolean onGround, final BlockState onState, final BlockPos pos) {
++        if (this instanceof ServerPlayer player) player.accumulateFallDistance(ya); // Cartridge - before the water check, so a splash charges this tick's drop too
+         if (!this.isInWater()) {
+             this.updateFluidInteraction();
+         }
 diff --git a/net/minecraft/world/entity/vehicle/boat/AbstractBoat.java b/net/minecraft/world/entity/vehicle/boat/AbstractBoat.java
 index 6c9ec44a46b6f40a2b8b008cc50c0cafe5e909e6..5b6310e9ec87253ae87d59ee009dec3b526aeed1 100644
 --- a/net/minecraft/world/entity/vehicle/boat/AbstractBoat.java
