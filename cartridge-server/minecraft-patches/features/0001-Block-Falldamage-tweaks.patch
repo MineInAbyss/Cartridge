@@ -69,7 +69,7 @@ index 6da0352bff6d76779aa01655fac98b6b9b319a66..10f1782f9f88a82b98cd87c187fcef9d
 +    // Cartridge end
  }
 diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
-index 56ee7ed4bdedbc5f7d12b9ccd547ff3984158b1d..3a74e55053c4eae8d6534e4873667e18db624440 100644
+index 1137be30f125cb79f05f3e5c104cdf8cca979ff1..0807d8ce7f67141531118da74a2bd32a4b1342f7 100644
 --- a/net/minecraft/server/level/ServerPlayer.java
 +++ b/net/minecraft/server/level/ServerPlayer.java
 @@ -477,6 +477,10 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
@@ -83,7 +83,7 @@ index 56ee7ed4bdedbc5f7d12b9ccd547ff3984158b1d..3a74e55053c4eae8d6534e4873667e18
      public ServerPlayer(final MinecraftServer server, final ServerLevel level, final GameProfile gameProfile, final ClientInformation clientInformation) {
          super(level, gameProfile);
          this.server = server;
-@@ -1838,7 +1842,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+@@ -1839,7 +1843,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
          super.onExplosionHit(explosionCausedBy);
          this.currentExplosionImpactPos = this.position();
          this.currentExplosionCause = explosionCausedBy;
@@ -93,7 +93,7 @@ index 56ee7ed4bdedbc5f7d12b9ccd547ff3984158b1d..3a74e55053c4eae8d6534e4873667e18
  
      @Override
 diff --git a/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index ee455011ff5d35466c1ee2f720c03ecef8d5237a..622a2fe7319ed3646f9450bc794b1b7f61028e04 100644
+index 8178922f5ecc7f6709335c7fbeb6dca505b044bb..093d7b1fd198185b0d33c64c51725698c82e939c 100644
 --- a/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 @@ -149,6 +149,7 @@ import net.minecraft.server.level.ServerLevel;
@@ -132,7 +132,7 @@ index ee455011ff5d35466c1ee2f720c03ecef8d5237a..622a2fe7319ed3646f9450bc794b1b7f
              } else if (vehicle != this.player
                  && vehicle.getControllingPassenger() != this.player
                  && (this.tickCount - this.vehiclePositionLastResetAt > 20 || vehicle.distanceToSqr(movingToPos) > Mth.square(1))) {
-@@ -1765,7 +1775,7 @@ public class ServerGamePacketListenerImpl
+@@ -1766,7 +1776,7 @@ public class ServerGamePacketListenerImpl
                      this.player.doCheckFallDamage(clientDeltaMovement.x, clientDeltaMovement.y, clientDeltaMovement.z, isOnGround);
                      this.handlePlayerKnownMovement(clientDeltaMovement);
                      if (movedUpwards) {
@@ -142,7 +142,7 @@ index ee455011ff5d35466c1ee2f720c03ecef8d5237a..622a2fe7319ed3646f9450bc794b1b7f
  
                      if (isOnGround
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index db60944f47d99ec8b213066f4939418a87d8c26e..9c48c8cc25fa27a4c8c518e7bd5775d1681b3b75 100644
+index 5cc94652112c67ca4e7ae6e8b324e9c9f8908d7d..ef9d0a2359cea00e5015d25d2bdaa9d6e962d743 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
 @@ -95,6 +95,7 @@ import net.minecraft.world.Nameable;
@@ -223,7 +223,7 @@ index db60944f47d99ec8b213066f4939418a87d8c26e..9c48c8cc25fa27a4c8c518e7bd5775d1
  
      public void ejectPassengers() {
          for (int i = this.passengers.size() - 1; i >= 0; i--) {
-@@ -4071,7 +4082,7 @@ public abstract class Entity
+@@ -4067,7 +4078,7 @@ public abstract class Entity
      }
  
      public void makeStuckInBlock(final BlockState blockState, final Vec3 speedMultiplier) {

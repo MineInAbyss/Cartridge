@@ -5,7 +5,7 @@ Subject: [PATCH] Water Tweaks
 
 
 diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
-index 3a74e55053c4eae8d6534e4873667e18db624440..4c3ecad8a6316922f56ebce46839f6c9e3a97d43 100644
+index 0807d8ce7f67141531118da74a2bd32a4b1342f7..456405b10e8662aa975c909c98d85254a2718082 100644
 --- a/net/minecraft/server/level/ServerPlayer.java
 +++ b/net/minecraft/server/level/ServerPlayer.java
 @@ -479,6 +479,9 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
@@ -85,7 +85,7 @@ index 3a74e55053c4eae8d6534e4873667e18db624440..4c3ecad8a6316922f56ebce46839f6c9
          if (this.fallDistance > 0.0 && this.startingToFallPosition == null) {
              this.startingToFallPosition = this.position();
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index 9c48c8cc25fa27a4c8c518e7bd5775d1681b3b75..b9e32f410fe8639226d57bc0070abee08cd942d2 100644
+index ef9d0a2359cea00e5015d25d2bdaa9d6e962d743..d3da0628cca748a2ca412b3f0db8d425f0cd8cc0 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
 @@ -1222,7 +1222,7 @@ public abstract class Entity
@@ -164,7 +164,7 @@ index 9c48c8cc25fa27a4c8c518e7bd5775d1681b3b75..b9e32f410fe8639226d57bc0070abee0
  
          this.wasTouchingWater = inWater;
          if (this.isPushedByFluid()) {
-@@ -4023,7 +4061,7 @@ public abstract class Entity
+@@ -4019,7 +4057,7 @@ public abstract class Entity
              entity.setDeltaMovement(movement.x, yd, movement.z);
          }
  
@@ -173,7 +173,7 @@ index 9c48c8cc25fa27a4c8c518e7bd5775d1681b3b75..b9e32f410fe8639226d57bc0070abee0
      }
  
      // Paper start
-@@ -4041,6 +4079,7 @@ public abstract class Entity
+@@ -4037,6 +4075,7 @@ public abstract class Entity
      }
  
      public void checkFallDistanceAccumulation() {
