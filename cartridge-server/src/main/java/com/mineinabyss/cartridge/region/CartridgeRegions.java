@@ -38,12 +38,12 @@ import org.slf4j.Logger;
 public final class CartridgeRegions implements Regions {
 
     private static final Logger LOGGER = LogUtils.getClassLogger();
-    private static final String FILE_NAME = "cartridge-regions.yml";
+    private static final String README_NAME = "README.txt";
     public static final String GLOBAL_REGION = "global";
     public static final String DENY_SPAWN = "denySpawn";
 
     private volatile Map<String, WorldRegions> worlds = Map.of();
-    private @Nullable Path file;
+    private @Nullable Path directory;
 
     public static CartridgeRegions instance() {
         return (CartridgeRegions) Regions.regions();
@@ -52,11 +52,11 @@ public final class CartridgeRegions implements Regions {
     public static void init(final Path configDir) {
         registerPermissions(Bukkit.getPluginManager());
         final CartridgeRegions regions = instance();
-        regions.file = configDir.resolve(FILE_NAME);
+        regions.directory = configDir.resolve("cartridge").resolve("regions");
         try {
             regions.reload();
         } catch (final IOException | InvalidConfigurationException | IllegalArgumentException e) {
-            LOGGER.error("Could not load {}, no regions are active", FILE_NAME, e);
+            LOGGER.error("Could not load regions from {}, no regions are active", regions.directory, e);
         }
     }
 
@@ -74,7 +74,7 @@ public final class CartridgeRegions implements Regions {
         }
     }
 
-    private static String defaultConfig() {
+    private static String readme() {
         final String flags = Arrays.stream(RegionFlag.values())
             .map(flag -> flag.parent() == null ? flag.key() : flag.key() + " (" + flag.parent().key() + ")")
             .collect(Collectors.joining(", "));
@@ -83,57 +83,64 @@ public final class CartridgeRegions implements Regions {
             .map(RegionFlag::key)
             .collect(Collectors.joining(", "));
         return """
-            # Flags are allow or deny. An unset flag falls back to its parent (in brackets) and then to lower priority regions.
-            # When overlapping regions of the same priority disagree, deny wins.
-            # Flags: %s
-            # A region without from and to is a template, it never applies by itself but its children inherit its flags.
-            # Children inherit every flag of their parent region and override only what they set, their priority defaults to one above the parent.
-            # denySpawn takes a list of entity types and blocks them from spawning, like mobSpawning it ignores plugin and command spawns.
-            # Players with cartridge.region.bypass.<flag> ignore a denied flag, ops have every bypass permission by default.
-            # Bypassable flags: %s
-            worlds: {}
-            #  world:
-            #    global:
-            #      pvp: deny
-            #    regions:
-            #      spawn:
-            #        priority: 10
-            #        from: "-100, -64, -100"
-            #        to: "100, 320, 100"
-            #        flags:
-            #          useOpenables: deny
-            #          blockBreak: deny
-            #          denySpawn: [zombie, skeleton]
-            #        children:
-            #          market:
-            #            from: "10, 60, 10"
-            #            to: "30, 80, 30"
-            #            flags:
-            #              chestAccess: allow
+            Each <world>.yml in this folder holds the regions of the world with that exact name, as returned by World#getName.
+            Flags are allow or deny. An unset flag falls back to its parent (in brackets) and then to lower priority regions.
+            When overlapping regions of the same priority disagree, deny wins.
+            Flags: %s
+            A region without from and to is a template, it never applies by itself but its children inherit its flags.
+            Children inherit every flag of their parent region and override only what they set, their priority defaults to one above the parent.
+            denySpawn takes a list of entity types and blocks them from spawning, like mobSpawning it ignores plugin and command spawns.
+            Players with cartridge.region.bypass.<flag> ignore a denied flag, ops have every bypass permission by default.
+            Bypassable flags: %s
+
+            Example world.yml:
+            global:
+              pvp: deny
+            regions:
+              spawn:
+                priority: 10
+                from: "-100, -64, -100"
+                to: "100, 320, 100"
+                flags:
+                  useOpenables: deny
+                  blockBreak: deny
+                  denySpawn: [zombie, skeleton]
+                children:
+                  market:
+                    from: "10, 60, 10"
+                    to: "30, 80, 30"
+                    flags:
+                      chestAccess: allow
             """.formatted(flags, bypassable);
     }
 
     /**
-     * Keeps the previously loaded regions when the file fails to parse
+     * Keeps the previously loaded regions when any world file fails to parse
      */
     public List<String> reload() throws IOException, InvalidConfigurationException {
-        if (this.file == null) throw new IllegalStateException("Regions are not initialized");
-        if (Files.notExists(this.file)) {
-            Files.writeString(this.file, defaultConfig());
+        if (this.directory == null) throw new IllegalStateException("Regions are not initialized");
+        if (Files.notExists(this.directory)) {
+            Files.createDirectories(this.directory);
+            Files.writeString(this.directory.resolve(README_NAME), readme());
         }
 
-        final YamlConfiguration config = new YamlConfiguration();
-        config.loadFromString(Files.readString(this.file));
+        final List<Path> files;
+        try (Stream<Path> stream = Files.list(this.directory)) {
+            files = stream.filter(path -> path.getFileName().toString().endsWith(".yml")).sorted().toList();
+        }
 
         final List<String> warnings = new ArrayList<>();
         final Map<String, WorldRegions> worlds = new HashMap<>();
-        final ConfigurationSection worldsSection = config.getConfigurationSection("worlds");
-        if (worldsSection != null) {
-            for (final String worldName : worldsSection.getKeys(false)) {
-                final ConfigurationSection worldSection = worldsSection.getConfigurationSection(worldName);
-                if (worldSection == null) continue;
-                worlds.put(worldName, parseWorld(worldName, worldSection, warnings));
+        for (final Path path : files) {
+            final String fileName = path.getFileName().toString();
+            final String worldName = fileName.substring(0, fileName.length() - ".yml".length());
+            final YamlConfiguration config = new YamlConfiguration();
+            try {
+                config.loadFromString(Files.readString(path));
+            } catch (final InvalidConfigurationException e) {
+                throw new InvalidConfigurationException(fileName + ": " + e.getMessage(), e);
             }
+            worlds.put(worldName, parseWorld(worldName, config, warnings));
         }
 
         this.worlds = Map.copyOf(worlds);
