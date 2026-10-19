@@ -78,12 +78,15 @@ subprojects {
 
     extensions.configure<PublishingExtension> {
         repositories {
-            /*
-            maven("https://repo.papermc.io/repository/maven-snapshots/") {
-                name = "paperSnapshots"
-                credentials(PasswordCredentials::class)
+            maven {
+                name = "mineinabyss"
+                val repo = "https://repo.mineinabyss.com/"
+                url = uri(if (version.toString().endsWith("-SNAPSHOT")) repo + "snapshots" else repo + "releases")
+                credentials {
+                    username = project.findProperty("mineinabyssMavenUsername") as String?
+                    password = project.findProperty("mineinabyssMavenPassword") as String?
+                }
             }
-             */
         }
     }
 }
