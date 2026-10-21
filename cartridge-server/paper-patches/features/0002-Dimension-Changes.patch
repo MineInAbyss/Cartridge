@@ -5,10 +5,10 @@ Subject: [PATCH] Dimension Changes
 
 
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-index 5f33ba98facf68a185263d4e6cff96207426aa79..6293e5b4549b63125d2f7ad631bbffff4ecdf4c5 100644
+index 549864ac47c1a6805403ee56fc110d09da2a01c3..ecc202173b0cef7b99471276517984db7bb3cd33 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-@@ -764,12 +764,12 @@ public final class CraftServer implements Server {
+@@ -766,12 +766,12 @@ public final class CraftServer implements Server {
  
      @Override
      public boolean getAllowEnd() {
