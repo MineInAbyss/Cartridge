@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Boy0000 <sivertpaulsen2@gmail.com>
+Date: Thu, 22 Oct 2026 20:28:22 +0200
+Subject: [PATCH] Tripwire inside event states
+
+
+diff --git a/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java b/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
+index 0b35a293f3436bcf8a39c4f07a88340cd9d33bcb..89d3bb1f8adb7801fb9202c00412f672ad71bdd9 100644
+--- a/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
++++ b/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
+@@ -346,8 +346,37 @@ public class GlobalConfiguration extends ConfigurationPart {
+     public class BlockUpdates extends ConfigurationPart {
+         public boolean disableNoteblockUpdates = false;
+         public boolean disableTripwireUpdates = false;
++        // Cartridge start - tripwire states that fire EntityInsideBlockEvent
++        @Comment("Tripwire states that still fire EntityInsideBlockEvent while tripwire updates are disabled, written like minecraft:tripwire[attached=true,disarmed=false].\nProperties left out match any value. The tripwire itself stays unchanged")
++        public java.util.List<String> tripwireInsideEventStates = java.util.List.of();
++        private transient java.util.List<net.minecraft.commands.arguments.blocks.BlockStateParser.BlockResult> tripwireInsideEventMatchers = java.util.List.of();
++        // Cartridge end - tripwire states that fire EntityInsideBlockEvent
+         public boolean disableChorusPlantUpdates = false;
+         public boolean disableMushroomBlockUpdates = false;
++
++        // Cartridge start - tripwire states that fire EntityInsideBlockEvent
++        @PostProcess
++        private void parseTripwireInsideEventStates() {
++            final java.util.List<net.minecraft.commands.arguments.blocks.BlockStateParser.BlockResult> matchers = new java.util.ArrayList<>();
++            for (final String state : this.tripwireInsideEventStates) {
++                try {
++                    matchers.add(net.minecraft.commands.arguments.blocks.BlockStateParser.parseForBlock(net.minecraft.core.registries.BuiltInRegistries.BLOCK, state, false));
++                } catch (final com.mojang.brigadier.exceptions.CommandSyntaxException e) {
++                    LOGGER.error("Invalid block-updates.tripwire-inside-event-states entry '{}': {}", state, e.getMessage());
++                }
++            }
++            this.tripwireInsideEventMatchers = java.util.List.copyOf(matchers);
++        }
++
++        public boolean firesTripwireInsideEvent(final net.minecraft.world.level.block.state.BlockState state) {
++            for (final net.minecraft.commands.arguments.blocks.BlockStateParser.BlockResult matcher : this.tripwireInsideEventMatchers) {
++                if (state.is(matcher.blockState().getBlock()) && matcher.properties().entrySet().stream().allMatch(entry -> state.getValue(entry.getKey()).equals(entry.getValue()))) {
++                    return true;
++                }
++            }
++            return false;
++        }
++        // Cartridge end - tripwire states that fire EntityInsideBlockEvent
+     }
+ 
+     public Anticheat anticheat;

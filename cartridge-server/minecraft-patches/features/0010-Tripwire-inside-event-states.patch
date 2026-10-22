@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Boy0000 <sivertpaulsen2@gmail.com>
+Date: Thu, 22 Oct 2026 20:28:22 +0200
+Subject: [PATCH] Tripwire inside event states
+
+
+diff --git a/net/minecraft/world/level/block/TripWireBlock.java b/net/minecraft/world/level/block/TripWireBlock.java
+index 51c5b039e5c4da0273077fe405ab1c3c377ceb23..9f994ac394a2684f0ba96aa4400fd25d3abbd363 100644
+--- a/net/minecraft/world/level/block/TripWireBlock.java
++++ b/net/minecraft/world/level/block/TripWireBlock.java
+@@ -149,8 +149,12 @@ public class TripWireBlock extends Block {
+         final InsideBlockEffectApplier effectApplier,
+         final boolean isPrecise
+     ) {
+-        if (io.papermc.paper.configuration.GlobalConfiguration.get().blockUpdates.disableTripwireUpdates) return; // Paper - prevent tripwires from detecting collision
++        // Cartridge start - tripwire states that fire EntityInsideBlockEvent
++        final io.papermc.paper.configuration.GlobalConfiguration.BlockUpdates blockUpdates = io.papermc.paper.configuration.GlobalConfiguration.get().blockUpdates;
++        if (blockUpdates.disableTripwireUpdates && !blockUpdates.firesTripwireInsideEvent(state)) return; // Paper - prevent tripwires from detecting collision
+         if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(level, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
++        if (blockUpdates.disableTripwireUpdates) return;
++        // Cartridge end - tripwire states that fire EntityInsideBlockEvent
+         if (!level.isClientSide()) {
+             if (!state.getValue(POWERED) && !level.getBlockTicks().hasScheduledTick(pos, this)) {
+                 this.checkPressed(level, pos, List.of(entity));
