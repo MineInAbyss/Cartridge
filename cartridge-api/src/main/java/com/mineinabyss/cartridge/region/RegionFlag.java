@@ -70,6 +70,7 @@ public enum RegionFlag {
     ENTITY_ITEM_FRAME_DESTROY(null, false),
     MOB_SPAWNING(null, false),
     PISTONS(null, false),
+    AUTO_CLOSE_DOORS(null, false),
     FIRE_SPREAD(null, false),
     LAVA_FIRE(null, false),
     LIGHTNING(null, false),

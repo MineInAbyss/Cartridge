@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Boy0000 <sivertpaulsen2@gmail.com>
+Date: Fri, 23 Oct 2026 00:12:35 +0200
+Subject: [PATCH] Door auto close
+
+
+diff --git a/net/minecraft/server/dedicated/DedicatedServer.java b/net/minecraft/server/dedicated/DedicatedServer.java
+index fb7bc8cdff5d0517ffb198296446869eebe0c8f9..b03b5beeb90dd0cbe9fd265a9cec1ecd25474f86 100644
+--- a/net/minecraft/server/dedicated/DedicatedServer.java
++++ b/net/minecraft/server/dedicated/DedicatedServer.java
+@@ -239,6 +239,7 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
+         this.paperConfigurations.initializeWorldDefaultsConfiguration(this.registryAccess());
+         // Paper end - initialize global and world-defaults configuration
+         com.mineinabyss.cartridge.region.CartridgeRegions.init(((java.io.File) this.options.valueOf("paper-settings-directory")).toPath()); // Cartridge - Regions
++        com.mineinabyss.cartridge.config.CartridgeGlobalConfig.init(((java.io.File) this.options.valueOf("paper-settings-directory")).toPath()); // Cartridge - Door auto close
+         this.server.spark.enableEarlyIfRequested(); // Paper - spark
+         // Paper start - fix converting txt to json file; convert old users earlier after PlayerList creation but before file load/save
+         if (this.convertOldUsers()) {
+diff --git a/net/minecraft/world/level/block/DoorBlock.java b/net/minecraft/world/level/block/DoorBlock.java
+index 345b540606a8946fec538d1b7cb088cae10aed9e..7f0161f3c802de47b7829c3adf3f6bf1ec4680bd 100644
+--- a/net/minecraft/world/level/block/DoorBlock.java
++++ b/net/minecraft/world/level/block/DoorBlock.java
+@@ -196,9 +196,17 @@ public class DoorBlock extends Block {
+         level.setBlock(pos, state, Block.UPDATE_CLIENTS | Block.UPDATE_IMMEDIATE);
+         this.playSound(player, level, pos, state.getValue(OPEN));
+         level.gameEvent(player, this.isOpen(state) ? GameEvent.BLOCK_OPEN : GameEvent.BLOCK_CLOSE, pos);
++        com.mineinabyss.cartridge.door.DoorAutoCloser.onToggledByHand(this, level, pos, player); // Cartridge - Door auto close
+         return InteractionResult.SUCCESS;
+     }
+ 
++    // Cartridge start - Door auto close
++    @Override
++    protected void tick(final BlockState state, final ServerLevel level, final BlockPos pos, final RandomSource random) {
++        com.mineinabyss.cartridge.door.DoorAutoCloser.tick(this, state, level, pos);
++    }
++    // Cartridge end - Door auto close
++
+     public boolean isOpen(final BlockState state) {
+         return state.getValue(OPEN);
+     }

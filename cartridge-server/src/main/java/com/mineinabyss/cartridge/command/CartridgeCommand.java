@@ -1,5 +1,6 @@
 package com.mineinabyss.cartridge.command;
 
+import com.mineinabyss.cartridge.config.CartridgeGlobalConfig;
 import com.mineinabyss.cartridge.region.CartridgeRegions;
 import com.mineinabyss.cartridge.region.Region;
 import com.mineinabyss.cartridge.region.RegionFlag;
@@ -29,18 +30,37 @@ import static net.kyori.adventure.text.format.NamedTextColor.YELLOW;
 @NullMarked
 public final class CartridgeCommand {
     public static final String DESCRIPTION = "Cartridge server commands";
+    private static final String RELOAD_PERMISSION = "cartridge.command.reload";
+    private static final String REGION_PERMISSION = "cartridge.command.region";
 
     private CartridgeCommand() {
     }
 
     public static LiteralCommandNode<CommandSourceStack> create() {
         return Commands.literal("cartridge")
-            .requires(source -> source.getSender().hasPermission("cartridge.command.region"))
+            .requires(source -> source.getSender().hasPermission(RELOAD_PERMISSION) || source.getSender().hasPermission(REGION_PERMISSION))
+            .then(Commands.literal("reload")
+                .requires(source -> source.getSender().hasPermission(RELOAD_PERMISSION))
+                .executes(CartridgeCommand::reloadConfig))
             .then(Commands.literal("region")
+                .requires(source -> source.getSender().hasPermission(REGION_PERMISSION))
                 .then(Commands.literal("reload").executes(CartridgeCommand::reload))
                 .then(Commands.literal("info").executes(CartridgeCommand::info))
                 .then(Commands.literal("list").executes(CartridgeCommand::list)))
             .build();
+    }
+
+    private static int reloadConfig(final CommandContext<CommandSourceStack> context) {
+        final CommandSender sender = context.getSource().getSender();
+        try {
+            CartridgeGlobalConfig.reload();
+        } catch (final Exception e) {
+            sender.sendMessage(text("Could not reload cartridge-global.yml, keeping the previous config: " + e.getMessage(), RED));
+            return 0;
+        }
+
+        sender.sendMessage(text("Reloaded cartridge-global.yml", GREEN));
+        return Command.SINGLE_SUCCESS;
     }
 
     private static int reload(final CommandContext<CommandSourceStack> context) {
