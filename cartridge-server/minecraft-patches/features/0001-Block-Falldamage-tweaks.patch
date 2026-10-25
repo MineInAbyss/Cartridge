@@ -69,7 +69,7 @@ index 6da0352bff6d76779aa01655fac98b6b9b319a66..10f1782f9f88a82b98cd87c187fcef9d
 +    // Cartridge end
  }
 diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
-index 1137be30f125cb79f05f3e5c104cdf8cca979ff1..0807d8ce7f67141531118da74a2bd32a4b1342f7 100644
+index 1137be30f125cb79f05f3e5c104cdf8cca979ff1..b27ba3266c586f46b40948808c8ca87e3789a432 100644
 --- a/net/minecraft/server/level/ServerPlayer.java
 +++ b/net/minecraft/server/level/ServerPlayer.java
 @@ -477,6 +477,10 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
@@ -83,17 +83,8 @@ index 1137be30f125cb79f05f3e5c104cdf8cca979ff1..0807d8ce7f67141531118da74a2bd32a
      public ServerPlayer(final MinecraftServer server, final ServerLevel level, final GameProfile gameProfile, final ClientInformation clientInformation) {
          super(level, gameProfile);
          this.server = server;
-@@ -1839,7 +1843,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
-         super.onExplosionHit(explosionCausedBy);
-         this.currentExplosionImpactPos = this.position();
-         this.currentExplosionCause = explosionCausedBy;
--        this.setIgnoreFallDamageFromCurrentImpulse(explosionCausedBy != null && explosionCausedBy.is(EntityTypes.WIND_CHARGE), this.position());
-+        //this.setIgnoreFallDamageFromCurrentImpulse(explosionCausedBy != null && explosionCausedBy.is(EntityTypes.WIND_CHARGE), this.position()); // Cartridge
-     }
- 
-     @Override
 diff --git a/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index 8178922f5ecc7f6709335c7fbeb6dca505b044bb..093d7b1fd198185b0d33c64c51725698c82e939c 100644
+index 8178922f5ecc7f6709335c7fbeb6dca505b044bb..724ef4ad364d253e2066c6c7e61e3d80d14b3d91 100644
 --- a/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 @@ -149,6 +149,7 @@ import net.minecraft.server.level.ServerLevel;
@@ -124,36 +115,11 @@ index 8178922f5ecc7f6709335c7fbeb6dca505b044bb..093d7b1fd198185b0d33c64c51725698
  
                  vehicle.move(MoverType.PLAYER, new Vec3(xDist, yDist, zDist));
                  final boolean didCollide = targetX != vehicle.getX() || targetY != vehicle.getY() || targetZ != vehicle.getZ(); // Paper - needed here as the difference in Y can be reset - also note: this is only a guess at whether collisions took place, floating point errors can make this true when it shouldn't be...
-@@ -747,6 +756,7 @@ public class ServerGamePacketListenerImpl
-                 this.vehicleLastGoodX = vehicle.getX();
-                 this.vehicleLastGoodY = vehicle.getY();
-                 this.vehicleLastGoodZ = vehicle.getZ();
-+                if (vehicle.fallDistance > this.player.getMaxFallDistance()) this.player.fallDistance = vehicle.fallDistance; // Cartridge
-             } else if (vehicle != this.player
-                 && vehicle.getControllingPassenger() != this.player
-                 && (this.tickCount - this.vehiclePositionLastResetAt > 20 || vehicle.distanceToSqr(movingToPos) > Mth.square(1))) {
-@@ -1766,7 +1776,7 @@ public class ServerGamePacketListenerImpl
-                     this.player.doCheckFallDamage(clientDeltaMovement.x, clientDeltaMovement.y, clientDeltaMovement.z, isOnGround);
-                     this.handlePlayerKnownMovement(clientDeltaMovement);
-                     if (movedUpwards) {
--                        this.player.resetFallDistance();
-+                        //this.player.resetFallDistance(); // Cartridge
-                     }
- 
-                     if (isOnGround
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index 267be9e775b8bb8c816c79fb4357a3ef23317b40..d278eb046c19cbb36fb1a54d43144eecf0c233d8 100644
+index 267be9e775b8bb8c816c79fb4357a3ef23317b40..aa94662abb937dd49f2ca0a8db0d629adbeb17c0 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
-@@ -95,6 +95,7 @@ import net.minecraft.world.Nameable;
- import net.minecraft.world.attribute.EnvironmentAttributes;
- import net.minecraft.world.damagesource.DamageSource;
- import net.minecraft.world.damagesource.DamageSources;
-+import net.minecraft.world.entity.ai.attributes.Attributes;
- import net.minecraft.world.entity.item.ItemEntity;
- import net.minecraft.world.entity.player.Player;
- import net.minecraft.world.entity.projectile.Projectile;
-@@ -937,7 +938,7 @@ public abstract class Entity
+@@ -937,7 +937,7 @@ public abstract class Entity
          }
  
          if (this.isInLava()) {
@@ -162,7 +128,7 @@ index 267be9e775b8bb8c816c79fb4357a3ef23317b40..d278eb046c19cbb36fb1a54d43144eec
              // CraftBukkit start
          } else {
              this.lastLavaContact = null;
-@@ -1495,7 +1496,7 @@ public abstract class Entity
+@@ -1495,7 +1495,7 @@ public abstract class Entity
      }
  
      private boolean isStateClimbable(final BlockState state) {
@@ -171,7 +137,7 @@ index 267be9e775b8bb8c816c79fb4357a3ef23317b40..d278eb046c19cbb36fb1a54d43144eec
      }
  
      private boolean vibrationAndSoundEffectsFromBlock(
-@@ -2118,7 +2119,7 @@ public abstract class Entity
+@@ -2118,7 +2118,7 @@ public abstract class Entity
              this.fallDistance -= (float)ya;
          }
  
@@ -180,50 +146,7 @@ index 267be9e775b8bb8c816c79fb4357a3ef23317b40..d278eb046c19cbb36fb1a54d43144eec
              if (this.fallDistance > 0.0) {
                  onState.getBlock().fallOn(this.level(), onState, pos, this, this.fallDistance);
                  this.level()
-@@ -2145,13 +2146,14 @@ public abstract class Entity
-         }
- 
-         this.propagateFallToPassengers(fallDistance, damageModifier, damageSource);
--        return false;
-+        return true; // Cartridge
-     }
- 
-     protected void propagateFallToPassengers(final double fallDistance, final float damageModifier, final DamageSource damageSource) {
-         if (this.isVehicle()) {
-             for (Entity passenger : this.getPassengers()) {
-                 passenger.causeFallDamage(fallDistance, damageModifier, damageSource);
-+                passenger.resetFallDistance(); // Cartridge - the fall is charged here, don't charge it again when they land or dismount
-             }
-         }
-     }
-@@ -3441,6 +3443,12 @@ public abstract class Entity
-                 this.stopRiding();
-             }
- 
-+            // Cartridge start - pay any accumulated fall on mounting so it cannot be dodged or charged twice
-+            if (this.fallDistance > 0.0) {
-+                this.causeFallDamage(this.fallDistance, 1.0f, this.damageSources().fall());
-+                this.resetFallDistance();
-+            }
-+            // Cartridge end
-             this.setPose(Pose.STANDING);
-             this.vehicle = entityToRide;
-             this.vehicle.addPassenger(this);
-@@ -3457,9 +3465,12 @@ public abstract class Entity
-         }
-     }
- 
-+    // Cartridge start - Prevent entering vehicle when falling
-     protected boolean canRide(final Entity vehicle) {
--        return !this.isShiftKeyDown() && this.boardingCooldown <= 0;
-+        boolean isSafeFallDistance = (!(this instanceof net.minecraft.world.entity.LivingEntity livingEntity) || this.fallDistance < livingEntity.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.SAFE_FALL_DISTANCE));
-+        return isSafeFallDistance && !this.isShiftKeyDown() && this.boardingCooldown <= 0;
-     }
-+    // Cartridge end - Prevent entering vehicle when falling
- 
-     public void ejectPassengers() {
-         for (int i = this.passengers.size() - 1; i >= 0; i--) {
-@@ -4068,7 +4079,7 @@ public abstract class Entity
+@@ -4068,7 +4068,7 @@ public abstract class Entity
      }
  
      public void makeStuckInBlock(final BlockState blockState, final Vec3 speedMultiplier) {
@@ -233,7 +156,7 @@ index 267be9e775b8bb8c816c79fb4357a3ef23317b40..d278eb046c19cbb36fb1a54d43144eec
      }
  
 diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
-index 23297b54c74684765f90e9e599d051a44357e9a5..6561be9f79d8c852fb9fb104f7b060efa959cb5c 100644
+index 23297b54c74684765f90e9e599d051a44357e9a5..c067c8d2f59774686fd2eb8dc586797f09be837c 100644
 --- a/net/minecraft/world/entity/LivingEntity.java
 +++ b/net/minecraft/world/entity/LivingEntity.java
 @@ -2158,11 +2158,18 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
@@ -256,123 +179,6 @@ index 23297b54c74684765f90e9e599d051a44357e9a5..6561be9f79d8c852fb9fb104f7b060ef
              return false;
          } else {
              BlockPos ladderCheckPos = this.blockPosition();
-@@ -3768,7 +3775,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
-         AABB beforeTravelBox = this.getBoundingBox();
-         Vec3 input = new Vec3(this.xxa, this.yya, this.zza);
-         if (this.hasEffect(MobEffects.SLOW_FALLING) || this.hasEffect(MobEffects.LEVITATION)) {
--            this.resetFallDistance();
-+            //this.resetFallDistance(); // Cartridge
-         }
- 
-         if (this.getControllingPassenger() instanceof Player controller && this.isAlive()) {
-@@ -3993,7 +4000,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
-     @Override
-     public void rideTick() {
-         super.rideTick();
--        this.resetFallDistance();
-+        //this.resetFallDistance(); // Cartridge
-     }
- 
-     @Override
-diff --git a/net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownEnderpearl.java b/net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownEnderpearl.java
-index 4abbb6a8029f6c77fdbeda9376d3d5cc5970896d..dfe0524f57c4d847a5e406b127188082ddcc37ff 100644
---- a/net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownEnderpearl.java
-+++ b/net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownEnderpearl.java
-@@ -103,6 +103,7 @@ public class ThrownEnderpearl extends ThrowableItemProjectile {
-             if (owner != null && isAllowedToTeleportOwner(owner, level)) {
-                 Vec3 teleportPos = this.oldPosition();
-                 if (owner instanceof ServerPlayer player) {
-+                    double originalY = player.getY(); // Cartridge - Make Ender Pearls increase fall-damage
-                     if (player.connection.isAcceptingMessages()) {
-                         // CraftBukkit start
-                         // Store pre teleportation position as the teleport has been moved up.
-@@ -133,7 +134,11 @@ public class ThrownEnderpearl extends ThrowableItemProjectile {
-                         // );
-                         // CraftBukkit end - moved up
-                         if (newOwner != null) {
--                            newOwner.resetFallDistance();
-+                            // Cartridge start - Make Ender Pearls increase fall-damage
-+                            //newOwner.resetFallDistance(); // Cartridge
-+                            // The added distance is paid on landing, so keep the pearl hurt at vanilla strength to avoid charging the fall twice
-+                            newOwner.fallDistance += Math.max((float) (originalY - this.getY()), 0f);
-+                            // Cartridge end - Make Ender Pearls increase fall-damage
-                             newOwner.resetCurrentImpulseContext();
-                             newOwner.hurtServer(player.level(), this.damageSources().enderPearl().eventEntityDamager(this), 5.0F); // CraftBukkit // Paper - fix DamageSource API
-                         }
-@@ -145,7 +150,7 @@ public class ThrownEnderpearl extends ThrowableItemProjectile {
-                         new TeleportTransition(level, teleportPos, Vec3.ZERO, owner.getYRot(), owner.getXRot(), TeleportTransition.DO_NOTHING)
-                     );
-                     if (newOwner != null) {
--                        newOwner.resetFallDistance();
-+                        //newOwner.resetFallDistance(); // Cartridge - Make Ender Pearls increase fall-damage
-                     }
- 
-                     if (newOwner instanceof LivingEntity livingEntity) {
-diff --git a/net/minecraft/world/entity/vehicle/minecart/NewMinecartBehavior.java b/net/minecraft/world/entity/vehicle/minecart/NewMinecartBehavior.java
-index eacf2358d0eeb9a4b07181bb01e78e781c2d069d..d4fe5ada98ad4cdb323283ad91eb87b4fa8faf55 100644
---- a/net/minecraft/world/entity/vehicle/minecart/NewMinecartBehavior.java
-+++ b/net/minecraft/world/entity/vehicle/minecart/NewMinecartBehavior.java
-@@ -244,7 +244,10 @@ public class NewMinecartBehavior extends MinecartBehavior {
-             }
- 
-             if (onRails) {
-+                // Cartridge start - catching a rail applies accumulated fall damage to riders instead of negating it
-+                if (this.minecart.fallDistance > 0.0) this.minecart.causeFallDamage(this.minecart.fallDistance, 1.0F, this.minecart.damageSources().fall());
-                 this.minecart.resetFallDistance();
-+                // Cartridge end
-                 this.minecart.setOldPosAndRot();
-                 if (currentState.is(Blocks.ACTIVATOR_RAIL)) {
-                     this.minecart
-diff --git a/net/minecraft/world/entity/vehicle/minecart/OldMinecartBehavior.java b/net/minecraft/world/entity/vehicle/minecart/OldMinecartBehavior.java
-index eece08119c52628d0918d90b595276210062b5ed..fa29d5e64cfad01501ec98e2e7c9ecc16a8c8959 100644
---- a/net/minecraft/world/entity/vehicle/minecart/OldMinecartBehavior.java
-+++ b/net/minecraft/world/entity/vehicle/minecart/OldMinecartBehavior.java
-@@ -96,7 +96,10 @@ public class OldMinecartBehavior extends MinecartBehavior {
-     public void moveAlongTrack(final ServerLevel level) {
-         BlockPos pos = this.minecart.getCurrentBlockPosOrRailBelow();
-         BlockState state = this.level().getBlockState(pos);
-+        // Cartridge start - catching a rail applies accumulated fall damage to riders instead of negating it
-+        if (this.minecart.fallDistance > 0.0) this.minecart.causeFallDamage(this.minecart.fallDistance, 1.0F, this.minecart.damageSources().fall());
-         this.minecart.resetFallDistance();
-+        // Cartridge end
-         double x = this.minecart.getX();
-         double y = this.minecart.getY();
-         double z = this.minecart.getZ();
-diff --git a/net/minecraft/world/item/MaceItem.java b/net/minecraft/world/item/MaceItem.java
-index 88eb1c885850d1c4f5b0a7a013038f1de7851898..aaf5659080b09dafe68a7431f05cc9a9aec4097c 100644
---- a/net/minecraft/world/item/MaceItem.java
-+++ b/net/minecraft/world/item/MaceItem.java
-@@ -63,7 +63,7 @@ public class MaceItem extends Item {
-         // Paper end - Add EntityAttemptSmashAttackEvent
-             ServerLevel level = (ServerLevel)attacker.level();
-             attacker.setDeltaMovement(attacker.getDeltaMovement().with(Direction.Axis.Y, 0.01F));
--            attacker.setIgnoreFallDamageFromCurrentImpulse(true, this.calculateImpactPosition(attacker));
-+            attacker.setIgnoreFallDamageFromCurrentImpulse(false, this.calculateImpactPosition(attacker)); // Cartridge - prevent mace from resetting fall-distance
-             if (attacker instanceof ServerPlayer player) {
-                 player.connection.send(new ClientboundSetEntityMotionPacket(player));
-             }
-@@ -92,7 +92,7 @@ public class MaceItem extends Item {
-     @Override
-     public void postHurtEnemy(final ItemStack itemStack, final LivingEntity mob, final LivingEntity attacker) {
-         if (canSmashAttack(attacker)) {
--            attacker.resetFallDistance();
-+            //attacker.resetFallDistance(); // Cartridge
-         }
-     }
- 
-diff --git a/net/minecraft/world/item/consume_effects/TeleportRandomlyConsumeEffect.java b/net/minecraft/world/item/consume_effects/TeleportRandomlyConsumeEffect.java
-index 438af6925200f8fbaf432ca55ae273cdfb3e1f4e..12eab87fb2f66668fd6befb2fd4c486d91d00631 100644
---- a/net/minecraft/world/item/consume_effects/TeleportRandomlyConsumeEffect.java
-+++ b/net/minecraft/world/item/consume_effects/TeleportRandomlyConsumeEffect.java
-@@ -91,7 +91,7 @@ public record TeleportRandomlyConsumeEffect(float diameter, boolean directionalP
-                     );
-                 }
- 
--                user.resetFallDistance();
-+                //user.resetFallDistance(); // Cartridge - chorus teleports no longer negate fall damage
-                 user.resetCurrentImpulseContext();
-                 return true;
-             }
 diff --git a/net/minecraft/world/level/block/BedBlock.java b/net/minecraft/world/level/block/BedBlock.java
 index 1b6c792f39ee909120261f5dfc43a9130f7fd7ee..dfd5677d93d301b6f9154e511b3b95cf7f6558cb 100644
 --- a/net/minecraft/world/level/block/BedBlock.java
@@ -543,7 +349,7 @@ index fab033a193debf323d198abcca347ef71e7c2b7b..2ee1414a9fd4846fa1f65aadd911616b
      private void playNote(final @Nullable Entity source, final BlockState state, final Level level, final BlockPos pos) {
          if (state.getValue(INSTRUMENT).worksAboveNoteBlock() || level.getBlockState(pos.above()).isAir()) {
 diff --git a/net/minecraft/world/level/block/PowderSnowBlock.java b/net/minecraft/world/level/block/PowderSnowBlock.java
-index fcc07616a72ff6921f1a21459300bdef658e6408..1c2560cb7c8406696e38548906bc216ca1b3fcca 100644
+index fcc07616a72ff6921f1a21459300bdef658e6408..6014936d3902d7c64d95c66ff9a07bba5a5a12db 100644
 --- a/net/minecraft/world/level/block/PowderSnowBlock.java
 +++ b/net/minecraft/world/level/block/PowderSnowBlock.java
 @@ -117,6 +117,7 @@ public class PowderSnowBlock extends Block implements BucketPickup {
@@ -554,6 +360,16 @@ index fcc07616a72ff6921f1a21459300bdef658e6408..1c2560cb7c8406696e38548906bc216c
          if (!(fallDistance < 4.0) && entity instanceof LivingEntity livingEntity) {
              LivingEntity.Fallsounds entityFallsounds = livingEntity.getFallSounds();
              SoundEvent fallSound = fallDistance < 7.0 ? entityFallsounds.small() : entityFallsounds.big();
+@@ -135,7 +136,8 @@ public class PowderSnowBlock extends Block implements BucketPickup {
+         if (!context.isPlacement() && context instanceof EntityCollisionContext entityCollisionContext) {
+             Entity entity = entityCollisionContext.getEntity();
+             if (entity != null) {
+-                if (entity.fallDistance > 2.5) {
++                // Cartridge - player fall distance no longer matches the client's, so the client decides whether a fall lands on top or sinks in
++                if (entity.fallDistance > 2.5 && !(entity instanceof net.minecraft.server.level.ServerPlayer)) {
+                     return FALLING_COLLISION_SHAPE;
+                 }
+ 
 diff --git a/net/minecraft/world/level/block/ShelfMushroomBlock.java b/net/minecraft/world/level/block/ShelfMushroomBlock.java
 index c9ea3b46e414a778a1f98ea116b3bc203cf3f621..5749df2be92d9c0a1c60361e2a12f74b5e52d6f6 100644
 --- a/net/minecraft/world/level/block/ShelfMushroomBlock.java

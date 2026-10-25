@@ -1,0 +1,265 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Boy0000 <sivertpaulsen2@gmail.com>
+Date: Sun, 25 Oct 2026 22:30:10 +0100
+Subject: [PATCH] Entity Falldamage tweaks
+
+
+diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
+index 7a5b68b0e5c20eaa9609ef6280867380ffcded2c..2a5666d22d1d816b81b6e458eb0ee9d486f69f10 100644
+--- a/net/minecraft/server/level/ServerPlayer.java
++++ b/net/minecraft/server/level/ServerPlayer.java
+@@ -1911,7 +1911,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
+         super.onExplosionHit(explosionCausedBy);
+         this.currentExplosionImpactPos = this.position();
+         this.currentExplosionCause = explosionCausedBy;
+-        this.setIgnoreFallDamageFromCurrentImpulse(explosionCausedBy != null && explosionCausedBy.is(EntityTypes.WIND_CHARGE), this.position());
++        //this.setIgnoreFallDamageFromCurrentImpulse(explosionCausedBy != null && explosionCausedBy.is(EntityTypes.WIND_CHARGE), this.position()); // Cartridge
+     }
+ 
+     @Override
+diff --git a/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
+index 724ef4ad364d253e2066c6c7e61e3d80d14b3d91..1bfc36f9888cd1f1c18dda3b0c9b2b13662b3bf3 100644
+--- a/net/minecraft/server/network/ServerGamePacketListenerImpl.java
++++ b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
+@@ -1775,7 +1775,7 @@ public class ServerGamePacketListenerImpl
+                     this.player.doCheckFallDamage(clientDeltaMovement.x, clientDeltaMovement.y, clientDeltaMovement.z, isOnGround);
+                     this.handlePlayerKnownMovement(clientDeltaMovement);
+                     if (movedUpwards) {
+-                        this.player.resetFallDistance();
++                        //this.player.resetFallDistance(); // Cartridge
+                     }
+ 
+                     if (isOnGround
+diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
+index 24c458f226aadd8cbb3d440dc22cdfb94f0a8a0a..30eda78d035c072550fc5ede9d8541ac85c0c5fd 100644
+--- a/net/minecraft/world/entity/Entity.java
++++ b/net/minecraft/world/entity/Entity.java
+@@ -95,6 +95,7 @@ import net.minecraft.world.Nameable;
+ import net.minecraft.world.attribute.EnvironmentAttributes;
+ import net.minecraft.world.damagesource.DamageSource;
+ import net.minecraft.world.damagesource.DamageSources;
++import net.minecraft.world.entity.ai.attributes.Attributes;
+ import net.minecraft.world.entity.item.ItemEntity;
+ import net.minecraft.world.entity.player.Player;
+ import net.minecraft.world.entity.projectile.Projectile;
+@@ -2145,13 +2146,14 @@ public abstract class Entity
+         }
+ 
+         this.propagateFallToPassengers(fallDistance, damageModifier, damageSource);
+-        return false;
++        return true; // Cartridge
+     }
+ 
+     protected void propagateFallToPassengers(final double fallDistance, final float damageModifier, final DamageSource damageSource) {
+         if (this.isVehicle()) {
+             for (Entity passenger : this.getPassengers()) {
+-                passenger.causeFallDamage(fallDistance, damageModifier, damageSource);
++                passenger.causeFallDamage(fallDistance + passenger.fallDistance, damageModifier, damageSource); // Cartridge - riders can carry a harmless fall from earlier splashes or seat swaps
++                passenger.resetFallDistance(); // Cartridge - the fall is charged here, don't charge it again when they land or dismount
+             }
+         }
+     }
+@@ -3474,10 +3476,25 @@ public abstract class Entity
+                 return false;
+             }
+             // CraftBukkit end
++            // Cartridge start - swapping seats teleports instead of falling, so the drop between the seats has to be added by hand
++            if (this instanceof ServerPlayer && this.isPassenger()) {
++                double newSeatedY = entityToRide.getPassengerRidingPosition(this).y - this.getVehicleAttachmentPoint(entityToRide).y;
++                this.fallDistance += Math.max(0.0, this.getY() - newSeatedY);
++            }
++            // Cartridge end
+             if (this.isPassenger()) {
+                 this.stopRiding();
+             }
+ 
++            // Cartridge start - pay any accumulated fall on mounting so it cannot be dodged or charged twice
++            if (this instanceof ServerPlayer player) {
++                // A harmless drop is kept while seated, so hopping down a tower of seats adds up like one fall
++                player.chargeChainedFall();
++            } else if (this.fallDistance > 0.0) {
++                this.causeFallDamage(this.fallDistance, 1.0f, this.damageSources().fall());
++                this.resetFallDistance();
++            }
++            // Cartridge end
+             this.setPose(Pose.STANDING);
+             this.vehicle = entityToRide;
+             this.vehicle.addPassenger(this);
+@@ -3494,9 +3511,12 @@ public abstract class Entity
+         }
+     }
+ 
++    // Cartridge start - Prevent entering vehicle when falling
+     protected boolean canRide(final Entity vehicle) {
+-        return !this.isShiftKeyDown() && this.boardingCooldown <= 0;
++        boolean isSafeFallDistance = (!(this instanceof net.minecraft.world.entity.LivingEntity livingEntity) || this.fallDistance < livingEntity.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.SAFE_FALL_DISTANCE));
++        return isSafeFallDistance && !this.isShiftKeyDown() && this.boardingCooldown <= 0;
+     }
++    // Cartridge end - Prevent entering vehicle when falling
+ 
+     public void ejectPassengers() {
+         for (int i = this.passengers.size() - 1; i >= 0; i--) {
+@@ -3521,6 +3541,7 @@ public abstract class Entity
+             Entity oldVehicle = this.vehicle;
+             this.vehicle = null;
+             if (!oldVehicle.removePassenger(this, suppressCancellation)) this.vehicle = oldVehicle; // CraftBukkit // Paper - Force entity dismount during teleportation
++            if (this.vehicle == null) this.fallDistance = Math.max(this.fallDistance, oldVehicle.getRootVehicle().fallDistance); // Cartridge - riders don't fall themselves, so leaving a falling vehicle keeps its fall
+             Entity.RemovalReason removalReason = this.getRemovalReason();
+             if (removalReason == null || removalReason.shouldDestroy()) {
+                 this.level().gameEvent(this, GameEvent.ENTITY_DISMOUNT, oldVehicle.position);
+diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
+index 0fa7078277afe3982f9eb48c5a7a196a900b361f..aa989bb022e66050136c55735eea209069e93b31 100644
+--- a/net/minecraft/world/entity/LivingEntity.java
++++ b/net/minecraft/world/entity/LivingEntity.java
+@@ -3776,7 +3776,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+         AABB beforeTravelBox = this.getBoundingBox();
+         Vec3 input = new Vec3(this.xxa, this.yya, this.zza);
+         if (this.hasEffect(MobEffects.SLOW_FALLING) || this.hasEffect(MobEffects.LEVITATION)) {
+-            this.resetFallDistance();
++            //this.resetFallDistance(); // Cartridge
+         }
+ 
+         if (this.getControllingPassenger() instanceof Player controller && this.isAlive()) {
+@@ -4001,7 +4001,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+     @Override
+     public void rideTick() {
+         super.rideTick();
+-        this.resetFallDistance();
++        //this.resetFallDistance(); // Cartridge
+     }
+ 
+     @Override
+diff --git a/net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownEnderpearl.java b/net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownEnderpearl.java
+index 4abbb6a8029f6c77fdbeda9376d3d5cc5970896d..dfe0524f57c4d847a5e406b127188082ddcc37ff 100644
+--- a/net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownEnderpearl.java
++++ b/net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownEnderpearl.java
+@@ -103,6 +103,7 @@ public class ThrownEnderpearl extends ThrowableItemProjectile {
+             if (owner != null && isAllowedToTeleportOwner(owner, level)) {
+                 Vec3 teleportPos = this.oldPosition();
+                 if (owner instanceof ServerPlayer player) {
++                    double originalY = player.getY(); // Cartridge - Make Ender Pearls increase fall-damage
+                     if (player.connection.isAcceptingMessages()) {
+                         // CraftBukkit start
+                         // Store pre teleportation position as the teleport has been moved up.
+@@ -133,7 +134,11 @@ public class ThrownEnderpearl extends ThrowableItemProjectile {
+                         // );
+                         // CraftBukkit end - moved up
+                         if (newOwner != null) {
+-                            newOwner.resetFallDistance();
++                            // Cartridge start - Make Ender Pearls increase fall-damage
++                            //newOwner.resetFallDistance(); // Cartridge
++                            // The added distance is paid on landing, so keep the pearl hurt at vanilla strength to avoid charging the fall twice
++                            newOwner.fallDistance += Math.max((float) (originalY - this.getY()), 0f);
++                            // Cartridge end - Make Ender Pearls increase fall-damage
+                             newOwner.resetCurrentImpulseContext();
+                             newOwner.hurtServer(player.level(), this.damageSources().enderPearl().eventEntityDamager(this), 5.0F); // CraftBukkit // Paper - fix DamageSource API
+                         }
+@@ -145,7 +150,7 @@ public class ThrownEnderpearl extends ThrowableItemProjectile {
+                         new TeleportTransition(level, teleportPos, Vec3.ZERO, owner.getYRot(), owner.getXRot(), TeleportTransition.DO_NOTHING)
+                     );
+                     if (newOwner != null) {
+-                        newOwner.resetFallDistance();
++                        //newOwner.resetFallDistance(); // Cartridge - Make Ender Pearls increase fall-damage
+                     }
+ 
+                     if (newOwner instanceof LivingEntity livingEntity) {
+diff --git a/net/minecraft/world/entity/vehicle/boat/AbstractBoat.java b/net/minecraft/world/entity/vehicle/boat/AbstractBoat.java
+index 6c9ec44a46b6f40a2b8b008cc50c0cafe5e909e6..76b1d743185e929562fd6daecf85a8c918eecbde 100644
+--- a/net/minecraft/world/entity/vehicle/boat/AbstractBoat.java
++++ b/net/minecraft/world/entity/vehicle/boat/AbstractBoat.java
+@@ -803,11 +803,16 @@ public abstract class AbstractBoat extends VehicleEntity implements Leashable {
+     protected void checkFallDamage(final double ya, final boolean onGround, final BlockState onState, final BlockPos pos) {
+         this.lastYd = this.getDeltaMovement().y;
+         if (!this.isPassenger()) {
++            // Cartridge start - landing on ground applies the fall to passengers, then
++            // resets so old falls cannot linger and taint later riders.
++            // Water landings are handled with the player splash in Entity.updateFluidInteraction
+             if (onGround) {
++                if (this.fallDistance > 0.0) this.causeFallDamage(this.fallDistance, 1.0F, this.damageSources().fall());
+                 this.resetFallDistance();
+-            } else if (!this.level().getFluidState(this.blockPosition().below()).is(FluidTags.WATER) && ya < 0.0) {
++            } else if (!this.isInWater() && ya < 0.0) {
+                 this.fallDistance -= (float)ya;
+             }
++            // Cartridge end
+         }
+     }
+ 
+diff --git a/net/minecraft/world/entity/vehicle/minecart/AbstractMinecart.java b/net/minecraft/world/entity/vehicle/minecart/AbstractMinecart.java
+index db16f4802235646d3e20eebf417951391f3193e8..6d9eb24f5f7dc6ad04ff7297cdd400ca2d88304f 100644
+--- a/net/minecraft/world/entity/vehicle/minecart/AbstractMinecart.java
++++ b/net/minecraft/world/entity/vehicle/minecart/AbstractMinecart.java
+@@ -326,7 +326,7 @@ public abstract class AbstractMinecart extends VehicleEntity {
+         if (this.isInLava()) {
+             this.lavaIgnite();
+             this.lavaHurt();
+-            this.fallDistance *= 0.5;
++            //this.fallDistance *= 0.5; // Cartridge
+         }
+ 
+         this.firstTick = false;
+diff --git a/net/minecraft/world/entity/vehicle/minecart/NewMinecartBehavior.java b/net/minecraft/world/entity/vehicle/minecart/NewMinecartBehavior.java
+index eacf2358d0eeb9a4b07181bb01e78e781c2d069d..d4fe5ada98ad4cdb323283ad91eb87b4fa8faf55 100644
+--- a/net/minecraft/world/entity/vehicle/minecart/NewMinecartBehavior.java
++++ b/net/minecraft/world/entity/vehicle/minecart/NewMinecartBehavior.java
+@@ -244,7 +244,10 @@ public class NewMinecartBehavior extends MinecartBehavior {
+             }
+ 
+             if (onRails) {
++                // Cartridge start - catching a rail applies accumulated fall damage to riders instead of negating it
++                if (this.minecart.fallDistance > 0.0) this.minecart.causeFallDamage(this.minecart.fallDistance, 1.0F, this.minecart.damageSources().fall());
+                 this.minecart.resetFallDistance();
++                // Cartridge end
+                 this.minecart.setOldPosAndRot();
+                 if (currentState.is(Blocks.ACTIVATOR_RAIL)) {
+                     this.minecart
+diff --git a/net/minecraft/world/entity/vehicle/minecart/OldMinecartBehavior.java b/net/minecraft/world/entity/vehicle/minecart/OldMinecartBehavior.java
+index eece08119c52628d0918d90b595276210062b5ed..fa29d5e64cfad01501ec98e2e7c9ecc16a8c8959 100644
+--- a/net/minecraft/world/entity/vehicle/minecart/OldMinecartBehavior.java
++++ b/net/minecraft/world/entity/vehicle/minecart/OldMinecartBehavior.java
+@@ -96,7 +96,10 @@ public class OldMinecartBehavior extends MinecartBehavior {
+     public void moveAlongTrack(final ServerLevel level) {
+         BlockPos pos = this.minecart.getCurrentBlockPosOrRailBelow();
+         BlockState state = this.level().getBlockState(pos);
++        // Cartridge start - catching a rail applies accumulated fall damage to riders instead of negating it
++        if (this.minecart.fallDistance > 0.0) this.minecart.causeFallDamage(this.minecart.fallDistance, 1.0F, this.minecart.damageSources().fall());
+         this.minecart.resetFallDistance();
++        // Cartridge end
+         double x = this.minecart.getX();
+         double y = this.minecart.getY();
+         double z = this.minecart.getZ();
+diff --git a/net/minecraft/world/item/MaceItem.java b/net/minecraft/world/item/MaceItem.java
+index 88eb1c885850d1c4f5b0a7a013038f1de7851898..aaf5659080b09dafe68a7431f05cc9a9aec4097c 100644
+--- a/net/minecraft/world/item/MaceItem.java
++++ b/net/minecraft/world/item/MaceItem.java
+@@ -63,7 +63,7 @@ public class MaceItem extends Item {
+         // Paper end - Add EntityAttemptSmashAttackEvent
+             ServerLevel level = (ServerLevel)attacker.level();
+             attacker.setDeltaMovement(attacker.getDeltaMovement().with(Direction.Axis.Y, 0.01F));
+-            attacker.setIgnoreFallDamageFromCurrentImpulse(true, this.calculateImpactPosition(attacker));
++            attacker.setIgnoreFallDamageFromCurrentImpulse(false, this.calculateImpactPosition(attacker)); // Cartridge - prevent mace from resetting fall-distance
+             if (attacker instanceof ServerPlayer player) {
+                 player.connection.send(new ClientboundSetEntityMotionPacket(player));
+             }
+@@ -92,7 +92,7 @@ public class MaceItem extends Item {
+     @Override
+     public void postHurtEnemy(final ItemStack itemStack, final LivingEntity mob, final LivingEntity attacker) {
+         if (canSmashAttack(attacker)) {
+-            attacker.resetFallDistance();
++            //attacker.resetFallDistance(); // Cartridge
+         }
+     }
+ 
+diff --git a/net/minecraft/world/item/consume_effects/TeleportRandomlyConsumeEffect.java b/net/minecraft/world/item/consume_effects/TeleportRandomlyConsumeEffect.java
+index 438af6925200f8fbaf432ca55ae273cdfb3e1f4e..12eab87fb2f66668fd6befb2fd4c486d91d00631 100644
+--- a/net/minecraft/world/item/consume_effects/TeleportRandomlyConsumeEffect.java
++++ b/net/minecraft/world/item/consume_effects/TeleportRandomlyConsumeEffect.java
+@@ -91,7 +91,7 @@ public record TeleportRandomlyConsumeEffect(float diameter, boolean directionalP
+                     );
+                 }
+ 
+-                user.resetFallDistance();
++                //user.resetFallDistance(); // Cartridge - chorus teleports no longer negate fall damage
+                 user.resetCurrentImpulseContext();
+                 return true;
+             }
