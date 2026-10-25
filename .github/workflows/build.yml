@@ -5,6 +5,9 @@ on:
     branches: [ "**" ]
   pull_request:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     # Only run on PRs if the source branch is on someone else's repo
@@ -25,10 +28,32 @@ jobs:
       - name: Apply Patches
         run: ./gradlew applyAllPatches --stacktrace
       - name: Build
-        run: ./gradlew build
+        run: ./gradlew build createPaperclipJar
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
       - name: Publish API
         if: ${{ github.event_name == 'push' }}
         run: >
           ./gradlew :cartridge-api:publish
           -PmineinabyssMavenUsername=${{ secrets.MAVEN_PUBLISH_USERNAME }}
           -PmineinabyssMavenPassword=${{ secrets.MAVEN_PUBLISH_PASSWORD }}
+      - name: Prepare Release Jar
+        id: release
+        if: ${{ github.event_name == 'push' && github.ref_name == github.event.repository.default_branch }}
+        run: |
+          mc_version=$(grep '^mcVersion=' gradle.properties | cut -d= -f2)
+          tag="v$mc_version-${{ github.run_number }}"
+          jar="cartridge-paperclip-$mc_version-${{ github.run_number }}.jar"
+          cp cartridge-server/build/libs/cartridge-paperclip-*.jar "$jar"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "jar=$jar" >> "$GITHUB_OUTPUT"
+      # The server image downloads the first jar asset of the latest release, so only the paperclip jar is attached
+      - name: Create Release
+        if: ${{ steps.release.outcome == 'success' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          files: ${{ steps.release.outputs.jar }}
+          generate_release_notes: true
+          make_latest: true
