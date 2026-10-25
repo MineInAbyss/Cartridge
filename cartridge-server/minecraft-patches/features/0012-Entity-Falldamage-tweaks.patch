@@ -31,7 +31,7 @@ index 724ef4ad364d253e2066c6c7e61e3d80d14b3d91..1bfc36f9888cd1f1c18dda3b0c9b2b13
  
                      if (isOnGround
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index 24c458f226aadd8cbb3d440dc22cdfb94f0a8a0a..30eda78d035c072550fc5ede9d8541ac85c0c5fd 100644
+index 24c458f226aadd8cbb3d440dc22cdfb94f0a8a0a..69ccd975b45e2722846900a2856e71d4b8f96824 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
 @@ -95,6 +95,7 @@ import net.minecraft.world.Nameable;
@@ -59,14 +59,15 @@ index 24c458f226aadd8cbb3d440dc22cdfb94f0a8a0a..30eda78d035c072550fc5ede9d8541ac
              }
          }
      }
-@@ -3474,10 +3476,25 @@ public abstract class Entity
+@@ -3474,10 +3476,26 @@ public abstract class Entity
                  return false;
              }
              // CraftBukkit end
-+            // Cartridge start - swapping seats teleports instead of falling, so the drop between the seats has to be added by hand
++            // Cartridge start - swapping seats teleports instead of falling, so the height change between the seats has to be applied by hand.
++            // Swapping up takes it off again, so hopping down and back up nets out
 +            if (this instanceof ServerPlayer && this.isPassenger()) {
 +                double newSeatedY = entityToRide.getPassengerRidingPosition(this).y - this.getVehicleAttachmentPoint(entityToRide).y;
-+                this.fallDistance += Math.max(0.0, this.getY() - newSeatedY);
++                this.fallDistance = Math.max(0.0, this.fallDistance + this.getY() - newSeatedY);
 +            }
 +            // Cartridge end
              if (this.isPassenger()) {
@@ -85,7 +86,7 @@ index 24c458f226aadd8cbb3d440dc22cdfb94f0a8a0a..30eda78d035c072550fc5ede9d8541ac
              this.setPose(Pose.STANDING);
              this.vehicle = entityToRide;
              this.vehicle.addPassenger(this);
-@@ -3494,9 +3511,12 @@ public abstract class Entity
+@@ -3494,9 +3512,12 @@ public abstract class Entity
          }
      }
  
@@ -99,7 +100,7 @@ index 24c458f226aadd8cbb3d440dc22cdfb94f0a8a0a..30eda78d035c072550fc5ede9d8541ac
  
      public void ejectPassengers() {
          for (int i = this.passengers.size() - 1; i >= 0; i--) {
-@@ -3521,6 +3541,7 @@ public abstract class Entity
+@@ -3521,6 +3542,7 @@ public abstract class Entity
              Entity oldVehicle = this.vehicle;
              this.vehicle = null;
              if (!oldVehicle.removePassenger(this, suppressCancellation)) this.vehicle = oldVehicle; // CraftBukkit // Paper - Force entity dismount during teleportation
