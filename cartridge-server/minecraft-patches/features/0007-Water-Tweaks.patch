@@ -85,10 +85,10 @@ index 0807d8ce7f67141531118da74a2bd32a4b1342f7..456405b10e8662aa975c909c98d85254
          if (this.fallDistance > 0.0 && this.startingToFallPosition == null) {
              this.startingToFallPosition = this.position();
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index ef9d0a2359cea00e5015d25d2bdaa9d6e962d743..d3da0628cca748a2ca412b3f0db8d425f0cd8cc0 100644
+index d278eb046c19cbb36fb1a54d43144eecf0c233d8..32087433b14cb23a54dc702b7c2c7373fc066152 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
-@@ -1222,7 +1222,7 @@ public abstract class Entity
+@@ -1223,7 +1223,7 @@ public abstract class Entity
                      BlockHitResult hitResult = this.level()
                          .clip(new ClipContext(this.position(), checkTo, ClipContext.Block.FALLDAMAGE_RESETTING, ClipContext.Fluid.WATER, this));
                      if (hitResult.getType() != HitResult.Type.MISS) {
@@ -97,7 +97,7 @@ index ef9d0a2359cea00e5015d25d2bdaa9d6e962d743..d3da0628cca748a2ca412b3f0db8d425
                      }
                  }
  
-@@ -2114,7 +2114,7 @@ public abstract class Entity
+@@ -2115,7 +2115,7 @@ public abstract class Entity
      }
  
      protected void checkFallDamage(final double ya, final boolean onGround, final BlockState onState, final BlockPos pos) {
@@ -106,7 +106,7 @@ index ef9d0a2359cea00e5015d25d2bdaa9d6e962d743..d3da0628cca748a2ca412b3f0db8d425
              this.fallDistance -= (float)ya;
          }
  
-@@ -2178,6 +2178,14 @@ public abstract class Entity
+@@ -2179,6 +2179,14 @@ public abstract class Entity
          return this.fluidInteraction.isInFluid(FluidTags.ENTITY_FLOATABLE);
      }
  
@@ -121,7 +121,7 @@ index ef9d0a2359cea00e5015d25d2bdaa9d6e962d743..d3da0628cca748a2ca412b3f0db8d425
      public boolean isUnderWater() {
          return this.wasEyeInWater && this.isInWater();
      }
-@@ -2215,11 +2223,41 @@ public abstract class Entity
+@@ -2216,11 +2224,41 @@ public abstract class Entity
          boolean inWater = this.fluidInteraction.isInFluid(FluidTags.WATER);
          boolean inLava = this.fluidInteraction.isInFluid(FluidTags.LAVA);
          if (inWater) {
@@ -164,7 +164,7 @@ index ef9d0a2359cea00e5015d25d2bdaa9d6e962d743..d3da0628cca748a2ca412b3f0db8d425
  
          this.wasTouchingWater = inWater;
          if (this.isPushedByFluid()) {
-@@ -4019,7 +4057,7 @@ public abstract class Entity
+@@ -4020,7 +4058,7 @@ public abstract class Entity
              entity.setDeltaMovement(movement.x, yd, movement.z);
          }
  
@@ -173,7 +173,7 @@ index ef9d0a2359cea00e5015d25d2bdaa9d6e962d743..d3da0628cca748a2ca412b3f0db8d425
      }
  
      // Paper start
-@@ -4037,6 +4075,7 @@ public abstract class Entity
+@@ -4038,6 +4076,7 @@ public abstract class Entity
      }
  
      public void checkFallDistanceAccumulation() {

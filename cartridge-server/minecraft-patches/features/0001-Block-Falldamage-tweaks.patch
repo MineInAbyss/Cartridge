@@ -142,7 +142,7 @@ index 8178922f5ecc7f6709335c7fbeb6dca505b044bb..093d7b1fd198185b0d33c64c51725698
  
                      if (isOnGround
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index 5cc94652112c67ca4e7ae6e8b324e9c9f8908d7d..ef9d0a2359cea00e5015d25d2bdaa9d6e962d743 100644
+index 267be9e775b8bb8c816c79fb4357a3ef23317b40..d278eb046c19cbb36fb1a54d43144eecf0c233d8 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
 @@ -95,6 +95,7 @@ import net.minecraft.world.Nameable;
@@ -153,7 +153,7 @@ index 5cc94652112c67ca4e7ae6e8b324e9c9f8908d7d..ef9d0a2359cea00e5015d25d2bdaa9d6
  import net.minecraft.world.entity.item.ItemEntity;
  import net.minecraft.world.entity.player.Player;
  import net.minecraft.world.entity.projectile.Projectile;
-@@ -936,7 +937,7 @@ public abstract class Entity
+@@ -937,7 +938,7 @@ public abstract class Entity
          }
  
          if (this.isInLava()) {
@@ -162,7 +162,7 @@ index 5cc94652112c67ca4e7ae6e8b324e9c9f8908d7d..ef9d0a2359cea00e5015d25d2bdaa9d6
              // CraftBukkit start
          } else {
              this.lastLavaContact = null;
-@@ -1494,7 +1495,7 @@ public abstract class Entity
+@@ -1495,7 +1496,7 @@ public abstract class Entity
      }
  
      private boolean isStateClimbable(final BlockState state) {
@@ -171,7 +171,7 @@ index 5cc94652112c67ca4e7ae6e8b324e9c9f8908d7d..ef9d0a2359cea00e5015d25d2bdaa9d6
      }
  
      private boolean vibrationAndSoundEffectsFromBlock(
-@@ -2117,7 +2118,7 @@ public abstract class Entity
+@@ -2118,7 +2119,7 @@ public abstract class Entity
              this.fallDistance -= (float)ya;
          }
  
@@ -180,7 +180,7 @@ index 5cc94652112c67ca4e7ae6e8b324e9c9f8908d7d..ef9d0a2359cea00e5015d25d2bdaa9d6
              if (this.fallDistance > 0.0) {
                  onState.getBlock().fallOn(this.level(), onState, pos, this, this.fallDistance);
                  this.level()
-@@ -2144,13 +2145,14 @@ public abstract class Entity
+@@ -2145,13 +2146,14 @@ public abstract class Entity
          }
  
          this.propagateFallToPassengers(fallDistance, damageModifier, damageSource);
@@ -196,7 +196,7 @@ index 5cc94652112c67ca4e7ae6e8b324e9c9f8908d7d..ef9d0a2359cea00e5015d25d2bdaa9d6
              }
          }
      }
-@@ -3440,6 +3442,12 @@ public abstract class Entity
+@@ -3441,6 +3443,12 @@ public abstract class Entity
                  this.stopRiding();
              }
  
@@ -209,7 +209,7 @@ index 5cc94652112c67ca4e7ae6e8b324e9c9f8908d7d..ef9d0a2359cea00e5015d25d2bdaa9d6
              this.setPose(Pose.STANDING);
              this.vehicle = entityToRide;
              this.vehicle.addPassenger(this);
-@@ -3456,9 +3464,12 @@ public abstract class Entity
+@@ -3457,9 +3465,12 @@ public abstract class Entity
          }
      }
  
@@ -223,7 +223,7 @@ index 5cc94652112c67ca4e7ae6e8b324e9c9f8908d7d..ef9d0a2359cea00e5015d25d2bdaa9d6
  
      public void ejectPassengers() {
          for (int i = this.passengers.size() - 1; i >= 0; i--) {
-@@ -4067,7 +4078,7 @@ public abstract class Entity
+@@ -4068,7 +4079,7 @@ public abstract class Entity
      }
  
      public void makeStuckInBlock(final BlockState blockState, final Vec3 speedMultiplier) {
