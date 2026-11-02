@@ -38,7 +38,7 @@ public final class CartridgeCommand {
 
     public static LiteralCommandNode<CommandSourceStack> create() {
         return Commands.literal("cartridge")
-            .requires(source -> source.getSender().hasPermission(RELOAD_PERMISSION) || source.getSender().hasPermission(REGION_PERMISSION))
+            .requires(source -> source.getSender().hasPermission(RELOAD_PERMISSION) || source.getSender().hasPermission(REGION_PERMISSION) || source.getSender().hasPermission(BiomeCommand.PERMISSION))
             .then(Commands.literal("reload")
                 .requires(source -> source.getSender().hasPermission(RELOAD_PERMISSION))
                 .executes(CartridgeCommand::reloadConfig))
@@ -47,6 +47,7 @@ public final class CartridgeCommand {
                 .then(Commands.literal("reload").executes(CartridgeCommand::reload))
                 .then(Commands.literal("info").executes(CartridgeCommand::info))
                 .then(Commands.literal("list").executes(CartridgeCommand::list)))
+            .then(BiomeCommand.create())
             .build();
     }
 

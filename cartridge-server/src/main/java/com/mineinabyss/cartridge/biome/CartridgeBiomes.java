@@ -34,10 +34,10 @@ public final class CartridgeBiomes {
     private static final Logger LOGGER = LogUtils.getClassLogger();
     private static final String README_NAME = "README.txt";
     private static final String PARENT = "parent";
-    private static final String ATTRIBUTES = "attributes";
+    static final String ATTRIBUTES = "attributes";
     private static final String EFFECTS = "effects";
 
-    private static final Map<String, List<String>> SHORTCUTS = Map.of(
+    static final Map<String, List<String>> SHORTCUTS = Map.of(
         "waterColor", List.of(EFFECTS, "water_color"),
         "grassColor", List.of(EFFECTS, "grass_color"),
         "foliageColor", List.of(EFFECTS, "foliage_color"),
@@ -281,6 +281,7 @@ public final class CartridgeBiomes {
         return """
             Custom biomes and overrides for existing ones, baked into the biome registry at startup.
             Changes need a full restart, /cartridge reload does not touch biomes.
+            To try values first, use /cartridge biome set and info, then /cartridge biome reload to resend biomes to yourself, and copy the result here.
             A broken file stops the server from starting, so chunks using a biome never lose it.
 
             Every .yml file in this folder maps biome ids to definitions, ids without a namespace use minecraft.

@@ -4,6 +4,29 @@ Date: Sun, 1 Nov 2026 23:01:59 +0100
 Subject: [PATCH] Custom Biomes
 
 
+diff --git a/net/minecraft/core/RegistrySynchronization.java b/net/minecraft/core/RegistrySynchronization.java
+index 3f713afa1677eadccca1a9dd14021d94412efeda..fdb9a8fefd5bf53970500a9672efe1bfae091261 100644
+--- a/net/minecraft/core/RegistrySynchronization.java
++++ b/net/minecraft/core/RegistrySynchronization.java
+@@ -48,7 +48,8 @@ public class RegistrySynchronization {
+                     registry.listElements()
+                         .forEach(
+                             element -> {
+-                                boolean canSkipContents = registry.registrationInfo(element.key())
++                                final T preview = registryData.key().equals(net.minecraft.core.registries.Registries.BIOME) ? (T) com.mineinabyss.cartridge.biome.BiomePreview.preview(element.key().identifier()) : null; // Cartridge - Custom biomes
++                                boolean canSkipContents = preview == null && registry.registrationInfo(element.key()) // Cartridge - Custom biomes
+                                     .flatMap(RegistrationInfo::knownPackInfo)
+                                     .filter(clientKnownPacks::contains)
+                                     .isPresent();
+@@ -57,7 +58,7 @@ public class RegistrySynchronization {
+                                     contents = Optional.empty();
+                                 } else {
+                                     Tag encodedElement = registryData.elementCodec()
+-                                        .encodeStart(ops, element.value())
++                                        .encodeStart(ops, preview != null ? preview : element.value()) // Cartridge - Custom biomes
+                                         .getOrThrow(s -> new IllegalArgumentException("Failed to serialize " + element.key() + ": " + s));
+                                     contents = Optional.of(encodedElement);
+                                 }
 diff --git a/net/minecraft/resources/ResourceManagerRegistryLoadTask.java b/net/minecraft/resources/ResourceManagerRegistryLoadTask.java
 index 80e24dae92712a9ce5ec7f5d5a762d6d8d10bfbf..c4933920ce972759461e51b575efe8e5e16d941f 100644
 --- a/net/minecraft/resources/ResourceManagerRegistryLoadTask.java
@@ -82,3 +105,53 @@ index a6d9b95c42926754acd2e54e7af7ade3f7d2c322..3343de00c23f1e042b1bf5eadd98e3fa
  
              WorldStem worldStem;
              try {
+diff --git a/net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java b/net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java
+index 6baa9d2a8af7901d47964e6d7ad53ea7963ceeef..5966c8b9fe5d4c9636cb314946d22ba0ee1b3fe4 100644
+--- a/net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java
++++ b/net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java
+@@ -111,19 +111,30 @@ public class ServerConfigurationPacketListenerImpl extends ServerCommonPacketLis
+         // Paper end
+         }
+ 
++        this.send(new ClientboundUpdateEnabledFeaturesPacket(FeatureFlags.REGISTRY.toNames(this.server.getWorldData().enabledFeatures())));
++        this.addSynchronizeRegistriesTask(); // Cartridge - Custom biomes
++        this.addOptionalTasks();
++        this.configurationTasks.add(new io.papermc.paper.connection.PaperConfigurationTask(this)); // Paper
++        this.returnToWorld();
++    }
++
++    // Cartridge start - Custom biomes
++    private void addSynchronizeRegistriesTask() {
+         LayeredRegistryAccess<RegistryLayer> registries = this.server.registries();
+         List<KnownPack> knownPacks = this.server
+             .getResourceManager()
+             .listPacks()
+             .flatMap(packResources -> packResources.location().knownPackInfo().stream())
+             .toList();
+-        this.send(new ClientboundUpdateEnabledFeaturesPacket(FeatureFlags.REGISTRY.toNames(this.server.getWorldData().enabledFeatures())));
+         this.synchronizeRegistriesTask = new SynchronizeRegistriesTask(knownPacks, registries);
+         this.configurationTasks.add(this.synchronizeRegistriesTask);
+-        this.addOptionalTasks();
+-        this.configurationTasks.add(new io.papermc.paper.connection.PaperConfigurationTask(this)); // Paper
++    }
++
++    public void resynchronizeRegistriesAndReturnToWorld() {
++        this.addSynchronizeRegistriesTask();
+         this.returnToWorld();
+     }
++    // Cartridge end - Custom biomes
+ 
+     public void returnToWorld() {
+         this.prepareSpawnTask = new PrepareSpawnTask(this.server, this.gameProfile, this); // Paper - pass full GameProfile & listener for events
+diff --git a/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
+index 1bfc36f9888cd1f1c18dda3b0c9b2b13662b3bf3..a667c1f8c466958859adbbb0a55f0eefc720576f 100644
+--- a/net/minecraft/server/network/ServerGamePacketListenerImpl.java
++++ b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
+@@ -3755,6 +3755,7 @@ public class ServerGamePacketListenerImpl
+                 listener // Paper
+             );
+         new io.papermc.paper.event.connection.configuration.PlayerConnectionReconfigureEvent(listener.paperConnection).callEvent(); // Paper
++        if (com.mineinabyss.cartridge.biome.BiomePreview.consumeResync(this.player.getUUID())) listener.resynchronizeRegistriesAndReturnToWorld(); // Cartridge - Custom biomes
+     }
+ 
+     @Override
