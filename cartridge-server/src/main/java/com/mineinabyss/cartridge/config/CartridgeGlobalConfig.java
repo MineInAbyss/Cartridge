@@ -25,8 +25,8 @@ public final class CartridgeGlobalConfig {
     public final DoubleDoors doubleDoors;
 
     private CartridgeGlobalConfig(final ConfigurationSection config) {
-        this.doorAutoClose = new DoorAutoClose(config.getConfigurationSection("door-auto-close"));
-        this.doubleDoors = new DoubleDoors(config.getConfigurationSection("double-doors"));
+        this.doorAutoClose = new DoorAutoClose(config.getConfigurationSection("doorAutoClose"));
+        this.doubleDoors = new DoubleDoors(config.getConfigurationSection("doubleDoors"));
     }
 
     public static CartridgeGlobalConfig get() {
@@ -62,12 +62,12 @@ public final class CartridgeGlobalConfig {
     private void save(final Path path) throws IOException {
         final YamlConfiguration config = new YamlConfiguration();
         config.options().setHeader(List.of("Cartridge server settings, reload with /cartridge reload"));
-        this.doorAutoClose.write(config.createSection("door-auto-close"));
-        config.setComments("door-auto-close", List.of(
+        this.doorAutoClose.write(config.createSection("doorAutoClose"));
+        config.setComments("doorAutoClose", List.of(
             "Closes doors opened by hand after a delay",
             "The autoCloseDoors region flag overrides enabled, allow turns it on and deny turns it off inside a region"
         ));
-        this.doubleDoors.write(config.createSection("double-doors"));
+        this.doubleDoors.write(config.createSection("doubleDoors"));
         Files.writeString(path, config.saveToString());
     }
 
@@ -79,16 +79,16 @@ public final class CartridgeGlobalConfig {
 
         private DoorAutoClose(final @Nullable ConfigurationSection section) {
             this.enabled = section != null && section.getBoolean("enabled", false);
-            this.closeAfterTicks = Math.max(1, section == null ? 100 : section.getInt("close-after-ticks", 100));
-            this.ignoreCreative = section == null || section.getBoolean("ignore-creative", true);
-            this.ignoreSneaking = section != null && section.getBoolean("ignore-sneaking", false);
+            this.closeAfterTicks = Math.max(1, section == null ? 100 : section.getInt("closeAfterTicks", 100));
+            this.ignoreCreative = section == null || section.getBoolean("ignoreCreative", true);
+            this.ignoreSneaking = section != null && section.getBoolean("ignoreSneaking", false);
         }
 
         private void write(final ConfigurationSection section) {
             section.set("enabled", this.enabled);
-            section.set("close-after-ticks", this.closeAfterTicks);
-            section.set("ignore-creative", this.ignoreCreative);
-            section.set("ignore-sneaking", this.ignoreSneaking);
+            section.set("closeAfterTicks", this.closeAfterTicks);
+            section.set("ignoreCreative", this.ignoreCreative);
+            section.set("ignoreSneaking", this.ignoreSneaking);
         }
     }
 
