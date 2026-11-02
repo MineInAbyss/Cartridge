@@ -1,0 +1,84 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Boy0000 <sivertpaulsen2@gmail.com>
+Date: Sun, 1 Nov 2026 23:01:59 +0100
+Subject: [PATCH] Custom Biomes
+
+
+diff --git a/net/minecraft/resources/ResourceManagerRegistryLoadTask.java b/net/minecraft/resources/ResourceManagerRegistryLoadTask.java
+index 80e24dae92712a9ce5ec7f5d5a762d6d8d10bfbf..c4933920ce972759461e51b575efe8e5e16d941f 100644
+--- a/net/minecraft/resources/ResourceManagerRegistryLoadTask.java
++++ b/net/minecraft/resources/ResourceManagerRegistryLoadTask.java
+@@ -45,6 +45,7 @@ public class ResourceManagerRegistryLoadTask<T> extends RegistryLoadTask<T> {
+             .thenCompose(
+                 registryResources -> {
+                     RegistryOps<JsonElement> ops = RegistryOps.create(JsonOps.INSTANCE, context);
++                    final Map<Identifier, RegistryLoadTask.PendingRegistration<T>> cartridgeBiomes = this.registryKey().equals(net.minecraft.core.registries.Registries.BIOME) ? this.loadCartridgeBiomes(lister, registryResources, ops) : Map.of(); // Cartridge - Custom biomes
+                     return ParallelMapTransform.schedule(
+                         (Map<Identifier, Resource>)registryResources,
+                         (resourceId, thunk) -> {
+@@ -57,7 +58,12 @@ public class ResourceManagerRegistryLoadTask<T> extends RegistryLoadTask<T> {
+                             );
+                         },
+                         executor
+-                    );
++                    ).thenApply(loaded -> { // Cartridge start - Custom biomes
++                        if (cartridgeBiomes.isEmpty()) return loaded;
++                        final Map<Identifier, RegistryLoadTask.PendingRegistration<T>> merged = new java.util.HashMap<>(loaded);
++                        merged.putAll(cartridgeBiomes);
++                        return merged;
++                    }); // Cartridge end - Custom biomes
+                 }
+             )
+             .thenAcceptAsync(
+@@ -74,4 +80,39 @@ public class ResourceManagerRegistryLoadTask<T> extends RegistryLoadTask<T> {
+                 executor
+             );
+     }
++
++    // Cartridge start - Custom biomes
++    // Keyed by resource file so overrides replace the data pack entry, and sent without a known pack so clients receive the changed data instead of their local copy
++    private Map<Identifier, RegistryLoadTask.PendingRegistration<T>> loadCartridgeBiomes(final FileToIdConverter lister, final Map<Identifier, Resource> resources, final RegistryOps<JsonElement> ops) {
++        final Map<Identifier, JsonElement> biomes;
++        try {
++            biomes = com.mineinabyss.cartridge.biome.CartridgeBiomes.resolve(id -> {
++                final Resource resource = resources.get(lister.idToFile(id));
++                if (resource == null) return null;
++                try (java.io.Reader reader = resource.openAsReader()) {
++                    return net.minecraft.util.StrictJsonParser.parse(reader);
++                } catch (final java.io.IOException e) {
++                    throw new java.io.UncheckedIOException(e);
++                }
++            });
++        } catch (final Exception e) {
++            final ResourceKey<T> key = ResourceKey.create(this.registryKey(), Identifier.fromNamespaceAndPath("cartridge", "biomes"));
++            return Map.of(lister.idToFile(key.identifier()), new RegistryLoadTask.PendingRegistration<>(key, com.mojang.datafixers.util.Either.right(new IllegalStateException("Failed to load Cartridge biomes", e)), new RegistrationInfo(Optional.empty(), Lifecycle.stable())));
++        }
++
++        final RegistrationInfo registrationInfo = new RegistrationInfo(Optional.empty(), Lifecycle.stable());
++        final Map<Identifier, RegistryLoadTask.PendingRegistration<T>> pending = new java.util.HashMap<>();
++        biomes.forEach((id, json) -> {
++            final ResourceKey<T> key = ResourceKey.create(this.registryKey(), id);
++            com.mojang.datafixers.util.Either<T, Exception> value;
++            try {
++                value = com.mojang.datafixers.util.Either.left(this.data.elementCodec().parse(ops, json).getOrThrow());
++            } catch (final Exception e) {
++                value = com.mojang.datafixers.util.Either.right(new IllegalStateException("Failed to parse Cartridge biome " + id, e));
++            }
++            pending.put(lister.idToFile(id), new RegistryLoadTask.PendingRegistration<>(key, value, registrationInfo));
++        });
++        return pending;
++    }
++    // Cartridge end - Custom biomes
+ }
+diff --git a/net/minecraft/server/Main.java b/net/minecraft/server/Main.java
+index a6d9b95c42926754acd2e54e7af7ade3f7d2c322..3343de00c23f1e042b1bf5eadd98e3fa996c478d 100644
+--- a/net/minecraft/server/Main.java
++++ b/net/minecraft/server/Main.java
+@@ -235,6 +235,7 @@ public class Main {
+             }
+             // Paper end
+             java.util.concurrent.atomic.AtomicReference<WorldLoader.DataLoadContext> worldLoader = new java.util.concurrent.atomic.AtomicReference<>(); // CraftBukkit
++            com.mineinabyss.cartridge.biome.CartridgeBiomes.init(((java.io.File) options.valueOf("paper-settings-directory")).toPath()); // Cartridge - Custom biomes
+ 
+             WorldStem worldStem;
+             try {
