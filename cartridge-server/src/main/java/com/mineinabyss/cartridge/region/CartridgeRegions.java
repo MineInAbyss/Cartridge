@@ -103,6 +103,8 @@ public final class CartridgeRegions implements Regions {
             Children inherit every flag of their parent region and override only what they set, their priority defaults to one above the parent.
             denySpawn takes a list of entity types and blocks them from spawning, like mobSpawning it ignores plugin and command spawns.
             A settings section next to flags holds values read by Cartridge or plugins, inherited by children like flags. On global it goes inside the global section.
+            Cartridge reads timeLock (player time in ticks while inside), greeting and farewell (chat on entry and exit), greetingTitle and farewellTitle (title on entry and exit, \\n starts the subtitle).
+            Texts use & or section sign colour codes. spawnOverride: true is read by Geary spawning and drops spawns of lower priority regions.
             Players with cartridge.region.bypass.<flag> ignore a denied flag, ops have every bypass permission by default.
             A region can name a bypassPermission, players holding it are members of the region and its children and ignore the region's own bypassable flags, or only those listed in bypassFlags.
             Bypassable flags: %s
@@ -493,6 +495,7 @@ public final class CartridgeRegions implements Regions {
         private final boolean usesDenySpawn;
         private final boolean hasMembers;
         private final Set<String> settingKeys;
+        private final boolean usesPlayerSettings;
         private final List<Region> all;
         private final Map<String, RegionImpl> byName;
         private final Long2ObjectMap<RegionImpl[]> cells;
@@ -532,6 +535,8 @@ public final class CartridgeRegions implements Regions {
             }
             this.byName = Map.copyOf(byName);
             this.settingKeys = Set.copyOf(settingKeys);
+            this.usesPlayerSettings = Stream.of(RegionSetting.TIME_LOCK, RegionSetting.GREETING, RegionSetting.FAREWELL, RegionSetting.GREETING_TITLE, RegionSetting.FAREWELL_TITLE)
+                .anyMatch(setting -> settingKeys.contains(setting.key()));
 
             for (final RegionFlag flag : RegionFlag.values()) {
                 for (RegionFlag current = flag; current != null; current = current.parent()) {
@@ -628,6 +633,10 @@ public final class CartridgeRegions implements Regions {
 
         boolean usesSetting(final String key) {
             return this.settingKeys.contains(key);
+        }
+
+        boolean usesPlayerSettings() {
+            return this.usesPlayerSettings;
         }
     }
 

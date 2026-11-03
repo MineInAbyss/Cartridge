@@ -86,6 +86,9 @@ import org.bukkit.event.player.PlayerBucketFillEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.vehicle.VehicleDamageEvent;
@@ -151,6 +154,9 @@ public final class RegionProtection {
         on(PlayerBedEnterEvent.class, (regions, e) -> check(regions, e, e.getPlayer(), e.getBed(), RegionFlag.SLEEP)),
         on(PlayerTeleportEvent.class, (regions, e) -> teleport(regions, e)),
         on(PlayerMoveEvent.class, (regions, e) -> move(regions, e)),
+        on(PlayerJoinEvent.class, (regions, e) -> RegionPlayerSettings.refresh(regions, e.getPlayer(), e.getPlayer().getLocation())),
+        on(PlayerRespawnEvent.class, (regions, e) -> RegionPlayerSettings.moved(regions, e.getPlayer(), e.getRespawnLocation())),
+        on(PlayerQuitEvent.class, (regions, e) -> RegionPlayerSettings.quit(e.getPlayer())),
         on(PlayerAttemptPickupItemEvent.class, (regions, e) -> check(regions, e, e.getPlayer(), e.getItem().getLocation(), RegionFlag.ITEM_PICKUP)),
         on(PlayerDropItemEvent.class, (regions, e) -> check(regions, e, e.getPlayer(), e.getPlayer().getLocation(), RegionFlag.ITEM_DROP)),
 
@@ -332,6 +338,7 @@ public final class RegionProtection {
             event.setCancelled(true);
             player.sendActionBar(Component.text("You can't leave this area", NamedTextColor.RED));
         }
+        if (!event.isCancelled()) RegionPlayerSettings.moved(regions, player, to);
     }
 
     private static void teleport(final CartridgeRegions regions, final PlayerTeleportEvent event) {
@@ -348,15 +355,16 @@ public final class RegionProtection {
             event.setCancelled(true);
             return;
         }
-        if (!PLAYER_TELEPORTS.contains(event.getCause())) return;
-
-        if (!regions.isAllowed(player, to, RegionFlag.ENTRY) && regions.isAllowed(player, from, RegionFlag.ENTRY)) {
-            event.setCancelled(true);
-            player.sendActionBar(Component.text("You can't enter this area", NamedTextColor.RED));
-        } else if (!regions.isAllowed(player, from, RegionFlag.EXIT_VIA_TELEPORT) && regions.isAllowed(player, to, RegionFlag.EXIT_VIA_TELEPORT)) {
-            event.setCancelled(true);
-            player.sendActionBar(Component.text("You can't teleport out of this area", NamedTextColor.RED));
+        if (PLAYER_TELEPORTS.contains(event.getCause())) {
+            if (!regions.isAllowed(player, to, RegionFlag.ENTRY) && regions.isAllowed(player, from, RegionFlag.ENTRY)) {
+                event.setCancelled(true);
+                player.sendActionBar(Component.text("You can't enter this area", NamedTextColor.RED));
+            } else if (!regions.isAllowed(player, from, RegionFlag.EXIT_VIA_TELEPORT) && regions.isAllowed(player, to, RegionFlag.EXIT_VIA_TELEPORT)) {
+                event.setCancelled(true);
+                player.sendActionBar(Component.text("You can't teleport out of this area", NamedTextColor.RED));
+            }
         }
+        if (!event.isCancelled()) RegionPlayerSettings.moved(regions, player, to);
     }
 
     private static void interact(final CartridgeRegions regions, final PlayerInteractEvent event) {

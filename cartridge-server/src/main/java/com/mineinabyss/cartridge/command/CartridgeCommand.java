@@ -4,6 +4,7 @@ import com.mineinabyss.cartridge.config.CartridgeGlobalConfig;
 import com.mineinabyss.cartridge.region.CartridgeRegions;
 import com.mineinabyss.cartridge.region.Region;
 import com.mineinabyss.cartridge.region.RegionFlag;
+import com.mineinabyss.cartridge.region.RegionPlayerSettings;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
@@ -13,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
@@ -74,6 +76,9 @@ public final class CartridgeCommand {
             return 0;
         }
 
+        for (final Player player : Bukkit.getOnlinePlayers()) {
+            RegionPlayerSettings.refresh(CartridgeRegions.instance(), player, player.getLocation());
+        }
         warnings.forEach(warning -> sender.sendMessage(text(warning, YELLOW)));
         sender.sendMessage(text("Reloaded regions with " + warnings.size() + " warning(s)", GREEN));
         return Command.SINGLE_SUCCESS;
