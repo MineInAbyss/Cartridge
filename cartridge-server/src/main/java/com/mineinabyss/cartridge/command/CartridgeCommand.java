@@ -84,7 +84,7 @@ public final class CartridgeCommand {
         final Location location = context.getSource().getLocation();
         final CartridgeRegions regions = CartridgeRegions.instance();
 
-        final List<Region> here = regions.regionsAt(location);
+        final List<Region> here = regions.regionsAt(location, true);
         sender.sendMessage(text("Regions here: ", GOLD).append(here.isEmpty()
             ? text("none", GRAY)
             : text(String.join(", ", here.stream().map(region -> region.bounds() == null ? region.name() : region.name() + " (" + region.priority() + ")").toList()), YELLOW)));
@@ -135,6 +135,7 @@ public final class CartridgeCommand {
             .map(entry -> entry.getKey().key() + "=" + (entry.getValue() ? "allow" : "deny"))
             .toList());
         if (region.denySpawn() != null) flags.add(CartridgeRegions.DENY_SPAWN + "=" + entityTypesText(region.denySpawn()));
+        region.settings().forEach((key, value) -> flags.add(key + "=" + value));
         return flags.toString();
     }
 

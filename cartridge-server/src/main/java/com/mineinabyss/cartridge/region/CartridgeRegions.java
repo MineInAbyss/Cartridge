@@ -46,6 +46,11 @@ public final class CartridgeRegions implements Regions {
     private static final String README_NAME = "README.txt";
     public static final String GLOBAL_REGION = "global";
     public static final String DENY_SPAWN = "denySpawn";
+    public static final String SETTINGS = "settings";
+    private static final List<RegionSetting<?>> BUILT_IN_SETTINGS = List.of(
+        RegionSetting.TIME_LOCK, RegionSetting.GREETING, RegionSetting.FAREWELL,
+        RegionSetting.GREETING_TITLE, RegionSetting.FAREWELL_TITLE, RegionSetting.SPAWN_OVERRIDE
+    );
 
     private volatile Map<String, WorldRegions> worlds = Map.of();
     private @Nullable Path directory;
@@ -95,6 +100,7 @@ public final class CartridgeRegions implements Regions {
             A region without from and to is a template, it never applies by itself but its children inherit its flags.
             Children inherit every flag of their parent region and override only what they set, their priority defaults to one above the parent.
             denySpawn takes a list of entity types and blocks them from spawning, like mobSpawning it ignores plugin and command spawns.
+            A settings section next to flags holds values read by Cartridge or plugins, inherited by children like flags. On global it goes inside the global section.
             Players with cartridge.region.bypass.<flag> ignore a denied flag, ops have every bypass permission by default.
             Bypassable flags: %s
 
@@ -156,7 +162,7 @@ public final class CartridgeRegions implements Regions {
     private static WorldRegions parseWorld(final String worldName, final ConfigurationSection section, final List<String> warnings) {
         final ConfigurationSection globalSection = section.getConfigurationSection(GLOBAL_REGION);
         final RegionImpl global = globalSection == null ? null
-            : parseRegion(GLOBAL_REGION, worldName, Integer.MIN_VALUE, null, null, null, globalSection, worldName + "." + GLOBAL_REGION, warnings);
+            : parseRegion(GLOBAL_REGION, worldName, Integer.MIN_VALUE, null, null, null, globalSection, globalSection.getConfigurationSection(SETTINGS), worldName + "." + GLOBAL_REGION, warnings);
 
         final List<RegionImpl> regions = new ArrayList<>();
         final List<RegionImpl> templates = new ArrayList<>();
@@ -196,7 +202,10 @@ public final class CartridgeRegions implements Regions {
             }
 
             final int priority = regionSection.getInt("priority", parent == null ? 0 : parent.priority() + 1);
-            final RegionImpl region = parseRegion(name, worldName, priority, from, to, parent, regionSection.getConfigurationSection("flags"), regionPath + ".flags", warnings);
+            final RegionImpl region = parseRegion(
+                name, worldName, priority, from, to, parent,
+                regionSection.getConfigurationSection("flags"), regionSection.getConfigurationSection(SETTINGS), regionPath, warnings
+            );
             (template ? templates : regions).add(region);
             parseRegions(worldName, regionSection.getConfigurationSection("children"), regionPath + ".children", region, regions, templates, warnings);
         }
@@ -215,12 +224,15 @@ public final class CartridgeRegions implements Regions {
 
     private static RegionImpl parseRegion(
         final String name, final String worldName, final int priority, final int @Nullable [] from, final int @Nullable [] to,
-        final @Nullable RegionImpl parent, final @Nullable ConfigurationSection section, final String path, final List<String> warnings
+        final @Nullable RegionImpl parent, final @Nullable ConfigurationSection section, final @Nullable ConfigurationSection settingsSection,
+        final String regionPath, final List<String> warnings
     ) {
         final Map<RegionFlag, Boolean> flags = new EnumMap<>(RegionFlag.class);
         Set<EntityType> denySpawn = null;
+        final String path = name.equals(GLOBAL_REGION) ? regionPath : regionPath + ".flags";
         if (section != null) {
             for (final String key : section.getKeys(false)) {
+                if (key.equals(SETTINGS) && section.isConfigurationSection(key)) continue;
                 if (key.equals(DENY_SPAWN)) {
                     denySpawn = parseEntityTypes(path + "." + key, section.getStringList(key), warnings);
                     continue;
@@ -240,7 +252,25 @@ public final class CartridgeRegions implements Regions {
                 }
             }
         }
-        return new RegionImpl(name, worldName, priority, from, to, parent, Collections.unmodifiableMap(flags), denySpawn);
+        return new RegionImpl(name, worldName, priority, from, to, parent, Collections.unmodifiableMap(flags), denySpawn, parseSettings(settingsSection, regionPath + "." + SETTINGS, warnings));
+    }
+
+    private static Map<String, Object> parseSettings(final @Nullable ConfigurationSection section, final String path, final List<String> warnings) {
+        if (section == null) return Map.of();
+        final Map<String, Object> settings = new HashMap<>();
+        for (final String key : section.getKeys(false)) {
+            final Object value = section.get(key);
+            if (value == null) continue;
+            settings.put(key, value instanceof ConfigurationSection nested ? nested.getValues(true) : value);
+        }
+        for (final RegionSetting<?> setting : BUILT_IN_SETTINGS) {
+            final Object value = settings.get(setting.key());
+            if (value != null && setting.convert(value) == null) {
+                warnings.add(path + "." + setting.key() + ": could not read '" + value + "', ignored");
+                settings.remove(setting.key());
+            }
+        }
+        return Map.copyOf(settings);
     }
 
     private static Set<EntityType> parseEntityTypes(final String path, final List<String> names, final List<String> warnings) {
@@ -284,6 +314,55 @@ public final class CartridgeRegions implements Regions {
         }
         if (world.global() != null) result.add(world.global());
         return result;
+    }
+
+    @Override
+    public List<Region> regionsAt(final Location location, final boolean includeParents) {
+        if (!includeParents) return this.regionsAt(location);
+        final WorldRegions world = this.world(location.getWorld());
+        if (world == null) return List.of();
+
+        final int x = location.getBlockX();
+        final int y = location.getBlockY();
+        final int z = location.getBlockZ();
+        final List<Region> result = new ArrayList<>();
+        for (final RegionImpl region : world.candidates(x, z)) {
+            if (!region.contains(x, y, z)) continue;
+            for (RegionImpl current = region; current != null; current = current.parent()) {
+                if (!result.contains(current)) result.add(current);
+            }
+        }
+        result.sort(Comparator.comparingInt(Region::priority).reversed());
+        if (world.global() != null) result.add(world.global());
+        return result;
+    }
+
+    @Override
+    public @Nullable Region region(final String worldName, final String name) {
+        final WorldRegions world = this.worlds.get(worldName);
+        return world == null ? null : world.byName(name);
+    }
+
+    @Override
+    public List<Region> regions(final String worldName) {
+        final WorldRegions world = this.worlds.get(worldName);
+        return world == null ? List.of() : world.all();
+    }
+
+    @Override
+    public <T> @Nullable T setting(final Location location, final RegionSetting<T> setting) {
+        final WorldRegions world = this.world(location.getWorld());
+        if (world == null || !world.usesSetting(setting.key())) return null;
+
+        final int x = location.getBlockX();
+        final int y = location.getBlockY();
+        final int z = location.getBlockZ();
+        for (final RegionImpl region : world.candidates(x, z)) {
+            if (!region.contains(x, y, z)) continue;
+            final T value = region.setting(setting);
+            if (value != null) return value;
+        }
+        return world.global() == null ? null : world.global().ownSetting(setting);
     }
 
     @Override
@@ -373,6 +452,9 @@ public final class CartridgeRegions implements Regions {
         private final @Nullable RegionImpl global;
         private final boolean[] mayDefine = new boolean[RegionFlag.values().length];
         private final boolean usesDenySpawn;
+        private final Set<String> settingKeys;
+        private final List<Region> all;
+        private final Map<String, RegionImpl> byName;
         private final Long2ObjectMap<RegionImpl[]> cells;
         private final RegionImpl[] uncelled;
 
@@ -396,6 +478,20 @@ public final class CartridgeRegions implements Regions {
                 usesDenySpawn |= global.denySpawn() != null;
             }
             this.usesDenySpawn = usesDenySpawn;
+
+            final List<Region> all = new ArrayList<>(regions);
+            all.addAll(templates);
+            if (global != null) all.add(global);
+            this.all = List.copyOf(all);
+            final Map<String, RegionImpl> byName = new HashMap<>();
+            final Set<String> settingKeys = new java.util.HashSet<>();
+            for (final Region region : all) {
+                byName.put(region.name(), (RegionImpl) region);
+                settingKeys.addAll(region.settings().keySet());
+            }
+            this.byName = Map.copyOf(byName);
+            this.settingKeys = Set.copyOf(settingKeys);
+
             for (final RegionFlag flag : RegionFlag.values()) {
                 for (RegionFlag current = flag; current != null; current = current.parent()) {
                     if (usedFlags.contains(current)) {
@@ -476,6 +572,18 @@ public final class CartridgeRegions implements Regions {
         public @Nullable RegionImpl global() {
             return this.global;
         }
+
+        public List<Region> all() {
+            return this.all;
+        }
+
+        public @Nullable RegionImpl byName(final String name) {
+            return this.byName.get(name);
+        }
+
+        boolean usesSetting(final String key) {
+            return this.settingKeys.contains(key);
+        }
     }
 
     public static final class RegionImpl implements Region {
@@ -498,12 +606,14 @@ public final class CartridgeRegions implements Regions {
         private final @Nullable RegionImpl parent;
         private final Map<RegionFlag, Boolean> flags;
         private final @Nullable Set<EntityType> denySpawn;
+        private final Map<String, Object> settings;
         // Indexed by RegionFlag ordinal, the value resolve() would give through parent flags and parent regions
         final byte[] resolved;
 
         RegionImpl(
             final String name, final String worldName, final int priority, final int @Nullable [] from, final int @Nullable [] to,
-            final @Nullable RegionImpl parent, final Map<RegionFlag, Boolean> flags, final @Nullable Set<EntityType> denySpawn
+            final @Nullable RegionImpl parent, final Map<RegionFlag, Boolean> flags, final @Nullable Set<EntityType> denySpawn,
+            final Map<String, Object> settings
         ) {
             this.name = name;
             this.worldName = worldName;
@@ -518,6 +628,7 @@ public final class CartridgeRegions implements Regions {
             this.parent = parent;
             this.flags = flags;
             this.denySpawn = denySpawn;
+            this.settings = settings;
 
             final RegionFlag[] values = RegionFlag.values();
             this.resolved = new byte[values.length];
@@ -571,6 +682,11 @@ public final class CartridgeRegions implements Regions {
         @Override
         public @Nullable Set<EntityType> denySpawn() {
             return this.denySpawn != null || this.parent == null ? this.denySpawn : this.parent.denySpawn();
+        }
+
+        @Override
+        public Map<String, Object> settings() {
+            return this.settings;
         }
 
         @Override
