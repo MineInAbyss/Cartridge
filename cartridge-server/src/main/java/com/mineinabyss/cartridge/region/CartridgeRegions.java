@@ -47,6 +47,8 @@ public final class CartridgeRegions implements Regions {
     public static final String GLOBAL_REGION = "global";
     public static final String DENY_SPAWN = "denySpawn";
     public static final String SETTINGS = "settings";
+    public static final String BYPASS_PERMISSION = "bypassPermission";
+    public static final String BYPASS_FLAGS = "bypassFlags";
     private static final List<RegionSetting<?>> BUILT_IN_SETTINGS = List.of(
         RegionSetting.TIME_LOCK, RegionSetting.GREETING, RegionSetting.FAREWELL,
         RegionSetting.GREETING_TITLE, RegionSetting.FAREWELL_TITLE, RegionSetting.SPAWN_OVERRIDE
@@ -102,6 +104,7 @@ public final class CartridgeRegions implements Regions {
             denySpawn takes a list of entity types and blocks them from spawning, like mobSpawning it ignores plugin and command spawns.
             A settings section next to flags holds values read by Cartridge or plugins, inherited by children like flags. On global it goes inside the global section.
             Players with cartridge.region.bypass.<flag> ignore a denied flag, ops have every bypass permission by default.
+            A region can name a bypassPermission, players holding it are members of the region and its children and ignore the region's own bypassable flags, or only those listed in bypassFlags.
             Bypassable flags: %s
 
             Example world.yml:
@@ -202,10 +205,20 @@ public final class CartridgeRegions implements Regions {
             }
 
             final int priority = regionSection.getInt("priority", parent == null ? 0 : parent.priority() + 1);
+            final String bypassPermission = regionSection.getString(BYPASS_PERMISSION);
+            final Set<RegionFlag> bypassFlags = EnumSet.noneOf(RegionFlag.class);
+            for (final String key : regionSection.getStringList(BYPASS_FLAGS)) {
+                final RegionFlag flag = RegionFlag.byKey(key);
+                if (flag == null || !flag.bypassable()) {
+                    warnings.add(regionPath + "." + BYPASS_FLAGS + ": '" + key + "' is not a bypassable flag");
+                } else {
+                    bypassFlags.add(flag);
+                }
+            }
             final RegionImpl region = parseRegion(
                 name, worldName, priority, from, to, parent,
                 regionSection.getConfigurationSection("flags"), regionSection.getConfigurationSection(SETTINGS), regionPath, warnings
-            );
+            ).withBypass(bypassPermission == null || bypassPermission.isBlank() ? null : bypassPermission.trim(), Collections.unmodifiableSet(bypassFlags));
             (template ? templates : regions).add(region);
             parseRegions(worldName, regionSection.getConfigurationSection("children"), regionPath + ".children", region, regions, templates, warnings);
         }
@@ -252,7 +265,7 @@ public final class CartridgeRegions implements Regions {
                 }
             }
         }
-        return new RegionImpl(name, worldName, priority, from, to, parent, Collections.unmodifiableMap(flags), denySpawn, parseSettings(settingsSection, regionPath + "." + SETTINGS, warnings));
+        return new RegionImpl(name, worldName, priority, from, to, parent, Collections.unmodifiableMap(flags), denySpawn, parseSettings(settingsSection, regionPath + "." + SETTINGS, warnings), null, Set.of());
     }
 
     private static Map<String, Object> parseSettings(final @Nullable ConfigurationSection section, final String path, final List<String> warnings) {
@@ -380,11 +393,37 @@ public final class CartridgeRegions implements Regions {
 
     @Override
     public boolean isAllowed(final Player player, final Location location, final RegionFlag flag) {
-        return !this.isDenied(location, flag) || hasBypass(player, flag);
+        return isAllowed(player, this.world(location.getWorld()), location.getBlockX(), location.getBlockY(), location.getBlockZ(), flag);
     }
 
     public boolean isAllowed(final Player player, final Block block, final RegionFlag flag) {
-        return !this.isDenied(block, flag) || hasBypass(player, flag);
+        return isAllowed(player, this.world(block.getWorld()), block.getX(), block.getY(), block.getZ(), flag);
+    }
+
+    private static boolean isAllowed(final Player player, final @Nullable WorldRegions world, final int x, final int y, final int z, final RegionFlag flag) {
+        if (state(world, x, y, z, flag) != RegionImpl.DENY) return true;
+        if (!flag.bypassable()) return false;
+        if (hasBypass(player, flag)) return true;
+        return world.hasMembers() && memberState(world, x, y, z, flag, player) != RegionImpl.DENY;
+    }
+
+    /**
+     * Same walk as state(), with the entries the player ignores as a member of a region left out
+     */
+    private static byte memberState(final WorldRegions world, final int x, final int y, final int z, final RegionFlag flag, final Player player) {
+        byte result = RegionImpl.UNSET;
+        int resultPriority = 0;
+        for (final RegionImpl region : world.candidates(x, z)) {
+            if (result != RegionImpl.UNSET && region.priority() < resultPriority) break;
+            if (!region.contains(x, y, z)) continue;
+            final byte value = region.isMember(player) ? region.resolveAsMember(flag) : region.resolved[flag.ordinal()];
+            if (value == RegionImpl.UNSET) continue;
+            if (value == RegionImpl.DENY) return RegionImpl.DENY;
+            result = RegionImpl.ALLOW;
+            resultPriority = region.priority();
+        }
+        if (result != RegionImpl.UNSET) return result;
+        return world.global() == null ? RegionImpl.UNSET : world.global().resolved[flag.ordinal()];
     }
 
     private static boolean hasBypass(final Player player, final RegionFlag flag) {
@@ -452,6 +491,7 @@ public final class CartridgeRegions implements Regions {
         private final @Nullable RegionImpl global;
         private final boolean[] mayDefine = new boolean[RegionFlag.values().length];
         private final boolean usesDenySpawn;
+        private final boolean hasMembers;
         private final Set<String> settingKeys;
         private final List<Region> all;
         private final Map<String, RegionImpl> byName;
@@ -478,6 +518,7 @@ public final class CartridgeRegions implements Regions {
                 usesDenySpawn |= global.denySpawn() != null;
             }
             this.usesDenySpawn = usesDenySpawn;
+            this.hasMembers = regions.stream().anyMatch(region -> !region.memberPermissions.isEmpty());
 
             final List<Region> all = new ArrayList<>(regions);
             all.addAll(templates);
@@ -581,6 +622,10 @@ public final class CartridgeRegions implements Regions {
             return this.byName.get(name);
         }
 
+        boolean hasMembers() {
+            return this.hasMembers;
+        }
+
         boolean usesSetting(final String key) {
             return this.settingKeys.contains(key);
         }
@@ -607,13 +652,17 @@ public final class CartridgeRegions implements Regions {
         private final Map<RegionFlag, Boolean> flags;
         private final @Nullable Set<EntityType> denySpawn;
         private final Map<String, Object> settings;
+        private final @Nullable String bypassPermission;
+        private final Set<RegionFlag> bypassFlags;
+        // Own bypass permission first, then those of the parents
+        final List<String> memberPermissions;
         // Indexed by RegionFlag ordinal, the value resolve() would give through parent flags and parent regions
         final byte[] resolved;
 
         RegionImpl(
             final String name, final String worldName, final int priority, final int @Nullable [] from, final int @Nullable [] to,
             final @Nullable RegionImpl parent, final Map<RegionFlag, Boolean> flags, final @Nullable Set<EntityType> denySpawn,
-            final Map<String, Object> settings
+            final Map<String, Object> settings, final @Nullable String bypassPermission, final Set<RegionFlag> bypassFlags
         ) {
             this.name = name;
             this.worldName = worldName;
@@ -629,6 +678,14 @@ public final class CartridgeRegions implements Regions {
             this.flags = flags;
             this.denySpawn = denySpawn;
             this.settings = settings;
+            this.bypassPermission = bypassPermission;
+            this.bypassFlags = bypassFlags;
+            final List<String> memberPermissions = new ArrayList<>();
+            if (bypassPermission != null) memberPermissions.add(bypassPermission);
+            for (RegionImpl current = parent; current != null; current = current.parent) {
+                if (current.bypassPermission != null) memberPermissions.add(current.bypassPermission);
+            }
+            this.memberPermissions = List.copyOf(memberPermissions);
 
             final RegionFlag[] values = RegionFlag.values();
             this.resolved = new byte[values.length];
@@ -684,9 +741,48 @@ public final class CartridgeRegions implements Regions {
             return this.denySpawn != null || this.parent == null ? this.denySpawn : this.parent.denySpawn();
         }
 
+        RegionImpl withBypass(final @Nullable String bypassPermission, final Set<RegionFlag> bypassFlags) {
+            if (bypassPermission == null && bypassFlags.isEmpty()) return this;
+            return new RegionImpl(
+                this.name, this.worldName, this.priority, this.hasBounds ? new int[]{this.minX, this.minY, this.minZ} : null,
+                this.hasBounds ? new int[]{this.maxX, this.maxY, this.maxZ} : null, this.parent, this.flags, this.denySpawn, this.settings, bypassPermission, bypassFlags
+            );
+        }
+
+        boolean isMember(final Player player) {
+            for (final String permission : this.memberPermissions) {
+                if (player.hasPermission(permission)) return true;
+            }
+            return false;
+        }
+
+        byte resolveAsMember(final RegionFlag flag) {
+            for (RegionImpl current = this; current != null; current = current.parent) {
+                for (RegionFlag key = flag; key != null; key = key.parent()) {
+                    final Boolean value = current.flags.get(key);
+                    if (value != null && !current.membersIgnore(key)) return value ? ALLOW : DENY;
+                }
+            }
+            return UNSET;
+        }
+
+        private boolean membersIgnore(final RegionFlag flag) {
+            return this.bypassFlags.isEmpty() ? flag.bypassable() : this.bypassFlags.contains(flag);
+        }
+
         @Override
         public Map<String, Object> settings() {
             return this.settings;
+        }
+
+        @Override
+        public @Nullable String bypassPermission() {
+            return this.bypassPermission;
+        }
+
+        @Override
+        public Set<RegionFlag> bypassFlags() {
+            return this.bypassFlags;
         }
 
         @Override

@@ -53,6 +53,17 @@ public interface Region {
      */
     Map<String, Object> settings();
 
+    /**
+     * Players holding this permission, or the bypass permission of a parent, are members of this region.
+     * Members ignore the region's own entries for the flags in {@link #bypassFlags}
+     */
+    @Nullable String bypassPermission();
+
+    /**
+     * Empty means every bypassable flag
+     */
+    Set<RegionFlag> bypassFlags();
+
     default <T> @Nullable T ownSetting(final RegionSetting<T> setting) {
         return setting.convert(this.settings().get(setting.key()));
     }

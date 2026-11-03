@@ -52,7 +52,8 @@ public interface Regions {
     @Nullable Boolean query(Location location, RegionFlag flag);
 
     /**
-     * For bypassable flags this is also true when the player holds the bypass permission of the flag or one of its parents
+     * For bypassable flags this is also true when the player holds the bypass permission of the flag or one of its parents,
+     * or when the deny goes away once the entries the player ignores as a member of a region are left out, see {@link Region#bypassPermission()}
      */
     boolean isAllowed(Player player, Location location, RegionFlag flag);
 
