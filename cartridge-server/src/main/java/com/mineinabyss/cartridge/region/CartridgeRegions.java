@@ -1,6 +1,8 @@
 package com.mineinabyss.cartridge.region;
 
 import com.mojang.logging.LogUtils;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,10 +17,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.configuration.ConfigurationSection;
@@ -151,28 +156,14 @@ public final class CartridgeRegions implements Regions {
     private static WorldRegions parseWorld(final String worldName, final ConfigurationSection section, final List<String> warnings) {
         final ConfigurationSection globalSection = section.getConfigurationSection(GLOBAL_REGION);
         final RegionImpl global = globalSection == null ? null
-            : parseRegion(GLOBAL_REGION, worldName, Integer.MIN_VALUE, null, null, globalSection, worldName + "." + GLOBAL_REGION, warnings);
+            : parseRegion(GLOBAL_REGION, worldName, Integer.MIN_VALUE, null, null, null, globalSection, worldName + "." + GLOBAL_REGION, warnings);
 
         final List<RegionImpl> regions = new ArrayList<>();
         final List<RegionImpl> templates = new ArrayList<>();
         parseRegions(worldName, section.getConfigurationSection("regions"), worldName + ".regions", null, regions, templates, warnings);
 
         regions.sort(Comparator.comparingInt(RegionImpl::priority).reversed());
-        final Set<RegionFlag> usedFlags = EnumSet.noneOf(RegionFlag.class);
-        boolean usesDenySpawn = false;
-        for (final RegionImpl region : regions) {
-            usedFlags.addAll(region.flags().keySet());
-            usesDenySpawn |= region.denySpawn() != null;
-        }
-        for (final RegionImpl region : templates) {
-            usedFlags.addAll(region.flags().keySet());
-            usesDenySpawn |= region.denySpawn() != null;
-        }
-        if (global != null) {
-            usedFlags.addAll(global.flags().keySet());
-            usesDenySpawn |= global.denySpawn() != null;
-        }
-        return new WorldRegions(List.copyOf(regions), List.copyOf(templates), global, usedFlags, usesDenySpawn);
+        return new WorldRegions(List.copyOf(regions), List.copyOf(templates), global);
     }
 
     private static void parseRegions(
@@ -190,24 +181,22 @@ public final class CartridgeRegions implements Regions {
             }
 
             final boolean template = !regionSection.contains("from") && !regionSection.contains("to");
-            final BoundingBox bounds;
+            final int[] from;
+            final int[] to;
             if (template) {
-                bounds = null;
+                from = null;
+                to = null;
             } else {
-                final int[] from = parseCorner(regionSection.getString("from"));
-                final int[] to = parseCorner(regionSection.getString("to"));
+                from = parseCorner(regionSection.getString("from"));
+                to = parseCorner(regionSection.getString("to"));
                 if (from == null || to == null) {
                     warnings.add(regionPath + ": from and to must both be \"x, y, z\", or both be left out for a template region, skipped");
                     continue;
                 }
-                bounds = new BoundingBox(
-                    Math.min(from[0], to[0]), Math.min(from[1], to[1]), Math.min(from[2], to[2]),
-                    Math.max(from[0], to[0]) + 1, Math.max(from[1], to[1]) + 1, Math.max(from[2], to[2]) + 1
-                );
             }
 
             final int priority = regionSection.getInt("priority", parent == null ? 0 : parent.priority() + 1);
-            final RegionImpl region = parseRegion(name, worldName, priority, bounds, parent, regionSection.getConfigurationSection("flags"), regionPath + ".flags", warnings);
+            final RegionImpl region = parseRegion(name, worldName, priority, from, to, parent, regionSection.getConfigurationSection("flags"), regionPath + ".flags", warnings);
             (template ? templates : regions).add(region);
             parseRegions(worldName, regionSection.getConfigurationSection("children"), regionPath + ".children", region, regions, templates, warnings);
         }
@@ -225,7 +214,7 @@ public final class CartridgeRegions implements Regions {
     }
 
     private static RegionImpl parseRegion(
-        final String name, final String worldName, final int priority, final @Nullable BoundingBox bounds,
+        final String name, final String worldName, final int priority, final int @Nullable [] from, final int @Nullable [] to,
         final @Nullable RegionImpl parent, final @Nullable ConfigurationSection section, final String path, final List<String> warnings
     ) {
         final Map<RegionFlag, Boolean> flags = new EnumMap<>(RegionFlag.class);
@@ -251,7 +240,7 @@ public final class CartridgeRegions implements Regions {
                 }
             }
         }
-        return new RegionImpl(name, worldName, priority, bounds, parent, Collections.unmodifiableMap(flags), denySpawn);
+        return new RegionImpl(name, worldName, priority, from, to, parent, Collections.unmodifiableMap(flags), denySpawn);
     }
 
     private static Set<EntityType> parseEntityTypes(final String path, final List<String> names, final List<String> warnings) {
@@ -268,6 +257,7 @@ public final class CartridgeRegions implements Regions {
         return Collections.unmodifiableSet(types);
     }
 
+
     public boolean isEmpty() {
         return this.worlds.isEmpty();
     }
@@ -276,14 +266,21 @@ public final class CartridgeRegions implements Regions {
         return this.worlds;
     }
 
+    public @Nullable WorldRegions world(final World world) {
+        return this.worlds.get(world.getName());
+    }
+
     @Override
     public List<Region> regionsAt(final Location location) {
-        final WorldRegions world = this.worlds.get(location.getWorld().getName());
+        final WorldRegions world = this.world(location.getWorld());
         if (world == null) return List.of();
 
+        final int x = location.getBlockX();
+        final int y = location.getBlockY();
+        final int z = location.getBlockZ();
         final List<Region> result = new ArrayList<>();
-        for (final RegionImpl region : world.regions()) {
-            if (region.contains(location)) result.add(region);
+        for (final RegionImpl region : world.candidates(x, z)) {
+            if (region.contains(x, y, z)) result.add(region);
         }
         if (world.global() != null) result.add(world.global());
         return result;
@@ -291,33 +288,28 @@ public final class CartridgeRegions implements Regions {
 
     @Override
     public @Nullable Boolean query(final Location location, final RegionFlag flag) {
-        final WorldRegions world = this.worlds.get(location.getWorld().getName());
-        if (world == null || !world.mayDefine(flag)) return null;
-
-        Boolean result = null;
-        int resultPriority = 0;
-        for (final RegionImpl region : world.regions()) {
-            if (result != null && region.priority() < resultPriority) break;
-            if (!region.contains(location)) continue;
-            final Boolean value = region.resolve(flag);
-            if (value == null) continue;
-            if (!value) return false;
-            result = true;
-            resultPriority = region.priority();
-        }
-        if (result != null) return result;
-        return world.global() == null ? null : world.global().resolve(flag);
+        return toBoolean(state(this.world(location.getWorld()), location.getBlockX(), location.getBlockY(), location.getBlockZ(), flag));
     }
 
     public boolean isDenied(final Location location, final RegionFlag flag) {
-        return Boolean.FALSE.equals(this.query(location, flag));
+        return state(this.world(location.getWorld()), location.getBlockX(), location.getBlockY(), location.getBlockZ(), flag) == RegionImpl.DENY;
+    }
+
+    public boolean isDenied(final Block block, final RegionFlag flag) {
+        return state(this.world(block.getWorld()), block.getX(), block.getY(), block.getZ(), flag) == RegionImpl.DENY;
     }
 
     @Override
     public boolean isAllowed(final Player player, final Location location, final RegionFlag flag) {
-        if (!this.isDenied(location, flag)) return true;
-        if (!flag.bypassable()) return false;
+        return !this.isDenied(location, flag) || hasBypass(player, flag);
+    }
 
+    public boolean isAllowed(final Player player, final Block block, final RegionFlag flag) {
+        return !this.isDenied(block, flag) || hasBypass(player, flag);
+    }
+
+    private static boolean hasBypass(final Player player, final RegionFlag flag) {
+        if (!flag.bypassable()) return false;
         for (RegionFlag current = flag; current != null; current = current.parent()) {
             if (player.hasPermission(current.bypassPermission())) return true;
         }
@@ -326,45 +318,254 @@ public final class CartridgeRegions implements Regions {
 
     @Override
     public Set<EntityType> denySpawn(final Location location) {
-        final WorldRegions world = this.worlds.get(location.getWorld().getName());
+        final WorldRegions world = this.world(location.getWorld());
         if (world == null || !world.usesDenySpawn()) return Set.of();
 
-        for (final RegionImpl region : world.regions()) {
-            if (region.contains(location) && region.denySpawn() != null) return region.denySpawn();
+        final int x = location.getBlockX();
+        final int y = location.getBlockY();
+        final int z = location.getBlockZ();
+        for (final RegionImpl region : world.candidates(x, z)) {
+            if (region.denySpawn() != null && region.contains(x, y, z)) return region.denySpawn();
         }
         return world.global() == null || world.global().denySpawn() == null ? Set.of() : world.global().denySpawn();
     }
 
-    public record WorldRegions(List<RegionImpl> regions, List<RegionImpl> templates, @Nullable RegionImpl global, Set<RegionFlag> usedFlags, boolean usesDenySpawn) {
+    private static @Nullable Boolean toBoolean(final byte state) {
+        return switch (state) {
+            case RegionImpl.ALLOW -> Boolean.TRUE;
+            case RegionImpl.DENY -> Boolean.FALSE;
+            default -> null;
+        };
+    }
+
+    private static byte state(final @Nullable WorldRegions world, final int x, final int y, final int z, final RegionFlag flag) {
+        if (world == null || !world.mayDefine(flag)) return RegionImpl.UNSET;
+
+        final int ordinal = flag.ordinal();
+        byte result = RegionImpl.UNSET;
+        int resultPriority = 0;
+        for (final RegionImpl region : world.candidates(x, z)) {
+            if (result != RegionImpl.UNSET && region.priority() < resultPriority) break;
+            if (!region.contains(x, y, z)) continue;
+            final byte value = region.resolved[ordinal];
+            if (value == RegionImpl.UNSET) continue;
+            if (value == RegionImpl.DENY) return RegionImpl.DENY;
+            result = RegionImpl.ALLOW;
+            resultPriority = region.priority();
+        }
+        if (result != RegionImpl.UNSET) return result;
+        return world.global() == null ? RegionImpl.UNSET : world.global().resolved[ordinal];
+    }
+
+    /**
+     * Regions are bucketed into square cells of 2^CELL_SHIFT blocks on x and z.
+     * Every cell lists the regions overlapping it in the same order as the full priority sorted list, so a lookup walks the same regions minus the ones that cannot contain the point
+     */
+    public static final class WorldRegions {
+
+        private static final int CELL_SHIFT = 8;
+        // Regions spanning more cells than this are not bucketed and instead appear in every cell, this keeps a world wide region from creating millions of cells
+        private static final long MAX_CELLS_PER_REGION = 4096;
+        private static final RegionImpl[] NO_REGIONS = new RegionImpl[0];
+
+        private final List<RegionImpl> regions;
+        private final List<RegionImpl> templates;
+        private final @Nullable RegionImpl global;
+        private final boolean[] mayDefine = new boolean[RegionFlag.values().length];
+        private final boolean usesDenySpawn;
+        private final Long2ObjectMap<RegionImpl[]> cells;
+        private final RegionImpl[] uncelled;
+
+        WorldRegions(final List<RegionImpl> regions, final List<RegionImpl> templates, final @Nullable RegionImpl global) {
+            this.regions = regions;
+            this.templates = templates;
+            this.global = global;
+
+            final Set<RegionFlag> usedFlags = EnumSet.noneOf(RegionFlag.class);
+            boolean usesDenySpawn = false;
+            for (final RegionImpl region : regions) {
+                usedFlags.addAll(region.flags().keySet());
+                usesDenySpawn |= region.denySpawn() != null;
+            }
+            for (final RegionImpl region : templates) {
+                usedFlags.addAll(region.flags().keySet());
+                usesDenySpawn |= region.denySpawn() != null;
+            }
+            if (global != null) {
+                usedFlags.addAll(global.flags().keySet());
+                usesDenySpawn |= global.denySpawn() != null;
+            }
+            this.usesDenySpawn = usesDenySpawn;
+            for (final RegionFlag flag : RegionFlag.values()) {
+                for (RegionFlag current = flag; current != null; current = current.parent()) {
+                    if (usedFlags.contains(current)) {
+                        this.mayDefine[flag.ordinal()] = true;
+                        break;
+                    }
+                }
+            }
+
+            final Long2ObjectOpenHashMap<List<RegionImpl>> lists = new Long2ObjectOpenHashMap<>();
+            for (final RegionImpl region : regions) {
+                if (!isCelled(region)) continue;
+                forEachCell(region, key -> lists.computeIfAbsent(key, ignored -> new ArrayList<>()));
+            }
+            final List<RegionImpl> uncelled = new ArrayList<>();
+            for (final RegionImpl region : regions) {
+                if (isCelled(region)) {
+                    forEachCell(region, key -> lists.get(key).add(region));
+                } else {
+                    uncelled.add(region);
+                    for (final List<RegionImpl> list : lists.values()) list.add(region);
+                }
+            }
+            final Long2ObjectOpenHashMap<RegionImpl[]> cells = new Long2ObjectOpenHashMap<>(lists.size());
+            for (final Long2ObjectMap.Entry<List<RegionImpl>> entry : lists.long2ObjectEntrySet()) {
+                cells.put(entry.getLongKey(), entry.getValue().toArray(NO_REGIONS));
+            }
+            cells.trim();
+            this.cells = cells;
+            this.uncelled = uncelled.toArray(NO_REGIONS);
+        }
+
+        private static boolean isCelled(final RegionImpl region) {
+            final long width = (region.maxX >> CELL_SHIFT) - (region.minX >> CELL_SHIFT) + 1L;
+            final long depth = (region.maxZ >> CELL_SHIFT) - (region.minZ >> CELL_SHIFT) + 1L;
+            return width * depth <= MAX_CELLS_PER_REGION;
+        }
+
+        private static void forEachCell(final RegionImpl region, final LongConsumer action) {
+            for (int cellX = region.minX >> CELL_SHIFT; cellX <= region.maxX >> CELL_SHIFT; cellX++) {
+                for (int cellZ = region.minZ >> CELL_SHIFT; cellZ <= region.maxZ >> CELL_SHIFT; cellZ++) {
+                    action.accept(cellKey(cellX, cellZ));
+                }
+            }
+        }
+
+        private static long cellKey(final int cellX, final int cellZ) {
+            return ((long) cellX << 32) | (cellZ & 0xFFFFFFFFL);
+        }
+
+        /**
+         * Highest priority first, a superset of the regions containing any block in the column
+         */
+        RegionImpl[] candidates(final int x, final int z) {
+            final RegionImpl[] cell = this.cells.get(cellKey(x >> CELL_SHIFT, z >> CELL_SHIFT));
+            return cell == null ? this.uncelled : cell;
+        }
 
         boolean mayDefine(final RegionFlag flag) {
-            for (RegionFlag current = flag; current != null; current = current.parent()) {
-                if (this.usedFlags.contains(current)) return true;
-            }
-            return false;
+            return this.mayDefine[flag.ordinal()];
+        }
+
+        public boolean usesDenySpawn() {
+            return this.usesDenySpawn;
+        }
+
+        /**
+         * Regions with bounds, highest priority first
+         */
+        public List<RegionImpl> regions() {
+            return this.regions;
+        }
+
+        public List<RegionImpl> templates() {
+            return this.templates;
+        }
+
+        public @Nullable RegionImpl global() {
+            return this.global;
         }
     }
 
-    public record RegionImpl(
-        String name,
-        String worldName,
-        int priority,
-        @Nullable BoundingBox bounds,
-        @Nullable RegionImpl parent,
-        Map<RegionFlag, Boolean> flags,
-        @Nullable Set<EntityType> denySpawn
-    ) implements Region {
+    public static final class RegionImpl implements Region {
 
-        boolean contains(final Location location) {
-            return this.bounds == null || this.bounds.contains(location.getBlockX() + 0.5, location.getBlockY() + 0.5, location.getBlockZ() + 0.5);
+        static final byte UNSET = 0;
+        static final byte ALLOW = 1;
+        static final byte DENY = 2;
+
+        private final String name;
+        private final String worldName;
+        private final int priority;
+        private final boolean hasBounds;
+        // Inclusive block coordinates, only meaningful when hasBounds is true
+        final int minX;
+        final int minY;
+        final int minZ;
+        final int maxX;
+        final int maxY;
+        final int maxZ;
+        private final @Nullable RegionImpl parent;
+        private final Map<RegionFlag, Boolean> flags;
+        private final @Nullable Set<EntityType> denySpawn;
+        // Indexed by RegionFlag ordinal, the value resolve() would give through parent flags and parent regions
+        final byte[] resolved;
+
+        RegionImpl(
+            final String name, final String worldName, final int priority, final int @Nullable [] from, final int @Nullable [] to,
+            final @Nullable RegionImpl parent, final Map<RegionFlag, Boolean> flags, final @Nullable Set<EntityType> denySpawn
+        ) {
+            this.name = name;
+            this.worldName = worldName;
+            this.priority = priority;
+            this.hasBounds = from != null && to != null;
+            this.minX = this.hasBounds ? Math.min(from[0], to[0]) : 0;
+            this.minY = this.hasBounds ? Math.min(from[1], to[1]) : 0;
+            this.minZ = this.hasBounds ? Math.min(from[2], to[2]) : 0;
+            this.maxX = this.hasBounds ? Math.max(from[0], to[0]) : 0;
+            this.maxY = this.hasBounds ? Math.max(from[1], to[1]) : 0;
+            this.maxZ = this.hasBounds ? Math.max(from[2], to[2]) : 0;
+            this.parent = parent;
+            this.flags = flags;
+            this.denySpawn = denySpawn;
+
+            final RegionFlag[] values = RegionFlag.values();
+            this.resolved = new byte[values.length];
+            for (final RegionFlag flag : values) {
+                this.resolved[flag.ordinal()] = this.computeResolved(flag);
+            }
         }
 
-        @Nullable Boolean resolve(final RegionFlag flag) {
+        private byte computeResolved(final RegionFlag flag) {
             for (RegionFlag current = flag; current != null; current = current.parent()) {
                 final Boolean value = this.flags.get(current);
-                if (value != null) return value;
+                if (value != null) return value ? ALLOW : DENY;
             }
-            return this.parent == null ? null : this.parent.resolve(flag);
+            return this.parent == null ? UNSET : this.parent.resolved[flag.ordinal()];
+        }
+
+        boolean contains(final int x, final int y, final int z) {
+            return !this.hasBounds || x >= this.minX && x <= this.maxX && y >= this.minY && y <= this.maxY && z >= this.minZ && z <= this.maxZ;
+        }
+
+        @Override
+        public String name() {
+            return this.name;
+        }
+
+        @Override
+        public String worldName() {
+            return this.worldName;
+        }
+
+        @Override
+        public int priority() {
+            return this.priority;
+        }
+
+        @Override
+        public @Nullable BoundingBox bounds() {
+            return this.hasBounds ? new BoundingBox(this.minX, this.minY, this.minZ, this.maxX + 1, this.maxY + 1, this.maxZ + 1) : null;
+        }
+
+        @Override
+        public @Nullable RegionImpl parent() {
+            return this.parent;
+        }
+
+        @Override
+        public Map<RegionFlag, Boolean> flags() {
+            return this.flags;
         }
 
         @Override
@@ -373,8 +574,8 @@ public final class CartridgeRegions implements Regions {
         }
 
         @Override
-        public @Nullable BoundingBox bounds() {
-            return this.bounds == null ? null : this.bounds.clone();
+        public String toString() {
+            return "Region[" + this.worldName + "/" + this.name + "]";
         }
     }
 }

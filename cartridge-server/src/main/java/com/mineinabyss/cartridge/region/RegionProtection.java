@@ -4,6 +4,8 @@ import io.papermc.paper.event.player.AsyncChatEvent;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.BiPredicate;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -137,6 +139,120 @@ public final class RegionProtection {
     );
     private static final Set<Material> LAVA_HARDEN = Set.of(Material.OBSIDIAN, Material.COBBLESTONE, Material.STONE, Material.BASALT);
 
+    private static final List<Case<?>> CASES = List.of(
+        on(AsyncChatEvent.class, (regions, e) -> chat(regions, e)),
+        on(PlayerInteractEvent.class, (regions, e) -> interact(regions, e)),
+        on(PlayerInteractEntityEvent.class, (regions, e) -> check(regions, e, e.getPlayer(), e.getRightClicked().getLocation(), entityInteractFlag(e.getPlayer(), e.getRightClicked()))),
+        when(EntityMountEvent.class, (regions, e) -> {
+            if (!(e.getEntity() instanceof Player player)) return false;
+            check(regions, e, player, e.getMount().getLocation(), RegionFlag.RIDE);
+            return true;
+        }),
+        on(PlayerBedEnterEvent.class, (regions, e) -> check(regions, e, e.getPlayer(), e.getBed(), RegionFlag.SLEEP)),
+        on(PlayerTeleportEvent.class, (regions, e) -> teleport(regions, e)),
+        on(PlayerMoveEvent.class, (regions, e) -> move(regions, e)),
+        on(PlayerAttemptPickupItemEvent.class, (regions, e) -> check(regions, e, e.getPlayer(), e.getItem().getLocation(), RegionFlag.ITEM_PICKUP)),
+        on(PlayerDropItemEvent.class, (regions, e) -> check(regions, e, e.getPlayer(), e.getPlayer().getLocation(), RegionFlag.ITEM_DROP)),
+
+        on(BlockPlaceEvent.class, (regions, e) -> check(regions, e, e.getPlayer(), e.getBlock(), RegionFlag.BLOCK_PLACE)),
+        on(BlockBreakEvent.class, (regions, e) -> {
+            check(regions, e, e.getPlayer(), e.getBlock(), RegionFlag.BLOCK_BREAK);
+            if (regions.isDenied(e.getBlock(), RegionFlag.EXP_DROPS)) e.setExpToDrop(0);
+        }),
+        on(BlockExpEvent.class, (regions, e) -> {
+            if (regions.isDenied(e.getBlock(), RegionFlag.EXP_DROPS)) e.setExpToDrop(0);
+        }),
+        on(PlayerBucketEmptyEvent.class, (regions, e) -> check(regions, e, e.getPlayer(), e.getBlock(), RegionFlag.BLOCK_PLACE)),
+        on(PlayerBucketFillEvent.class, (regions, e) -> check(regions, e, e.getPlayer(), e.getBlock(), RegionFlag.BLOCK_BREAK)),
+        on(SignChangeEvent.class, (regions, e) -> check(regions, e, e.getPlayer(), e.getBlock(), RegionFlag.BLOCK_PLACE)),
+        on(BlockFertilizeEvent.class, (regions, e) -> check(regions, e, e.getPlayer(), e.getBlock(), RegionFlag.BLOCK_PLACE)),
+        on(BlockIgniteEvent.class, (regions, e) -> ignite(regions, e)),
+        on(BlockBurnEvent.class, (regions, e) -> deny(regions, e, e.getBlock(), RegionFlag.FIRE_SPREAD)),
+        on(EntityChangeBlockEvent.class, (regions, e) -> changeBlock(regions, e)),
+        on(HangingPlaceEvent.class, (regions, e) -> check(regions, e, e.getPlayer(), e.getEntity().getLocation(), RegionFlag.BLOCK_PLACE)),
+        on(EntityPlaceEvent.class, (regions, e) -> check(regions, e, e.getPlayer(), e.getEntity().getLocation(), e.getEntity() instanceof Vehicle ? RegionFlag.VEHICLE_PLACE : RegionFlag.BLOCK_PLACE)),
+        on(HangingBreakByEntityEvent.class, (regions, e) -> {
+            final Player player = attackingPlayer(e.getRemover());
+            if (player != null) {
+                check(regions, e, player, e.getEntity().getLocation(), RegionFlag.BLOCK_BREAK);
+            } else if (e.getRemover() != null) {
+                deny(regions, e, e.getEntity().getLocation(), hangingDestroyFlag(e.getEntity()));
+            }
+        }),
+        on(VehicleDamageEvent.class, (regions, e) -> check(regions, e, attackingPlayer(e.getAttacker()), e.getVehicle().getLocation(), RegionFlag.VEHICLE_DESTROY)),
+        on(VehicleDestroyEvent.class, (regions, e) -> check(regions, e, attackingPlayer(e.getAttacker()), e.getVehicle().getLocation(), RegionFlag.VEHICLE_DESTROY)),
+
+        on(EntityDamageEvent.class, (regions, e) -> damage(regions, e)),
+        when(EntityRegainHealthEvent.class, (regions, e) -> {
+            if (!(e.getEntity() instanceof Player player)
+                || e.getRegainReason() != EntityRegainHealthEvent.RegainReason.SATIATED && e.getRegainReason() != EntityRegainHealthEvent.RegainReason.REGEN) return false;
+            deny(regions, e, player.getLocation(), RegionFlag.NATURAL_HEALTH_REGEN);
+            return true;
+        }),
+        when(FoodLevelChangeEvent.class, (regions, e) -> {
+            if (e.getItem() != null || e.getFoodLevel() >= e.getEntity().getFoodLevel()) return false;
+            deny(regions, e, e.getEntity().getLocation(), RegionFlag.NATURAL_HUNGER_DRAIN);
+            return true;
+        }),
+        when(EntityDeathEvent.class, (regions, e) -> {
+            if (e.getEntity() instanceof Player) return false;
+            if (regions.isDenied(e.getEntity().getLocation(), RegionFlag.EXP_DROPS)) e.setDroppedExp(0);
+            return true;
+        }),
+        on(PotionSplashEvent.class, (regions, e) -> check(regions, e, attackingPlayer(e.getEntity()), e.getEntity().getLocation(), RegionFlag.POTION_SPLASH)),
+        on(LingeringPotionSplashEvent.class, (regions, e) -> check(regions, e, attackingPlayer(e.getEntity()), e.getEntity().getLocation(), RegionFlag.POTION_SPLASH)),
+        when(ProjectileHitEvent.class, (regions, e) -> {
+            if (e.getEntity() instanceof BreezeWindCharge) {
+                deny(regions, e, e.getEntity().getLocation(), RegionFlag.BREEZE_CHARGE_EXPLOSION);
+            } else if (e.getEntity() instanceof WindCharge) {
+                check(regions, e, attackingPlayer(e.getEntity()), e.getEntity().getLocation(), RegionFlag.WIND_CHARGE_BURST);
+            } else {
+                return false;
+            }
+            return true;
+        }),
+        when(CreatureSpawnEvent.class, (regions, e) -> {
+            if (!(e.getEntity() instanceof Mob) || PLUGIN_SPAWNS.contains(e.getSpawnReason())) return false;
+            final Location location = e.getLocation();
+            if (regions.isDenied(location, RegionFlag.MOB_SPAWNING) || regions.denySpawn(location).contains(e.getEntityType())) e.setCancelled(true);
+            return true;
+        }),
+
+        on(EntityExplodeEvent.class, (regions, e) -> filterExplosion(regions, e.blockList(), explosionFlag(e.getEntity()))),
+        on(BlockExplodeEvent.class, (regions, e) -> filterExplosion(regions, e.blockList(), RegionFlag.OTHER_EXPLOSION)),
+        when(LightningStrikeEvent.class, (regions, e) -> {
+            if (e.getCause() == LightningStrikeEvent.Cause.COMMAND || e.getCause() == LightningStrikeEvent.Cause.CUSTOM) return false;
+            deny(regions, e, e.getLightning().getLocation(), RegionFlag.LIGHTNING);
+            return true;
+        }),
+        on(BlockPistonExtendEvent.class, (regions, e) -> pistons(regions, e, e.getBlock(), e.getBlocks(), e.getDirection())),
+        on(BlockPistonRetractEvent.class, (regions, e) -> pistons(regions, e, e.getBlock(), e.getBlocks(), e.getDirection())),
+        on(EntityBlockFormEvent.class, (regions, e) -> {
+            if (e.getEntity() instanceof Snowman) {
+                deny(regions, e, e.getBlock(), RegionFlag.SNOWMAN_TRAILS);
+            } else if (e.getNewState().getType() == Material.FROSTED_ICE) {
+                deny(regions, e, e.getBlock(), RegionFlag.FROSTED_ICE_FORM);
+            }
+        }),
+        on(BlockSpreadEvent.class, (regions, e) -> deny(regions, e, e.getBlock(), spreadFlag(e.getSource().getType(), e.getNewState().getType()))),
+        on(BlockFormEvent.class, (regions, e) -> deny(regions, e, e.getBlock(), formFlag(e.getBlock().getType(), e.getNewState().getType()))),
+        on(BlockGrowEvent.class, (regions, e) -> deny(regions, e, e.getBlock(), growFlag(e.getNewState().getType()))),
+        on(BlockFadeEvent.class, (regions, e) -> deny(regions, e, e.getBlock(), fadeFlag(e.getBlock().getType()))),
+        on(LeavesDecayEvent.class, (regions, e) -> deny(regions, e, e.getBlock(), RegionFlag.LEAF_DECAY)),
+        on(MoistureChangeEvent.class, (regions, e) -> deny(regions, e, e.getBlock(), RegionFlag.MOISTURE_CHANGE)),
+        on(BlockFromToEvent.class, (regions, e) -> deny(regions, e, e.getToBlock(), flowFlag(e.getBlock())))
+    );
+
+    private static final Case<?>[] NO_CASES = new Case<?>[0];
+    // Same order as CASES, so the first case whose guard passes wins as it would in a pattern switch
+    private static final ClassValue<Case<?>[]> CASES_BY_TYPE = new ClassValue<>() {
+        @Override
+        protected Case<?>[] computeValue(final Class<?> type) {
+            final Case<?>[] cases = CASES.stream().filter(entry -> entry.type().isAssignableFrom(type)).toArray(Case<?>[]::new);
+            return cases.length == 0 ? NO_CASES : cases;
+        }
+    };
+
     private RegionProtection() {
     }
 
@@ -144,85 +260,29 @@ public final class RegionProtection {
         final CartridgeRegions regions = CartridgeRegions.instance();
         if (regions.isEmpty()) return;
 
-        switch (event) {
-            case AsyncChatEvent e -> chat(regions, e);
-            case PlayerInteractEvent e -> interact(regions, e);
-            case PlayerInteractEntityEvent e -> check(regions, e, e.getPlayer(), e.getRightClicked().getLocation(), entityInteractFlag(e.getPlayer(), e.getRightClicked()));
-            case EntityMountEvent e when e.getEntity() instanceof Player player -> check(regions, e, player, e.getMount().getLocation(), RegionFlag.RIDE);
-            case PlayerBedEnterEvent e -> check(regions, e, e.getPlayer(), e.getBed().getLocation(), RegionFlag.SLEEP);
-            case PlayerTeleportEvent e -> teleport(regions, e);
-            case PlayerMoveEvent e -> move(regions, e);
-            case PlayerAttemptPickupItemEvent e -> check(regions, e, e.getPlayer(), e.getItem().getLocation(), RegionFlag.ITEM_PICKUP);
-            case PlayerDropItemEvent e -> check(regions, e, e.getPlayer(), e.getPlayer().getLocation(), RegionFlag.ITEM_DROP);
+        for (final Case<?> entry : CASES_BY_TYPE.get(event.getClass())) {
+            if (entry.handle(regions, event)) return;
+        }
+    }
 
-            case BlockPlaceEvent e -> check(regions, e, e.getPlayer(), e.getBlock().getLocation(), RegionFlag.BLOCK_PLACE);
-            case BlockBreakEvent e -> {
-                check(regions, e, e.getPlayer(), e.getBlock().getLocation(), RegionFlag.BLOCK_BREAK);
-                if (regions.isDenied(e.getBlock().getLocation(), RegionFlag.EXP_DROPS)) e.setExpToDrop(0);
-            }
-            case BlockExpEvent e -> {
-                if (regions.isDenied(e.getBlock().getLocation(), RegionFlag.EXP_DROPS)) e.setExpToDrop(0);
-            }
-            case PlayerBucketEmptyEvent e -> check(regions, e, e.getPlayer(), e.getBlock().getLocation(), RegionFlag.BLOCK_PLACE);
-            case PlayerBucketFillEvent e -> check(regions, e, e.getPlayer(), e.getBlock().getLocation(), RegionFlag.BLOCK_BREAK);
-            case SignChangeEvent e -> check(regions, e, e.getPlayer(), e.getBlock().getLocation(), RegionFlag.BLOCK_PLACE);
-            case BlockFertilizeEvent e -> check(regions, e, e.getPlayer(), e.getBlock().getLocation(), RegionFlag.BLOCK_PLACE);
-            case BlockIgniteEvent e -> ignite(regions, e);
-            case BlockBurnEvent e -> deny(regions, e, e.getBlock().getLocation(), RegionFlag.FIRE_SPREAD);
-            case EntityChangeBlockEvent e -> changeBlock(regions, e);
-            case HangingPlaceEvent e -> check(regions, e, e.getPlayer(), e.getEntity().getLocation(), RegionFlag.BLOCK_PLACE);
-            case EntityPlaceEvent e -> check(regions, e, e.getPlayer(), e.getEntity().getLocation(), e.getEntity() instanceof Vehicle ? RegionFlag.VEHICLE_PLACE : RegionFlag.BLOCK_PLACE);
-            case HangingBreakByEntityEvent e -> {
-                final Player player = attackingPlayer(e.getRemover());
-                if (player != null) {
-                    check(regions, e, player, e.getEntity().getLocation(), RegionFlag.BLOCK_BREAK);
-                } else if (e.getRemover() != null) {
-                    deny(regions, e, e.getEntity().getLocation(), hangingDestroyFlag(e.getEntity()));
-                }
-            }
-            case VehicleDamageEvent e -> check(regions, e, attackingPlayer(e.getAttacker()), e.getVehicle().getLocation(), RegionFlag.VEHICLE_DESTROY);
-            case VehicleDestroyEvent e -> check(regions, e, attackingPlayer(e.getAttacker()), e.getVehicle().getLocation(), RegionFlag.VEHICLE_DESTROY);
+    private static <E extends Event> Case<E> on(final Class<E> type, final BiConsumer<CartridgeRegions, E> handler) {
+        return new Case<>(type, (regions, event) -> {
+            handler.accept(regions, event);
+            return true;
+        });
+    }
 
-            case EntityDamageEvent e -> damage(regions, e);
-            case EntityRegainHealthEvent e when e.getEntity() instanceof Player player
-                && (e.getRegainReason() == EntityRegainHealthEvent.RegainReason.SATIATED || e.getRegainReason() == EntityRegainHealthEvent.RegainReason.REGEN) ->
-                deny(regions, e, player.getLocation(), RegionFlag.NATURAL_HEALTH_REGEN);
-            case FoodLevelChangeEvent e when e.getItem() == null && e.getFoodLevel() < e.getEntity().getFoodLevel() ->
-                deny(regions, e, e.getEntity().getLocation(), RegionFlag.NATURAL_HUNGER_DRAIN);
-            case EntityDeathEvent e when !(e.getEntity() instanceof Player) -> {
-                if (regions.isDenied(e.getEntity().getLocation(), RegionFlag.EXP_DROPS)) e.setDroppedExp(0);
-            }
-            case PotionSplashEvent e -> check(regions, e, attackingPlayer(e.getEntity()), e.getEntity().getLocation(), RegionFlag.POTION_SPLASH);
-            case LingeringPotionSplashEvent e -> check(regions, e, attackingPlayer(e.getEntity()), e.getEntity().getLocation(), RegionFlag.POTION_SPLASH);
-            case ProjectileHitEvent e when e.getEntity() instanceof BreezeWindCharge -> deny(regions, e, e.getEntity().getLocation(), RegionFlag.BREEZE_CHARGE_EXPLOSION);
-            case ProjectileHitEvent e when e.getEntity() instanceof WindCharge -> check(regions, e, attackingPlayer(e.getEntity()), e.getEntity().getLocation(), RegionFlag.WIND_CHARGE_BURST);
-            case CreatureSpawnEvent e when e.getEntity() instanceof Mob && !PLUGIN_SPAWNS.contains(e.getSpawnReason()) -> {
-                final Location location = e.getLocation();
-                if (regions.isDenied(location, RegionFlag.MOB_SPAWNING) || regions.denySpawn(location).contains(e.getEntityType())) e.setCancelled(true);
-            }
+    /**
+     * The handler returns false when the event does not match its guard, so later cases are tried
+     */
+    private static <E extends Event> Case<E> when(final Class<E> type, final BiPredicate<CartridgeRegions, E> handler) {
+        return new Case<>(type, handler);
+    }
 
-            case EntityExplodeEvent e -> filterExplosion(regions, e.blockList(), explosionFlag(e.getEntity()));
-            case BlockExplodeEvent e -> filterExplosion(regions, e.blockList(), RegionFlag.OTHER_EXPLOSION);
-            case LightningStrikeEvent e when e.getCause() != LightningStrikeEvent.Cause.COMMAND && e.getCause() != LightningStrikeEvent.Cause.CUSTOM ->
-                deny(regions, e, e.getLightning().getLocation(), RegionFlag.LIGHTNING);
-            case BlockPistonExtendEvent e -> pistons(regions, e, e.getBlock(), e.getBlocks(), e.getDirection());
-            case BlockPistonRetractEvent e -> pistons(regions, e, e.getBlock(), e.getBlocks(), e.getDirection());
-            case EntityBlockFormEvent e -> {
-                if (e.getEntity() instanceof Snowman) {
-                    deny(regions, e, e.getBlock().getLocation(), RegionFlag.SNOWMAN_TRAILS);
-                } else if (e.getNewState().getType() == Material.FROSTED_ICE) {
-                    deny(regions, e, e.getBlock().getLocation(), RegionFlag.FROSTED_ICE_FORM);
-                }
-            }
-            case BlockSpreadEvent e -> deny(regions, e, e.getBlock().getLocation(), spreadFlag(e.getSource().getType(), e.getNewState().getType()));
-            case BlockFormEvent e -> deny(regions, e, e.getBlock().getLocation(), formFlag(e.getBlock().getType(), e.getNewState().getType()));
-            case BlockGrowEvent e -> deny(regions, e, e.getBlock().getLocation(), growFlag(e.getNewState().getType()));
-            case BlockFadeEvent e -> deny(regions, e, e.getBlock().getLocation(), fadeFlag(e.getBlock().getType()));
-            case LeavesDecayEvent e -> deny(regions, e, e.getBlock().getLocation(), RegionFlag.LEAF_DECAY);
-            case MoistureChangeEvent e -> deny(regions, e, e.getBlock().getLocation(), RegionFlag.MOISTURE_CHANGE);
-            case BlockFromToEvent e -> deny(regions, e, e.getToBlock().getLocation(), flowFlag(e.getBlock()));
-            default -> {
-            }
+    private record Case<E extends Event>(Class<E> type, BiPredicate<CartridgeRegions, E> handler) {
+
+        boolean handle(final CartridgeRegions regions, final Event event) {
+            return this.handler.test(regions, this.type.cast(event));
         }
     }
 
@@ -232,8 +292,20 @@ public final class RegionProtection {
         }
     }
 
+    private static void check(final CartridgeRegions regions, final Cancellable event, final @Nullable Player player, final Block block, final @Nullable RegionFlag flag) {
+        if (player != null && flag != null && !regions.isAllowed(player, block, flag)) {
+            event.setCancelled(true);
+        }
+    }
+
     private static void deny(final CartridgeRegions regions, final Cancellable event, final Location location, final @Nullable RegionFlag flag) {
         if (flag != null && regions.isDenied(location, flag)) {
+            event.setCancelled(true);
+        }
+    }
+
+    private static void deny(final CartridgeRegions regions, final Cancellable event, final Block block, final @Nullable RegionFlag flag) {
+        if (flag != null && regions.isDenied(block, flag)) {
             event.setCancelled(true);
         }
     }
@@ -294,11 +366,11 @@ public final class RegionProtection {
         switch (event.getAction()) {
             case RIGHT_CLICK_BLOCK -> {
                 final RegionFlag flag = blockInteractFlag(event.getPlayer(), block);
-                if (flag != null && !regions.isAllowed(event.getPlayer(), block.getLocation(), flag)) {
+                if (flag != null && !regions.isAllowed(event.getPlayer(), block, flag)) {
                     event.setUseInteractedBlock(Event.Result.DENY);
                 }
             }
-            case PHYSICAL -> check(regions, event, event.getPlayer(), block.getLocation(), physicalFlag(block.getType()));
+            case PHYSICAL -> check(regions, event, event.getPlayer(), block, physicalFlag(block.getType()));
             default -> {
             }
         }
@@ -338,7 +410,7 @@ public final class RegionProtection {
     }
 
     private static void ignite(final CartridgeRegions regions, final BlockIgniteEvent event) {
-        final Location location = event.getBlock().getLocation();
+        final Block location = event.getBlock();
         switch (event.getCause()) {
             case SPREAD -> deny(regions, event, location, RegionFlag.FIRE_SPREAD);
             case LAVA -> deny(regions, event, location, RegionFlag.LAVA_FIRE);
@@ -348,8 +420,8 @@ public final class RegionProtection {
     }
 
     private static void changeBlock(final CartridgeRegions regions, final EntityChangeBlockEvent event) {
-        final Location location = event.getBlock().getLocation();
-        final Material type = event.getBlock().getType();
+        final Block location = event.getBlock();
+        final Material type = location.getType();
         final boolean trampling = type == Material.FARMLAND || type == Material.TURTLE_EGG;
         switch (event.getEntity()) {
             case Player player -> check(regions, event, player, location, trampling ? RegionFlag.BLOCK_TRAMPLING : RegionFlag.BLOCK_PLACE);
@@ -428,16 +500,16 @@ public final class RegionProtection {
     }
 
     private static void filterExplosion(final CartridgeRegions regions, final List<Block> blocks, final RegionFlag flag) {
-        blocks.removeIf(block -> regions.isDenied(block.getLocation(), flag));
+        blocks.removeIf(block -> regions.isDenied(block, flag));
     }
 
     private static void pistons(final CartridgeRegions regions, final Cancellable event, final Block piston, final List<Block> blocks, final BlockFace direction) {
-        if (regions.isDenied(piston.getLocation(), RegionFlag.PISTONS)) {
+        if (regions.isDenied(piston, RegionFlag.PISTONS)) {
             event.setCancelled(true);
             return;
         }
         for (final Block block : blocks) {
-            if (regions.isDenied(block.getLocation(), RegionFlag.PISTONS) || regions.isDenied(block.getRelative(direction).getLocation(), RegionFlag.PISTONS)) {
+            if (regions.isDenied(block, RegionFlag.PISTONS) || regions.isDenied(block.getRelative(direction), RegionFlag.PISTONS)) {
                 event.setCancelled(true);
                 return;
             }
