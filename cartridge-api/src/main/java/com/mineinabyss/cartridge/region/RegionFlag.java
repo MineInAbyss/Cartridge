@@ -25,6 +25,7 @@ public enum RegionFlag {
     RESPAWN_ANCHORS(INTERACT, true),
     RIDE(INTERACT, true),
     ITEM_FRAME_ROTATION(INTERACT, true),
+    ENTITY_EQUIPMENT(INTERACT, true),
 
     BUILD(null, true),
     BLOCK_PLACE(BUILD, true),

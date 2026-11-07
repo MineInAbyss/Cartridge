@@ -16,6 +16,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Waterlogged;
 import org.bukkit.craftbukkit.block.CraftBlock;
+import org.bukkit.entity.Allay;
 import org.bukkit.entity.Ambient;
 import org.bukkit.entity.Animals;
 import org.bukkit.entity.ArmorStand;
@@ -412,7 +413,8 @@ public final class RegionProtection {
     private static RegionFlag entityInteractFlag(final Player player, final Entity entity) {
         if (entity instanceof StorageMinecart || entity instanceof HopperMinecart) return RegionFlag.CHEST_ACCESS;
         if (entity instanceof ChestBoat && player.isSneaking()) return RegionFlag.CHEST_ACCESS;
-        if (entity instanceof ItemFrame frame) return frame.getItem().isEmpty() ? RegionFlag.BLOCK_PLACE : RegionFlag.ITEM_FRAME_ROTATION;
+        if (entity instanceof ItemFrame frame) return frame.getItem().isEmpty() ? RegionFlag.ENTITY_EQUIPMENT : RegionFlag.ITEM_FRAME_ROTATION;
+        if (entity instanceof ArmorStand || entity instanceof Allay) return RegionFlag.ENTITY_EQUIPMENT;
         if (entity instanceof Vehicle) return RegionFlag.RIDE;
         return RegionFlag.INTERACT;
     }
@@ -474,7 +476,8 @@ public final class RegionProtection {
             case ArmorStand ignored -> check(regions, event, attacker instanceof Player source ? source : null, location, RegionFlag.BLOCK_BREAK);
             case Hanging hanging -> {
                 if (attacker instanceof Player source) {
-                    check(regions, event, source, location, RegionFlag.BLOCK_BREAK);
+                    final boolean dropsItem = hanging instanceof ItemFrame frame && !frame.getItem().isEmpty();
+                    check(regions, event, source, location, dropsItem ? RegionFlag.ENTITY_EQUIPMENT : RegionFlag.BLOCK_BREAK);
                 } else if (attacker != null) {
                     deny(regions, event, location, hangingDestroyFlag(hanging));
                 }
@@ -516,8 +519,13 @@ public final class RegionProtection {
             event.setCancelled(true);
             return;
         }
+        final boolean pistonMayBreak = !regions.isDenied(piston, RegionFlag.BLOCK_BREAK);
+        final boolean pistonMayPlace = !regions.isDenied(piston, RegionFlag.BLOCK_PLACE);
         for (final Block block : blocks) {
-            if (regions.isDenied(block, RegionFlag.PISTONS) || regions.isDenied(block.getRelative(direction), RegionFlag.PISTONS)) {
+            final Block destination = block.getRelative(direction);
+            if (regions.isDenied(block, RegionFlag.PISTONS) || regions.isDenied(destination, RegionFlag.PISTONS)
+                || pistonMayBreak && regions.isDenied(block, RegionFlag.BLOCK_BREAK)
+                || pistonMayPlace && regions.isDenied(destination, RegionFlag.BLOCK_PLACE)) {
                 event.setCancelled(true);
                 return;
             }
