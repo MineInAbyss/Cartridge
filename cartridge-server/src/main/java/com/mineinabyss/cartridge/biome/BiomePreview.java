@@ -24,6 +24,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.StrictJsonParser;
 import net.minecraft.world.attribute.EnvironmentAttribute;
 import net.minecraft.world.level.biome.Biome;
+import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -197,9 +198,20 @@ public final class BiomePreview {
         return value.isJsonNull() ? "~" : value.toString();
     }
 
-    public static void resync(final Player player) {
+    /**
+     * Paper refuses to reconfigure connections that went through the legacy PlayerLoginEvent.
+     * LuckPerms sets up permissions in that event, and a reconfigured player is a new instance that never sees it, so those players are disconnected to rejoin instead
+     *
+     * @return false when the player was disconnected instead of reconfigured
+     */
+    public static boolean resync(final Player player) {
+        if (((CraftPlayer) player).getHandle().connection.connection.handledLegacyLoginEvent) {
+            player.kick(net.kyori.adventure.text.Component.text("Rejoin to see the biome preview"));
+            return false;
+        }
         PENDING_RESYNC.add(player.getUniqueId());
         player.getConnection().reenterConfiguration();
+        return true;
     }
 
     public static boolean consumeResync(final UUID player) {

@@ -229,7 +229,7 @@ final class BiomeCommand {
 
     private static Component reloadButton() {
         return text("[Resend to me]", AQUA)
-            .hoverEvent(HoverEvent.showText(text("Runs /cartridge biome reload, which briefly sends you to the loading screen", GRAY)))
+            .hoverEvent(HoverEvent.showText(text("Runs /cartridge biome reload, which briefly sends you to the loading screen, or disconnects you to rejoin on servers with PlayerLoginEvent plugins", GRAY)))
             .clickEvent(ClickEvent.runCommand("/cartridge biome reload"));
     }
 
@@ -247,8 +247,13 @@ final class BiomeCommand {
     }
 
     private static int resync(final CommandSender sender, final List<Player> players) {
-        players.forEach(BiomePreview::resync);
-        sender.sendMessage(text("Resending biomes to " + players.size() + " player(s)", GREEN));
+        final List<Player> kicked = players.stream().filter(player -> !BiomePreview.resync(player)).toList();
+        if (kicked.size() < players.size()) {
+            sender.sendMessage(text("Resending biomes to " + (players.size() - kicked.size()) + " player(s)", GREEN));
+        }
+        if (!kicked.isEmpty()) {
+            sender.sendMessage(text("Disconnected " + kicked.stream().map(Player::getName).toList() + " to rejoin, a plugin listening to PlayerLoginEvent blocks resending biomes in place", YELLOW));
+        }
         return players.size();
     }
 }

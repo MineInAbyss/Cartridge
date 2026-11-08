@@ -1,0 +1,209 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Boy0000 <sivertpaulsen2@gmail.com>
+Date: Mon, 2 Nov 2026 21:10:59 +0100
+Subject: [PATCH] Permission manager hook
+
+
+diff --git a/src/main/java/io/papermc/paper/plugin/PermissionManager.java b/src/main/java/io/papermc/paper/plugin/PermissionManager.java
+index c6363e5c54d9128c41ff1b832c6c4c2624cce3c4..69f993a2d931477c2334c10f14b0708501eb9efe 100644
+--- a/src/main/java/io/papermc/paper/plugin/PermissionManager.java
++++ b/src/main/java/io/papermc/paper/plugin/PermissionManager.java
+@@ -1,10 +1,15 @@
+ package io.papermc.paper.plugin;
+ 
+ import java.util.List;
++import java.util.Optional;
+ import java.util.Set;
++import java.util.UUID;
++import java.util.concurrent.CompletableFuture;
+ import org.bukkit.permissions.Permissible;
+ import org.bukkit.permissions.Permission;
++import org.bukkit.permissions.ServerOperator;
+ import org.jetbrains.annotations.ApiStatus;
++import org.jetbrains.annotations.NotNull;
+ import org.jspecify.annotations.NullMarked;
+ import org.jspecify.annotations.Nullable;
+ 
+@@ -163,4 +168,41 @@ public interface PermissionManager {
+      */
+     void clearPermissions();
+ 
++    /**
++     * Called whenever a Bukkit entity is created, so the returned permissible is in place before any permission check.
++     * For players the result must extend {@link org.bukkit.permissions.PermissibleBase}, anything else falls back to a plain one.
++     * Entities are created often, so other entities should share one permissible unless they need their own
++     */
++    @ApiStatus.Experimental
++    default Permissible createPermissible(@NotNull ServerOperator operator) {
++        if (operator instanceof org.bukkit.entity.Player) return new org.bukkit.permissions.PermissibleBase(operator);
++        return SharedEntityPermissible.INSTANCE;
++    }
++
++    /**
++     * Looks up the permissions of a player that has no {@link org.bukkit.entity.Player} yet, such as during the configuration phase.
++     * The returned permissible must not be kept around, it is not updated when the player's permissions change
++     */
++    @ApiStatus.Experimental
++    default CompletableFuture<Optional<Permissible>> loadPlayerPermissible(@NotNull UUID playerUuid) {
++        return CompletableFuture.completedFuture(Optional.empty());
++    }
++
++    @ApiStatus.Internal
++    final class SharedEntityPermissible {
++        // Lazy, since PermissibleBase calculates default permissions when it is constructed
++        private static final Permissible INSTANCE = new org.bukkit.permissions.PermissibleBase(new ServerOperator() {
++            @Override
++            public boolean isOp() {
++                return false;
++            }
++
++            @Override
++            public void setOp(final boolean value) {
++            }
++        });
++
++        private SharedEntityPermissible() {
++        }
++    }
+ }
+diff --git a/src/main/java/io/papermc/paper/plugin/PermissionManagerRegistrar.java b/src/main/java/io/papermc/paper/plugin/PermissionManagerRegistrar.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..e46a48edcfbce32492ac75d046dc0aa4e374cd79
+--- /dev/null
++++ b/src/main/java/io/papermc/paper/plugin/PermissionManagerRegistrar.java
+@@ -0,0 +1,12 @@
++package io.papermc.paper.plugin;
++
++import io.papermc.paper.plugin.lifecycle.event.registrar.Registrar;
++import org.jetbrains.annotations.ApiStatus;
++import org.jetbrains.annotations.NotNull;
++
++@ApiStatus.Experimental
++public interface PermissionManagerRegistrar extends Registrar {
++
++    void register(@NotNull PermissionManager permissionManager);
++
++}
+diff --git a/src/main/java/io/papermc/paper/plugin/lifecycle/event/types/LifecycleEvents.java b/src/main/java/io/papermc/paper/plugin/lifecycle/event/types/LifecycleEvents.java
+index d5b63fb1c6a11ab4f1ade9bbbe1f73a3fdaba03e..6d5c1907c111357087a484686cb799582c4545e3 100644
+--- a/src/main/java/io/papermc/paper/plugin/lifecycle/event/types/LifecycleEvents.java
++++ b/src/main/java/io/papermc/paper/plugin/lifecycle/event/types/LifecycleEvents.java
+@@ -2,6 +2,7 @@ package io.papermc.paper.plugin.lifecycle.event.types;
+ 
+ import io.papermc.paper.command.brigadier.Commands;
+ import io.papermc.paper.datapack.DatapackRegistrar;
++import io.papermc.paper.plugin.PermissionManagerRegistrar;
+ import io.papermc.paper.plugin.bootstrap.BootstrapContext;
+ import io.papermc.paper.plugin.lifecycle.event.LifecycleEvent;
+ import io.papermc.paper.plugin.lifecycle.event.LifecycleEventManager;
+@@ -41,6 +42,13 @@ public final class LifecycleEvents {
+     @ApiStatus.Experimental
+     public static final LifecycleEventType.Prioritizable<BootstrapContext, RegistrarEvent<DatapackRegistrar>> DATAPACK_DISCOVERY = bootstrapPrioritized("datapack_discovery");
+ 
++    /**
++     * Replaces the server permission manager before any plugin is enabled. You
++     * can register a handler for this event only in {@link io.papermc.paper.plugin.bootstrap.PluginBootstrap#bootstrap(BootstrapContext)}.
++     */
++    @ApiStatus.Experimental
++    public static final LifecycleEventType.Prioritizable<BootstrapContext, RegistrarEvent<PermissionManagerRegistrar>> PERMISSION_MANAGER_REGISTER = bootstrapPrioritized("permission_manager_register");
++
+     //<editor-fold desc="helper methods" defaultstate="collapsed">
+     @ApiStatus.Internal
+     static <E extends LifecycleEvent> LifecycleEventType.Monitorable<Plugin, E> plugin(final String name) {
+diff --git a/src/main/java/org/bukkit/permissions/Permissible.java b/src/main/java/org/bukkit/permissions/Permissible.java
+index 26791db3c267670d5782f1d2b67ff7d5b55b9dac..a025031e3351004feb66d187790abb11643595a4 100644
+--- a/src/main/java/org/bukkit/permissions/Permissible.java
++++ b/src/main/java/org/bukkit/permissions/Permissible.java
+@@ -156,4 +156,8 @@ public interface Permissible extends ServerOperator {
+         }
+     }
+     // Paper end
++
++    default void clearPermissions() {
++
++    }
+ }
+diff --git a/src/main/java/org/bukkit/permissions/PermissibleBase.java b/src/main/java/org/bukkit/permissions/PermissibleBase.java
+index 75b77cc4fe189b4b6baa1af3663dc492e992a266..3a93c7dd9d765e83236ce23a2d5e3a09cba5bf87 100644
+--- a/src/main/java/org/bukkit/permissions/PermissibleBase.java
++++ b/src/main/java/org/bukkit/permissions/PermissibleBase.java
+@@ -179,6 +179,7 @@ public class PermissibleBase implements Permissible {
+         }
+     }
+ 
++    @Override
+     public synchronized void clearPermissions() {
+         Set<String> perms = permissions.keySet();
+ 
+diff --git a/src/main/java/org/bukkit/plugin/PluginManager.java b/src/main/java/org/bukkit/plugin/PluginManager.java
+index 734c24b842e92064a9d0f7a97ae8aa1113c6e54c..df0ea8c78cbc881012f0e8258c0fe2cbe7138ab0 100644
+--- a/src/main/java/org/bukkit/plugin/PluginManager.java
++++ b/src/main/java/org/bukkit/plugin/PluginManager.java
+@@ -329,4 +329,12 @@ public interface PluginManager extends io.papermc.paper.plugin.PermissionManager
+     @org.jetbrains.annotations.ApiStatus.Experimental
+     void overridePermissionManager(@NotNull Plugin plugin, @Nullable io.papermc.paper.plugin.PermissionManager permissionManager);
+     // Paper end
++
++    // Cartridge start - Permission manager hook
++    /**
++     * Lets a plugin wrap the active manager before passing its wrapper to {@link #overridePermissionManager(Plugin, io.papermc.paper.plugin.PermissionManager)}
++     */
++    @org.jetbrains.annotations.ApiStatus.Experimental
++    io.papermc.paper.plugin.@NotNull PermissionManager getPermissionManager();
++    // Cartridge end - Permission manager hook
+ }
+diff --git a/src/main/java/org/bukkit/plugin/SimplePluginManager.java b/src/main/java/org/bukkit/plugin/SimplePluginManager.java
+index d1a13d8893ffbbd2a3f90ec8f89bd584ef96032e..041660b3d778bf440b4a285836910596e1fc0f43 100644
+--- a/src/main/java/org/bukkit/plugin/SimplePluginManager.java
++++ b/src/main/java/org/bukkit/plugin/SimplePluginManager.java
+@@ -20,8 +20,11 @@ import java.util.LinkedList;
+ import java.util.List;
+ import java.util.Locale;
+ import java.util.Map;
++import java.util.Optional;
+ import java.util.Set;
++import java.util.UUID;
+ import java.util.WeakHashMap;
++import java.util.concurrent.CompletableFuture;
+ import java.util.logging.Level;
+ import java.util.regex.Matcher;
+ import java.util.regex.Pattern;
+@@ -37,6 +40,7 @@ import org.bukkit.event.Listener;
+ import org.bukkit.permissions.Permissible;
+ import org.bukkit.permissions.Permission;
+ import org.bukkit.permissions.PermissionDefault;
++import org.bukkit.permissions.ServerOperator;
+ import org.bukkit.util.FileUtil;
+ import org.jetbrains.annotations.NotNull;
+ import org.jetbrains.annotations.Nullable;
+@@ -971,6 +975,16 @@ public final class SimplePluginManager implements PluginManager {
+         defaultPerms.get(false).clear();
+     }
+ 
++    @Override
++    public Permissible createPermissible(@NotNull ServerOperator operator) {
++        return this.paperPluginManager.createPermissible(operator);
++    }
++
++    @Override
++    public CompletableFuture<Optional<Permissible>> loadPlayerPermissible(@NotNull UUID playerUuid) {
++        return this.paperPluginManager.loadPlayerPermissible(playerUuid);
++    }
++
+     @Override
+     public boolean isTransitiveDependency(io.papermc.paper.plugin.configuration.PluginMeta pluginMeta, io.papermc.paper.plugin.configuration.PluginMeta dependencyConfig) {
+         return this.paperPluginManager.isTransitiveDependency(pluginMeta, dependencyConfig);
+@@ -981,6 +995,13 @@ public final class SimplePluginManager implements PluginManager {
+         this.paperPluginManager.overridePermissionManager(plugin, permissionManager);
+     }
+ 
++    // Cartridge start - Permission manager hook
++    @Override
++    public io.papermc.paper.plugin.@NotNull PermissionManager getPermissionManager() {
++        return this.paperPluginManager.getPermissionManager();
++    }
++    // Cartridge end - Permission manager hook
++
+     @Override
+     public void addPermissions(@NotNull List<Permission> perm) {
+         this.paperPluginManager.addPermissions(perm);

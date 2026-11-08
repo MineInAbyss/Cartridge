@@ -1,0 +1,411 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Boy0000 <sivertpaulsen2@gmail.com>
+Date: Mon, 2 Nov 2026 21:10:59 +0100
+Subject: [PATCH] Permission manager hook
+
+
+diff --git a/src/main/java/io/papermc/paper/connection/HorriblePlayerLoginEventHack.java b/src/main/java/io/papermc/paper/connection/HorriblePlayerLoginEventHack.java
+index e1215b7403fb90a51b810036ccc38faaa81d29b1..11c0bc109f8ab4143c41033e683810d148793edf 100644
+--- a/src/main/java/io/papermc/paper/connection/HorriblePlayerLoginEventHack.java
++++ b/src/main/java/io/papermc/paper/connection/HorriblePlayerLoginEventHack.java
+@@ -43,7 +43,7 @@ public class HorriblePlayerLoginEventHack {
+                 are not listening to the PlayerLoginEvent.
+                 
+                 Please look in your logs for the Plugins listening to this event.
+-                ============================================================""", StackWalkerUtil.getFirstPluginCaller().getName());
++                ============================================================""", java.util.Optional.ofNullable(StackWalkerUtil.getFirstPluginCaller()).map(org.bukkit.plugin.java.JavaPlugin::getName).orElse("The server")); // Cartridge - Fix NPE when the server itself reconfigures
+         return true;
+     }
+ 
+diff --git a/src/main/java/io/papermc/paper/plugin/entrypoint/LaunchEntryPointHandler.java b/src/main/java/io/papermc/paper/plugin/entrypoint/LaunchEntryPointHandler.java
+index c75f72b470a926fef8deddcece97920c7da74913..06bc93bffec63fc1b181fd600864e3ae0b81d357 100644
+--- a/src/main/java/io/papermc/paper/plugin/entrypoint/LaunchEntryPointHandler.java
++++ b/src/main/java/io/papermc/paper/plugin/entrypoint/LaunchEntryPointHandler.java
+@@ -1,5 +1,10 @@
+ package io.papermc.paper.plugin.entrypoint;
+ 
++import io.papermc.paper.plugin.PermissionManagerRegistrar;
++import io.papermc.paper.plugin.bootstrap.BootstrapContext;
++import io.papermc.paper.plugin.lifecycle.event.LifecycleEventRunner;
++import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
++import io.papermc.paper.plugin.manager.PermissionRegistrar;
+ import io.papermc.paper.plugin.provider.PluginProvider;
+ import io.papermc.paper.plugin.storage.BootstrapProviderStorage;
+ import io.papermc.paper.plugin.storage.ProviderStorage;
+@@ -27,6 +32,11 @@ public class LaunchEntryPointHandler implements EntrypointHandler {
+     // Utility
+     public static void enterBootstrappers() {
+         LaunchEntryPointHandler.INSTANCE.enter(Entrypoint.BOOTSTRAPPER);
++        // Register permission manager
++        LifecycleEventRunner.INSTANCE.callStaticRegistrarEvent(LifecycleEvents.PERMISSION_MANAGER_REGISTER,
++                PermissionRegistrar.INSTANCE,
++                BootstrapContext.class
++        );
+     }
+ 
+     @Override
+diff --git a/src/main/java/io/papermc/paper/plugin/manager/PaperPluginManagerImpl.java b/src/main/java/io/papermc/paper/plugin/manager/PaperPluginManagerImpl.java
+index 097500a59336db1bbfffcd1aa4cff7a8586e46ec..b042f04eafb38516a6057524580ac230aff21c1f 100644
+--- a/src/main/java/io/papermc/paper/plugin/manager/PaperPluginManagerImpl.java
++++ b/src/main/java/io/papermc/paper/plugin/manager/PaperPluginManagerImpl.java
+@@ -32,6 +32,7 @@ public class PaperPluginManagerImpl implements PluginManager, DependencyContext
+ 
+     final PaperPluginInstanceManager instanceManager;
+     final PaperEventManager paperEventManager;
++    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getClassLogger(); // Cartridge - Permission manager hook
+     PermissionManager permissionManager;
+ 
+     public PaperPluginManagerImpl(Server server, CommandMap commandMap, @Nullable SimplePluginManager permissionManager) {
+@@ -43,6 +44,13 @@ public class PaperPluginManagerImpl implements PluginManager, DependencyContext
+         } else {
+             this.permissionManager = new StupidSPMPermissionManagerWrapper(permissionManager); // TODO: See comment when SimplePermissionManager is removed
+         }
++        // Cartridge start - Permission manager hook
++        final PermissionManager registered = PermissionRegistrar.INSTANCE.getRegistered();
++        if (registered != null) {
++            this.permissionManager = registered;
++            LOGGER.info("Using the permission manager registered by {}", PermissionRegistrar.INSTANCE.getRegisteredOwner());
++        }
++        // Cartridge end - Permission manager hook
+     }
+ 
+     // REMOVE THIS WHEN SimplePluginManager is removed.
+@@ -228,6 +236,23 @@ public class PaperPluginManagerImpl implements PluginManager, DependencyContext
+         this.permissionManager = permissionManager;
+     }
+ 
++    // Cartridge start - Permission manager hook
++    @Override
++    public PermissionManager getPermissionManager() {
++        return this.permissionManager;
++    }
++
++    @Override
++    public org.bukkit.permissions.Permissible createPermissible(final org.bukkit.permissions.@NotNull ServerOperator operator) {
++        return this.permissionManager.createPermissible(operator);
++    }
++
++    @Override
++    public java.util.concurrent.CompletableFuture<java.util.Optional<org.bukkit.permissions.Permissible>> loadPlayerPermissible(final java.util.@NotNull UUID playerUuid) {
++        return this.permissionManager.loadPlayerPermissible(playerUuid);
++    }
++    // Cartridge end - Permission manager hook
++
+     // Etc
+ 
+     @Override
+diff --git a/src/main/java/io/papermc/paper/plugin/manager/PermissionRegistrar.java b/src/main/java/io/papermc/paper/plugin/manager/PermissionRegistrar.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..1f124815c11acc6b0a834f3e8ed97a60d170eadb
+--- /dev/null
++++ b/src/main/java/io/papermc/paper/plugin/manager/PermissionRegistrar.java
+@@ -0,0 +1,45 @@
++package io.papermc.paper.plugin.manager;
++
++import com.mojang.logging.LogUtils;
++import io.papermc.paper.plugin.PermissionManager;
++import io.papermc.paper.plugin.PermissionManagerRegistrar;
++import io.papermc.paper.plugin.bootstrap.BootstrapContext;
++import io.papermc.paper.plugin.lifecycle.event.registrar.PaperRegistrar;
++import org.checkerframework.checker.nullness.qual.Nullable;
++import org.jspecify.annotations.NullMarked;
++import org.slf4j.Logger;
++
++@NullMarked
++public enum PermissionRegistrar implements PermissionManagerRegistrar, PaperRegistrar<BootstrapContext> {
++    INSTANCE;
++
++    private static final Logger LOGGER = LogUtils.getClassLogger();
++
++    private BootstrapContext owner;
++
++    private @Nullable PermissionManager registered;
++    private String registeredOwner;
++
++    @Override
++    public void register(PermissionManager permissionManager) {
++        if (this.registered != null) {
++            LOGGER.warn("Permission manager registration overridden! (Was {}, now is {})", this.registeredOwner, this.owner.getPluginMeta().getDisplayName());
++        }
++
++        this.registered = permissionManager;
++        this.registeredOwner = this.owner.getPluginMeta().getDisplayName();
++    }
++
++    @Override
++    public void setCurrentContext(@Nullable BootstrapContext owner) {
++        this.owner = owner;
++    }
++
++    public @Nullable PermissionManager getRegistered() {
++        return this.registered;
++    }
++
++    public String getRegisteredOwner() {
++        return registeredOwner;
++    }
++}
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java
+index 58fdb79adf624bc5a575e1ec296a9bd18c3d1801..50a764a036ce1ce45314d24b53fad43eddbc2904 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java
+@@ -82,6 +82,7 @@ import org.bukkit.event.entity.EntityRemoveEvent;
+ import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
+ import org.bukkit.inventory.ItemStack;
+ import org.bukkit.metadata.MetadataValue;
++import org.bukkit.permissions.Permissible;
+ import org.bukkit.permissions.PermissibleBase;
+ import org.bukkit.permissions.Permission;
+ import org.bukkit.permissions.PermissionAttachment;
+@@ -99,7 +100,6 @@ public abstract class CraftEntity implements org.bukkit.entity.Entity {
+ 
+     private static final Logger LOGGER = LogUtils.getLogger();
+ 
+-    private static PermissibleBase perm;
+     private static final CraftPersistentDataTypeRegistry DATA_TYPE_REGISTRY = new CraftPersistentDataTypeRegistry();
+     static final PointersSupplier<org.bukkit.entity.Entity> POINTERS_SUPPLIER = PointersSupplier.<org.bukkit.entity.Entity>builder()
+         .resolving(net.kyori.adventure.identity.Identity.DISPLAY_NAME, org.bukkit.entity.Entity::name)
+@@ -109,6 +109,7 @@ public abstract class CraftEntity implements org.bukkit.entity.Entity {
+ 
+     protected final CraftServer server;
+     protected Entity entity;
++    protected @Nullable Permissible perm; // Cartridge - Permission manager hook
+     private final EntityType entityType;
+     private EntityDamageEvent lastDamageEvent;
+     private final Map<Key, Predicate<org.bukkit.entity.Entity>> additionalAlliedRules = new HashMap<>();
+@@ -127,6 +128,7 @@ public abstract class CraftEntity implements org.bukkit.entity.Entity {
+         this.server = server;
+         this.entity = entity;
+         this.entityType = CraftEntityType.minecraftToBukkit(entity.getType());
++        if (!(this instanceof CraftHumanEntity)) this.perm = server.getPluginManager().createPermissible(this); // Cartridge - Permission manager hook, players create theirs in CraftHumanEntity
+     }
+ 
+     public static <T extends Entity> CraftEntity getEntity(CraftServer server, T entity) {
+@@ -844,67 +846,67 @@ public abstract class CraftEntity implements org.bukkit.entity.Entity {
+ 
+     @Override
+     public boolean isPermissionSet(String name) {
+-        return CraftEntity.getPermissibleBase().isPermissionSet(name);
++        return this.permissible().isPermissionSet(name);
+     }
+ 
+     @Override
+     public boolean isPermissionSet(Permission perm) {
+-        return CraftEntity.getPermissibleBase().isPermissionSet(perm);
++        return this.permissible().isPermissionSet(perm);
+     }
+ 
+     @Override
+     public boolean hasPermission(String name) {
+-        return CraftEntity.getPermissibleBase().hasPermission(name);
++        return this.permissible().hasPermission(name);
+     }
+ 
+     @Override
+     public boolean hasPermission(Permission perm) {
+-        return CraftEntity.getPermissibleBase().hasPermission(perm);
++        return this.permissible().hasPermission(perm);
+     }
+ 
+     @Override
+     public PermissionAttachment addAttachment(Plugin plugin, String name, boolean value) {
+-        return CraftEntity.getPermissibleBase().addAttachment(plugin, name, value);
++        return this.permissible().addAttachment(plugin, name, value);
+     }
+ 
+     @Override
+     public PermissionAttachment addAttachment(Plugin plugin) {
+-        return CraftEntity.getPermissibleBase().addAttachment(plugin);
++        return this.permissible().addAttachment(plugin);
+     }
+ 
+     @Override
+     public PermissionAttachment addAttachment(Plugin plugin, String name, boolean value, int ticks) {
+-        return CraftEntity.getPermissibleBase().addAttachment(plugin, name, value, ticks);
++        return this.permissible().addAttachment(plugin, name, value, ticks);
+     }
+ 
+     @Override
+     public PermissionAttachment addAttachment(Plugin plugin, int ticks) {
+-        return CraftEntity.getPermissibleBase().addAttachment(plugin, ticks);
++        return this.permissible().addAttachment(plugin, ticks);
+     }
+ 
+     @Override
+     public void removeAttachment(PermissionAttachment attachment) {
+-        CraftEntity.getPermissibleBase().removeAttachment(attachment);
++        this.permissible().removeAttachment(attachment);
+     }
+ 
+     @Override
+     public void recalculatePermissions() {
+-        CraftEntity.getPermissibleBase().recalculatePermissions();
++        this.permissible().recalculatePermissions();
+     }
+ 
+     @Override
+     public Set<PermissionAttachmentInfo> getEffectivePermissions() {
+-        return CraftEntity.getPermissibleBase().getEffectivePermissions();
++        return this.permissible().getEffectivePermissions();
+     }
+ 
+     @Override
+     public boolean isOp() {
+-        return CraftEntity.getPermissibleBase().isOp();
++        return this.permissible().isOp();
+     }
+ 
+     @Override
+     public void setOp(boolean value) {
+-        CraftEntity.getPermissibleBase().setOp(value);
++        this.permissible().setOp(value);
+     }
+ 
+     @Override
+@@ -1163,23 +1165,11 @@ public abstract class CraftEntity implements org.bukkit.entity.Entity {
+         player.connection.send(this.getHandle().getAddEntityPacket(entityTracker.serverEntity));
+     }
+ 
+-    private static PermissibleBase getPermissibleBase() {
+-        if (CraftEntity.perm == null) {
+-            CraftEntity.perm = new PermissibleBase(new ServerOperator() {
+-
+-                @Override
+-                public boolean isOp() {
+-                    return false;
+-                }
+-
+-                @Override
+-                public void setOp(boolean value) {
+-
+-                }
+-            });
+-        }
+-        return CraftEntity.perm;
++    // Cartridge start - Permission manager hook
++    protected Permissible permissible() {
++        return this.perm;
+     }
++    // Cartridge end - Permission manager hook
+ 
+     // Paper start - more teleport API / async chunk API
+     @Override
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftHumanEntity.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftHumanEntity.java
+index b461beae03e0228f7a6de2f133b548deb925bd02..69ddd6a06bb673d251c4dadbc9edbc7efe5eed75 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftHumanEntity.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftHumanEntity.java
+@@ -83,7 +83,12 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
+ 
+     private CraftInventoryPlayer inventory;
+     private final CraftInventory enderChest;
+-    protected final PermissibleBase perm = new PermissibleBase(this);
++    // Cartridge start - Permission manager hook
++    // Mirror of CraftEntity#perm for plugins that read or replace this field by reflection, kept in sync by permissible()
++    @Deprecated(forRemoval = true)
++    protected PermissibleBase perm = CraftHumanEntity.createPermissible(this);
++    private static final java.util.concurrent.atomic.AtomicBoolean WARNED_LEGACY_PERMISSIBLE = new java.util.concurrent.atomic.AtomicBoolean();
++    // Cartridge end - Permission manager hook
+     private boolean op;
+     private GameMode mode;
+ 
+@@ -94,6 +99,33 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
+         this.enderChest = new CraftInventory(entity.getEnderChestInventory());
+     }
+ 
++    // Cartridge start - Permission manager hook
++    private static PermissibleBase createPermissible(final CraftHumanEntity entity) {
++        final org.bukkit.permissions.Permissible permissible = org.bukkit.Bukkit.getPluginManager().createPermissible(entity);
++        final PermissibleBase base;
++        if (permissible instanceof final PermissibleBase permissibleBase) {
++            base = permissibleBase;
++        } else {
++            com.mojang.logging.LogUtils.getLogger().warn("Permission manager returned {} for {}, which is not a PermissibleBase, using the default one", permissible.getClass().getName(), entity.getName());
++            base = new PermissibleBase(entity);
++        }
++        ((CraftEntity) entity).perm = base;
++        return base;
++    }
++
++    @Override
++    protected org.bukkit.permissions.Permissible permissible() {
++        final PermissibleBase legacy = this.perm;
++        if (legacy != super.perm) {
++            if (WARNED_LEGACY_PERMISSIBLE.compareAndSet(false, true)) {
++                com.mojang.logging.LogUtils.getLogger().warn("A plugin replaced CraftHumanEntity#perm of {} by reflection, which is deprecated. Permission plugins should provide player permissibles through PermissionManager#createPermissible instead", this.getName());
++            }
++            super.perm = legacy;
++        }
++        return legacy;
++    }
++    // Cartridge end - Permission manager hook
++
+     @Override
+     public Player getHandle() {
+         return (Player) this.entity;
+@@ -255,65 +287,10 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
+         return this.op;
+     }
+ 
+-    @Override
+-    public boolean isPermissionSet(String name) {
+-        return this.perm.isPermissionSet(name);
+-    }
+-
+-    @Override
+-    public boolean isPermissionSet(Permission perm) {
+-        return this.perm.isPermissionSet(perm);
+-    }
+-
+-    @Override
+-    public boolean hasPermission(String name) {
+-        return this.perm.hasPermission(name);
+-    }
+-
+-    @Override
+-    public boolean hasPermission(Permission perm) {
+-        return this.perm.hasPermission(perm);
+-    }
+-
+-    @Override
+-    public PermissionAttachment addAttachment(Plugin plugin, String name, boolean value) {
+-        return this.perm.addAttachment(plugin, name, value);
+-    }
+-
+-    @Override
+-    public PermissionAttachment addAttachment(Plugin plugin) {
+-        return this.perm.addAttachment(plugin);
+-    }
+-
+-    @Override
+-    public PermissionAttachment addAttachment(Plugin plugin, String name, boolean value, int ticks) {
+-        return this.perm.addAttachment(plugin, name, value, ticks);
+-    }
+-
+-    @Override
+-    public PermissionAttachment addAttachment(Plugin plugin, int ticks) {
+-        return this.perm.addAttachment(plugin, ticks);
+-    }
+-
+-    @Override
+-    public void removeAttachment(PermissionAttachment attachment) {
+-        this.perm.removeAttachment(attachment);
+-    }
+-
+-    @Override
+-    public void recalculatePermissions() {
+-        this.perm.recalculatePermissions();
+-    }
+-
+     @Override
+     public void setOp(boolean value) {
+         this.op = value;
+-        this.perm.recalculatePermissions();
+-    }
+-
+-    @Override
+-    public Set<PermissionAttachmentInfo> getEffectivePermissions() {
+-        return this.perm.getEffectivePermissions();
++        this.permissible().recalculatePermissions(); // Cartridge - Permission manager hook
+     }
+ 
+     @Override
