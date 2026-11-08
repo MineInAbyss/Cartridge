@@ -1,0 +1,49 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Boy <sivertpaulsen2@gmail.com>
+Date: Sun, 8 Nov 2026 01:38:12 +0100
+Subject: [PATCH] Mob interaction tweaks
+
+
+diff --git a/net/minecraft/world/entity/animal/Animal.java b/net/minecraft/world/entity/animal/Animal.java
+index 0814912f7b9e6ab1f8037006a2224b57e1ef241b..e996e381478b7f8afeed92f6e1523f538b1c9c16 100644
+--- a/net/minecraft/world/entity/animal/Animal.java
++++ b/net/minecraft/world/entity/animal/Animal.java
+@@ -173,7 +173,7 @@ public abstract class Animal extends AgeableMob {
+     }
+ 
+     public boolean canFallInLove() {
+-        return this.inLove <= 0;
++        return false; // Cartridge - Disable breeding
+     }
+ 
+     @Deprecated @io.papermc.paper.annotation.DoNotUse // Paper - Fix EntityBreedEvent copying
+@@ -183,6 +183,7 @@ public abstract class Animal extends AgeableMob {
+     }
+ 
+     public void setInLove(final @Nullable Player player, final @Nullable ItemStack breedItemCopy) {
++        if (true) return; // Cartridge - Disable breeding
+         if (breedItemCopy != null) this.breedItem = breedItemCopy;
+         // Paper end - Fix EntityBreedEvent copying
+         // CraftBukkit start
+@@ -213,7 +214,7 @@ public abstract class Animal extends AgeableMob {
+     }
+ 
+     public boolean isInLove() {
+-        return this.inLove > 0;
++        return false; // Cartridge - Disable breeding, also covers love mode set through the API or setInLoveTime
+     }
+ 
+     public void resetLove() {
+diff --git a/net/minecraft/world/entity/npc/villager/Villager.java b/net/minecraft/world/entity/npc/villager/Villager.java
+index e6f3961f1573dffef51b8ee724a52800c8a6004b..58d8bd3b38dd1389f80bc8237a95421122d5e24e 100644
+--- a/net/minecraft/world/entity/npc/villager/Villager.java
++++ b/net/minecraft/world/entity/npc/villager/Villager.java
+@@ -671,7 +671,7 @@ public class Villager extends AbstractVillager implements VillagerDataHolder, Re
+ 
+     @Override
+     public boolean canBreed() {
+-        return this.foodLevel + this.countFoodPointsInInventory() >= 12 && !this.isSleeping() && this.getAge() == 0;
++        return false; // Cartridge - Disable breeding
+     }
+ 
+     private boolean hungry() {
