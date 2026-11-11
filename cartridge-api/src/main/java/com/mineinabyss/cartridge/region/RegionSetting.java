@@ -3,6 +3,7 @@ package com.mineinabyss.cartridge.region;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Function;
+import org.bukkit.WeatherType;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -17,6 +18,15 @@ public final class RegionSetting<T> {
      * Player time in ticks, fixed while the player is inside the region
      */
     public static final RegionSetting<Long> TIME_LOCK = number("timeLock");
+    /**
+     * Player weather while inside the region, clear or rain.
+     * Thunder is read as rain, Minecraft has no per player thunder
+     */
+    public static final RegionSetting<WeatherType> WEATHER_LOCK = new RegionSetting<>("weatherLock", value -> switch (String.valueOf(value).toLowerCase(Locale.ROOT)) {
+        case "clear", "sun" -> WeatherType.CLEAR;
+        case "rain", "downfall", "thunder" -> WeatherType.DOWNFALL;
+        default -> null;
+    });
     /**
      * Chat message shown on entering the region, legacy colour codes with &amp; or the section sign
      */

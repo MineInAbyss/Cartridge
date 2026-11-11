@@ -51,7 +51,7 @@ public final class CartridgeRegions implements Regions {
     public static final String BYPASS_PERMISSION = "bypassPermission";
     public static final String BYPASS_FLAGS = "bypassFlags";
     private static final List<RegionSetting<?>> BUILT_IN_SETTINGS = List.of(
-        RegionSetting.TIME_LOCK, RegionSetting.GREETING, RegionSetting.FAREWELL,
+        RegionSetting.TIME_LOCK, RegionSetting.WEATHER_LOCK, RegionSetting.GREETING, RegionSetting.FAREWELL,
         RegionSetting.GREETING_TITLE, RegionSetting.FAREWELL_TITLE, RegionSetting.SPAWN_OVERRIDE
     );
 
@@ -104,7 +104,7 @@ public final class CartridgeRegions implements Regions {
             Children inherit every flag of their parent region and override only what they set, their priority defaults to one above the parent.
             denySpawn takes a list of entity types and blocks them from spawning, like mobSpawning it ignores plugin and command spawns.
             A settings section next to flags holds values read by Cartridge or plugins, inherited by children like flags. On global it goes inside the global section.
-            Cartridge reads timeLock (player time in ticks while inside), greeting and farewell (chat on entry and exit), greetingTitle and farewellTitle (title on entry and exit, \\n starts the subtitle).
+            Cartridge reads timeLock (player time in ticks while inside), weatherLock (clear or rain while inside), greeting and farewell (chat on entry and exit), greetingTitle and farewellTitle (title on entry and exit, \\n starts the subtitle).
             playerCollision: deny stops players inside from pushing or being pushed, for clients too, by putting them in the cartridge_nocollide team. A player already on another team keeps it and keeps colliding.
             Texts use & or section sign colour codes. spawnOverride: true is read by Geary spawning and drops spawns of lower priority regions.
             Players with cartridge.region.bypass.<flag> ignore a denied flag, ops have every bypass permission by default.
@@ -539,7 +539,7 @@ public final class CartridgeRegions implements Regions {
             this.byName = Map.copyOf(byName);
             this.settingKeys = Set.copyOf(settingKeys);
             this.usesPlayerSettings = usedFlags.contains(RegionFlag.PLAYER_COLLISION)
-                || Stream.of(RegionSetting.TIME_LOCK, RegionSetting.GREETING, RegionSetting.FAREWELL, RegionSetting.GREETING_TITLE, RegionSetting.FAREWELL_TITLE)
+                || Stream.of(RegionSetting.TIME_LOCK, RegionSetting.WEATHER_LOCK, RegionSetting.GREETING, RegionSetting.FAREWELL, RegionSetting.GREETING_TITLE, RegionSetting.FAREWELL_TITLE)
                 .anyMatch(setting -> settingKeys.contains(setting.key()));
 
             for (final RegionFlag flag : RegionFlag.values()) {

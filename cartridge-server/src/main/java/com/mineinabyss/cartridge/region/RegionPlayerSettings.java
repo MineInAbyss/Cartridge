@@ -9,6 +9,7 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.WeatherType;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
@@ -16,12 +17,12 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Applies timeLock, greeting, farewell, greetingTitle, farewellTitle and the playerCollision flag as players move between regions, like the WorldGuard flags of the same names
+ * Applies timeLock, weatherLock, greeting, farewell, greetingTitle, farewellTitle and the playerCollision flag as players move between regions, like the WorldGuard flags of the same names
  */
 @NullMarked
 public final class RegionPlayerSettings {
 
-    private static final State EMPTY = new State(null, null, null, null, null, false);
+    private static final State EMPTY = new State(null, null, null, null, null, null, false);
     private static final String NO_COLLIDE_TEAM = "cartridge_nocollide";
     private static final Map<UUID, State> STATES = new ConcurrentHashMap<>();
 
@@ -29,7 +30,7 @@ public final class RegionPlayerSettings {
     }
 
     private record State(
-        @Nullable Long timeLock, @Nullable String greeting, @Nullable String farewell, @Nullable String greetingTitle, @Nullable String farewellTitle,
+        @Nullable Long timeLock, @Nullable WeatherType weatherLock, @Nullable String greeting, @Nullable String farewell, @Nullable String greetingTitle, @Nullable String farewellTitle,
         boolean noCollision
     ) {
     }
@@ -62,6 +63,7 @@ public final class RegionPlayerSettings {
 
         final State current = world == null || !world.usesPlayerSettings() ? EMPTY : new State(
             regions.setting(location, RegionSetting.TIME_LOCK),
+            regions.setting(location, RegionSetting.WEATHER_LOCK),
             regions.setting(location, RegionSetting.GREETING),
             regions.setting(location, RegionSetting.FAREWELL),
             regions.setting(location, RegionSetting.GREETING_TITLE),
@@ -80,6 +82,13 @@ public final class RegionPlayerSettings {
                 player.setPlayerTime(current.timeLock(), false);
             } else {
                 player.resetPlayerTime();
+            }
+        }
+        if (previous.weatherLock() != current.weatherLock()) {
+            if (current.weatherLock() != null) {
+                player.setPlayerWeather(current.weatherLock());
+            } else {
+                player.resetPlayerWeather();
             }
         }
         if (previous.noCollision() != current.noCollision()) setNoCollision(player, current.noCollision());
