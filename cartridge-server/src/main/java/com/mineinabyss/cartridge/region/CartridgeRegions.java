@@ -14,6 +14,7 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -97,6 +98,8 @@ public final class CartridgeRegions implements Regions {
             .collect(Collectors.joining(", "));
         return """
             Each <world>.yml in this folder holds the regions of the world with that exact name, as returned by World#getName.
+            A <world> folder works too, every .yml directly inside it is loaded into that world, next to <world>.yml if both exist.
+            Region names must be unique across all files of a world, a region and its children stay in one file, and only one file of a world may set global.
             Flags are allow or deny. An unset flag falls back to its parent (in brackets) and then to lower priority regions.
             When overlapping regions of the same priority disagree, deny wins.
             Flags: %s
@@ -144,23 +147,36 @@ public final class CartridgeRegions implements Regions {
             Files.writeString(this.directory.resolve(README_NAME), readme());
         }
 
-        final List<Path> files;
+        final Map<String, List<Path>> filesByWorld = new HashMap<>();
         try (Stream<Path> stream = Files.list(this.directory)) {
-            files = stream.filter(path -> path.getFileName().toString().endsWith(".yml")).sorted().toList();
+            for (final Path path : stream.sorted().toList()) {
+                final String fileName = path.getFileName().toString();
+                if (Files.isDirectory(path)) {
+                    try (Stream<Path> worldFiles = Files.list(path)) {
+                        filesByWorld.computeIfAbsent(fileName, key -> new ArrayList<>())
+                            .addAll(worldFiles.filter(CartridgeRegions::isRegionFile).sorted().toList());
+                    }
+                } else if (isRegionFile(path)) {
+                    filesByWorld.computeIfAbsent(fileName.substring(0, fileName.length() - ".yml".length()), key -> new ArrayList<>()).addFirst(path);
+                }
+            }
         }
 
         final List<String> warnings = new ArrayList<>();
         final Map<String, WorldRegions> worlds = new HashMap<>();
-        for (final Path path : files) {
-            final String fileName = path.getFileName().toString();
-            final String worldName = fileName.substring(0, fileName.length() - ".yml".length());
-            final YamlConfiguration config = new YamlConfiguration();
-            try {
-                config.loadFromString(Files.readString(path));
-            } catch (final InvalidConfigurationException e) {
-                throw new InvalidConfigurationException(fileName + ": " + e.getMessage(), e);
+        for (final Map.Entry<String, List<Path>> entry : filesByWorld.entrySet()) {
+            final Map<String, ConfigurationSection> configs = new LinkedHashMap<>();
+            for (final Path path : entry.getValue()) {
+                final String label = this.directory.relativize(path).toString();
+                final YamlConfiguration config = new YamlConfiguration();
+                try {
+                    config.loadFromString(Files.readString(path));
+                } catch (final InvalidConfigurationException e) {
+                    throw new InvalidConfigurationException(label + ": " + e.getMessage(), e);
+                }
+                configs.put(label.substring(0, label.length() - ".yml".length()), config);
             }
-            worlds.put(worldName, parseWorld(worldName, config, warnings));
+            worlds.put(entry.getKey(), parseWorld(entry.getKey(), configs, warnings));
         }
 
         this.worlds = Map.copyOf(worlds);
@@ -168,14 +184,30 @@ public final class CartridgeRegions implements Regions {
         return warnings;
     }
 
-    private static WorldRegions parseWorld(final String worldName, final ConfigurationSection section, final List<String> warnings) {
-        final ConfigurationSection globalSection = section.getConfigurationSection(GLOBAL_REGION);
-        final RegionImpl global = globalSection == null ? null
-            : parseRegion(GLOBAL_REGION, worldName, Integer.MIN_VALUE, null, null, null, globalSection, globalSection.getConfigurationSection(SETTINGS), worldName + "." + GLOBAL_REGION, warnings);
+    private static boolean isRegionFile(final Path path) {
+        return Files.isRegularFile(path) && path.getFileName().toString().endsWith(".yml");
+    }
 
+    /**
+     * @param files the parsed files of one world keyed by their path relative to the regions folder without extension, in load order
+     */
+    private static WorldRegions parseWorld(final String worldName, final Map<String, ConfigurationSection> files, final List<String> warnings) {
+        RegionImpl global = null;
+        String globalFile = null;
         final List<RegionImpl> regions = new ArrayList<>();
         final List<RegionImpl> templates = new ArrayList<>();
-        parseRegions(worldName, section.getConfigurationSection("regions"), worldName + ".regions", null, regions, templates, warnings);
+        for (final Map.Entry<String, ConfigurationSection> file : files.entrySet()) {
+            final ConfigurationSection globalSection = file.getValue().getConfigurationSection(GLOBAL_REGION);
+            if (globalSection != null) {
+                if (global != null) {
+                    warnings.add(file.getKey() + "." + GLOBAL_REGION + ": global is already set in " + globalFile + ", skipped");
+                } else {
+                    global = parseRegion(GLOBAL_REGION, worldName, Integer.MIN_VALUE, null, null, null, globalSection, globalSection.getConfigurationSection(SETTINGS), file.getKey() + "." + GLOBAL_REGION, warnings);
+                    globalFile = file.getKey();
+                }
+            }
+            parseRegions(worldName, file.getValue().getConfigurationSection("regions"), file.getKey() + ".regions", null, regions, templates, warnings);
+        }
 
         regions.sort(Comparator.comparingInt(RegionImpl::priority).reversed());
         return new WorldRegions(List.copyOf(regions), List.copyOf(templates), global);
