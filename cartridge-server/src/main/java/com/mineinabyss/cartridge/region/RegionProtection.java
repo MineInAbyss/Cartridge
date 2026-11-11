@@ -120,7 +120,7 @@ public final class RegionProtection {
     };
 
     private static final Set<CreatureSpawnEvent.SpawnReason> PLUGIN_SPAWNS = Set.of(CreatureSpawnEvent.SpawnReason.CUSTOM, CreatureSpawnEvent.SpawnReason.COMMAND);
-    // Plugin teleports such as DeeperWorld section transitions must never be blocked by entry or exit
+    // Same world plugin teleports such as DeeperWorld section transitions must never be blocked by entry or exit, other causes only check entry when changing worlds
     private static final Set<PlayerTeleportEvent.TeleportCause> PLAYER_TELEPORTS = Set.of(
         PlayerTeleportEvent.TeleportCause.ENDER_PEARL,
         PlayerTeleportEvent.TeleportCause.CONSUMABLE_EFFECT,
@@ -356,11 +356,12 @@ public final class RegionProtection {
             event.setCancelled(true);
             return;
         }
-        if (PLAYER_TELEPORTS.contains(event.getCause())) {
+        final boolean playerTeleport = PLAYER_TELEPORTS.contains(event.getCause());
+        if (playerTeleport || !from.getWorld().equals(to.getWorld())) {
             if (!regions.isAllowed(player, to, RegionFlag.ENTRY) && regions.isAllowed(player, from, RegionFlag.ENTRY)) {
                 event.setCancelled(true);
                 player.sendActionBar(Component.text("You can't enter this area", NamedTextColor.RED));
-            } else if (!regions.isAllowed(player, from, RegionFlag.EXIT_VIA_TELEPORT) && regions.isAllowed(player, to, RegionFlag.EXIT_VIA_TELEPORT)) {
+            } else if (playerTeleport && !regions.isAllowed(player, from, RegionFlag.EXIT_VIA_TELEPORT) && regions.isAllowed(player, to, RegionFlag.EXIT_VIA_TELEPORT)) {
                 event.setCancelled(true);
                 player.sendActionBar(Component.text("You can't teleport out of this area", NamedTextColor.RED));
             }
