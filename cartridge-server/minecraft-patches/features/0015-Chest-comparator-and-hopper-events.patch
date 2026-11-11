@@ -1,0 +1,94 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Boy0000 <sivertpaulsen2@gmail.com>
+Date: Wed, 11 Nov 2026 17:03:23 +0100
+Subject: [PATCH] Chest, comparator and hopper events
+
+
+diff --git a/net/minecraft/world/level/block/ChestBlock.java b/net/minecraft/world/level/block/ChestBlock.java
+index 4b3f5c92f3caf6d68f60b906d1f7eb552698ef05..2e096474eda0a1d5226b1105534f1c77c287f67d 100644
+--- a/net/minecraft/world/level/block/ChestBlock.java
++++ b/net/minecraft/world/level/block/ChestBlock.java
+@@ -218,6 +218,20 @@ public class ChestBlock extends AbstractChestBlock<ChestBlockEntity> implements
+             type = this.getChestType(context.getLevel(), context.getClickedPos(), facingDirection);
+         }
+ 
++        // Cartridge start - ChestConnectEvent
++        if (type != ChestType.SINGLE && context.getLevel() instanceof net.minecraft.server.level.ServerLevel level
++            && com.mineinabyss.cartridge.event.ChestConnectEvent.getHandlerList().getRegisteredListeners().length > 0) {
++            final BlockPos pos = context.getClickedPos();
++            final BlockPos partner = pos.relative(type == ChestType.LEFT ? facingDirection.getClockWise() : facingDirection.getCounterClockWise());
++            final org.bukkit.entity.Player player = context.getPlayer() instanceof net.minecraft.server.level.ServerPlayer serverPlayer ? serverPlayer.getBukkitEntity() : null;
++            if (!new com.mineinabyss.cartridge.event.ChestConnectEvent(
++                org.bukkit.craftbukkit.block.CraftBlock.at(level, pos), org.bukkit.craftbukkit.block.CraftBlock.at(level, partner), player
++            ).callEvent()) {
++                type = ChestType.SINGLE;
++            }
++        }
++        // Cartridge end - ChestConnectEvent
++
+         return this.defaultBlockState().setValue(FACING, facingDirection).setValue(TYPE, type).setValue(WATERLOGGED, replacedFluidState.is(Fluids.WATER));
+     }
+ 
+diff --git a/net/minecraft/world/level/block/ComparatorBlock.java b/net/minecraft/world/level/block/ComparatorBlock.java
+index b867f52d98f127269864775dbeb2481cbbd07a26..f5bc7217afe4d46d84b74740af5f2f8fd50fd41a 100644
+--- a/net/minecraft/world/level/block/ComparatorBlock.java
++++ b/net/minecraft/world/level/block/ComparatorBlock.java
+@@ -94,15 +94,17 @@ public class ComparatorBlock extends DiodeBlock implements EntityBlock {
+         BlockPos targetPos = pos.relative(direction);
+         BlockState targetState = level.getBlockState(targetPos);
+         if (targetState.hasAnalogOutputSignal()) {
+-            resultSignal = targetState.getAnalogOutputSignal(level, targetPos, direction.getOpposite());
++            resultSignal = readSignal(level, pos, targetPos, null, targetState.getAnalogOutputSignal(level, targetPos, direction.getOpposite())); // Cartridge - ComparatorReadEvent
+         } else if (resultSignal < Redstone.SIGNAL_MAX && targetState.isRedstoneConductor(level, targetPos)) {
+             targetPos = targetPos.relative(direction);
+             targetState = level.getBlockState(targetPos);
+             ItemFrame itemFrame = this.getItemFrame(level, direction, targetPos);
++            // Cartridge start - ComparatorReadEvent
+             int itemFrameOrBlockSignal = Math.max(
+-                itemFrame == null ? Integer.MIN_VALUE : itemFrame.getAnalogOutput(),
+-                targetState.hasAnalogOutputSignal() ? targetState.getAnalogOutputSignal(level, targetPos, direction.getOpposite()) : Integer.MIN_VALUE
++                itemFrame == null ? Integer.MIN_VALUE : readSignal(level, pos, null, itemFrame, itemFrame.getAnalogOutput()),
++                targetState.hasAnalogOutputSignal() ? readSignal(level, pos, targetPos, null, targetState.getAnalogOutputSignal(level, targetPos, direction.getOpposite())) : Integer.MIN_VALUE
+             );
++            // Cartridge end - ComparatorReadEvent
+             if (itemFrameOrBlockSignal != Integer.MIN_VALUE) {
+                 resultSignal = itemFrameOrBlockSignal;
+             }
+@@ -111,6 +113,20 @@ public class ComparatorBlock extends DiodeBlock implements EntityBlock {
+         return resultSignal;
+     }
+ 
++    // Cartridge start - ComparatorReadEvent
++    private static int readSignal(final Level level, final BlockPos comparator, final @Nullable BlockPos source, final @Nullable ItemFrame itemFrame, final int signal) {
++        if (signal <= 0 || com.mineinabyss.cartridge.event.ComparatorReadEvent.getHandlerList().getRegisteredListeners().length == 0) return signal;
++        final com.mineinabyss.cartridge.event.ComparatorReadEvent event = new com.mineinabyss.cartridge.event.ComparatorReadEvent(
++            org.bukkit.craftbukkit.block.CraftBlock.at(level, comparator),
++            source == null ? null : org.bukkit.craftbukkit.block.CraftBlock.at(level, source),
++            itemFrame == null ? null : (org.bukkit.entity.ItemFrame) itemFrame.getBukkitEntity(),
++            signal
++        );
++        event.callEvent();
++        return event.getSignal();
++    }
++    // Cartridge end - ComparatorReadEvent
++
+     private @Nullable ItemFrame getItemFrame(final Level level, final Direction direction, final BlockPos tPos) {
+         List<ItemFrame> itemFrames = level.getEntitiesOfClass(
+             ItemFrame.class,
+diff --git a/net/minecraft/world/level/block/HopperBlock.java b/net/minecraft/world/level/block/HopperBlock.java
+index c2d18458ce81c2d1523b3cf932e3c133c75b6f3f..11105916c441c2374ec38dde796da71fdaed9401 100644
+--- a/net/minecraft/world/level/block/HopperBlock.java
++++ b/net/minecraft/world/level/block/HopperBlock.java
+@@ -117,6 +117,12 @@ public class HopperBlock extends BaseEntityBlock {
+     private void checkPoweredState(final Level level, final BlockPos pos, final BlockState state) {
+         boolean shouldBeOn = !level.hasNeighborSignal(pos);
+         if (shouldBeOn != state.getValue(ENABLED)) {
++            // Cartridge start - HopperToggleEvent
++            if (com.mineinabyss.cartridge.event.HopperToggleEvent.getHandlerList().getRegisteredListeners().length > 0
++                && !new com.mineinabyss.cartridge.event.HopperToggleEvent(org.bukkit.craftbukkit.block.CraftBlock.at(level, pos), shouldBeOn).callEvent()) {
++                return;
++            }
++            // Cartridge end - HopperToggleEvent
+             level.setBlock(pos, state.setValue(ENABLED, shouldBeOn), Block.UPDATE_CLIENTS);
+         }
+     }
