@@ -6,14 +6,27 @@ import com.mineinabyss.cartridge.region.Region;
 import com.mineinabyss.cartridge.region.RegionFlag;
 import com.mineinabyss.cartridge.region.RegionPlayerSettings;
 import com.mojang.brigadier.Command;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
@@ -23,6 +36,7 @@ import org.bukkit.util.BoundingBox;
 import org.jspecify.annotations.NullMarked;
 
 import static net.kyori.adventure.text.Component.text;
+import static net.kyori.adventure.text.format.NamedTextColor.AQUA;
 import static net.kyori.adventure.text.format.NamedTextColor.GOLD;
 import static net.kyori.adventure.text.format.NamedTextColor.GRAY;
 import static net.kyori.adventure.text.format.NamedTextColor.GREEN;
@@ -48,7 +62,15 @@ public final class CartridgeCommand {
                 .requires(source -> source.getSender().hasPermission(REGION_PERMISSION))
                 .then(Commands.literal("reload").executes(CartridgeCommand::reload))
                 .then(Commands.literal("info").executes(CartridgeCommand::info))
-                .then(Commands.literal("list").executes(CartridgeCommand::list)))
+                .then(Commands.literal("list").executes(CartridgeCommand::list))
+                .then(Commands.literal("set")
+                    .then(Commands.argument("region", StringArgumentType.word())
+                        .suggests((context, builder) -> suggest(builder, CartridgeRegions.instance().regionNames(context.getSource().getLocation().getWorld().getName())))
+                        .then(Commands.argument("flag", StringArgumentType.word())
+                            .suggests((context, builder) -> suggest(builder, Arrays.stream(RegionFlag.values()).map(RegionFlag::key).toList()))
+                            .then(Commands.argument("value", StringArgumentType.word())
+                                .suggests((context, builder) -> suggest(builder, List.of("allow", "deny", "unset")))
+                                .executes(CartridgeCommand::setFlag))))))
             .then(BiomeCommand.create())
             .build();
     }
@@ -67,7 +89,10 @@ public final class CartridgeCommand {
     }
 
     private static int reload(final CommandContext<CommandSourceStack> context) {
-        final CommandSender sender = context.getSource().getSender();
+        return reloadRegions(context.getSource().getSender());
+    }
+
+    private static int reloadRegions(final CommandSender sender) {
         final List<String> warnings;
         try {
             warnings = CartridgeRegions.instance().reload();
@@ -82,6 +107,40 @@ public final class CartridgeCommand {
         warnings.forEach(warning -> sender.sendMessage(text(warning, YELLOW)));
         sender.sendMessage(text("Reloaded regions with " + warnings.size() + " warning(s)", GREEN));
         return Command.SINGLE_SUCCESS;
+    }
+
+    private static int setFlag(final CommandContext<CommandSourceStack> context) {
+        final CommandSender sender = context.getSource().getSender();
+        final String worldName = context.getSource().getLocation().getWorld().getName();
+        final String regionName = StringArgumentType.getString(context, "region");
+        final String flagName = StringArgumentType.getString(context, "flag");
+        final String valueName = StringArgumentType.getString(context, "value");
+
+        final RegionFlag flag = RegionFlag.byKey(flagName);
+        if (flag == null) {
+            sender.sendMessage(text("Unknown flag " + flagName, RED));
+            return 0;
+        }
+        if (!List.of("allow", "deny", "unset").contains(valueName)) {
+            sender.sendMessage(text("Value must be allow, deny or unset", RED));
+            return 0;
+        }
+        final Boolean value = valueName.equals("unset") ? null : valueName.equals("allow");
+
+        try {
+            CartridgeRegions.instance().setFlag(worldName, regionName, flag, value);
+        } catch (final Exception e) {
+            sender.sendMessage(text("Could not set " + flag.key() + " on " + regionName + ": " + e.getMessage(), RED));
+            return 0;
+        }
+        sender.sendMessage(text("Set " + flag.key() + " to " + valueName + " on " + regionName + " in " + worldName, GREEN));
+        return reloadRegions(sender);
+    }
+
+    private static CompletableFuture<Suggestions> suggest(final SuggestionsBuilder builder, final Collection<String> options) {
+        final String remaining = builder.getRemainingLowerCase();
+        options.stream().filter(option -> option.toLowerCase(Locale.ROOT).startsWith(remaining)).sorted().forEach(builder::suggest);
+        return builder.buildFuture();
     }
 
     private static int info(final CommandContext<CommandSourceStack> context) {
@@ -109,6 +168,27 @@ public final class CartridgeCommand {
         if (!denySpawn.isEmpty()) {
             sender.sendMessage(text(" " + CartridgeRegions.DENY_SPAWN + ": ", GRAY).append(text(entityTypesText(denySpawn), RED)));
         }
+
+        final Set<Path> files = new LinkedHashSet<>();
+        for (final Region region : here) {
+            final Path file = regions.sourceFile(location.getWorld().getName(), region.name());
+            if (file != null) files.add(file);
+        }
+        Component buttons = Component.empty();
+        for (final Path file : files) {
+            final String yaml;
+            try {
+                yaml = Files.readString(file);
+            } catch (final IOException e) {
+                sender.sendMessage(text("Could not read " + file + ": " + e.getMessage(), RED));
+                continue;
+            }
+            buttons = buttons.append(text("[Copy " + file.getFileName() + "]", AQUA)
+                .hoverEvent(HoverEvent.showText(text("Copies " + file + " as it is on disk, " + yaml.lines().count() + " lines", GRAY)))
+                .clickEvent(ClickEvent.copyToClipboard(yaml)))
+                .append(text(" "));
+        }
+        if (!files.isEmpty()) sender.sendMessage(buttons);
         return Command.SINGLE_SUCCESS;
     }
 

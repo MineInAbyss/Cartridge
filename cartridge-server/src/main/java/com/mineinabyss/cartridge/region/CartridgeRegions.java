@@ -14,7 +14,6 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -57,6 +56,7 @@ public final class CartridgeRegions implements Regions {
     );
 
     private volatile Map<String, WorldRegions> worlds = Map.of();
+    private volatile Map<String, Map<String, RegionSource>> sources = Map.of();
     private @Nullable Path directory;
 
     public static CartridgeRegions instance() {
@@ -164,8 +164,9 @@ public final class CartridgeRegions implements Regions {
 
         final List<String> warnings = new ArrayList<>();
         final Map<String, WorldRegions> worlds = new HashMap<>();
+        final Map<String, Map<String, RegionSource>> sources = new HashMap<>();
         for (final Map.Entry<String, List<Path>> entry : filesByWorld.entrySet()) {
-            final Map<String, ConfigurationSection> configs = new LinkedHashMap<>();
+            final List<RegionFile> files = new ArrayList<>();
             for (final Path path : entry.getValue()) {
                 final String label = this.directory.relativize(path).toString();
                 final YamlConfiguration config = new YamlConfiguration();
@@ -174,12 +175,15 @@ public final class CartridgeRegions implements Regions {
                 } catch (final InvalidConfigurationException e) {
                     throw new InvalidConfigurationException(label + ": " + e.getMessage(), e);
                 }
-                configs.put(label.substring(0, label.length() - ".yml".length()), config);
+                files.add(new RegionFile(label.substring(0, label.length() - ".yml".length()), path, config));
             }
-            worlds.put(entry.getKey(), parseWorld(entry.getKey(), configs, warnings));
+            final Map<String, RegionSource> worldSources = new HashMap<>();
+            worlds.put(entry.getKey(), parseWorld(entry.getKey(), files, worldSources, warnings));
+            sources.put(entry.getKey(), Map.copyOf(worldSources));
         }
 
         this.worlds = Map.copyOf(worlds);
+        this.sources = Map.copyOf(sources);
         warnings.forEach(LOGGER::warn);
         return warnings;
     }
@@ -189,33 +193,70 @@ public final class CartridgeRegions implements Regions {
     }
 
     /**
-     * @param files the parsed files of one world keyed by their path relative to the regions folder without extension, in load order
+     * Writes the flag into the file the region was loaded from and leaves reloading to the caller.
+     * Only the lines of that flag change, the edit is checked by parsing the result before it is written
+     *
+     * @param value null removes the flag from the region
      */
-    private static WorldRegions parseWorld(final String worldName, final Map<String, ConfigurationSection> files, final List<String> warnings) {
+    public void setFlag(final String worldName, final String regionName, final RegionFlag flag, final @Nullable Boolean value) throws IOException, InvalidConfigurationException {
+        final RegionSource source = this.sources.getOrDefault(worldName, Map.of()).get(regionName);
+        if (source == null) throw new IllegalArgumentException("No region named " + regionName + " in " + worldName);
+
+        final String written = value == null ? null : value ? "allow" : "deny";
+        final String edited = RegionFileEditor.setFlag(Files.readString(source.file()), source.sectionPath(), flag.key(), written);
+        final YamlConfiguration check = new YamlConfiguration();
+        check.loadFromString(edited);
+        final String flagPath = (source.sectionPath().equals(GLOBAL_REGION) ? GLOBAL_REGION : source.sectionPath() + ".flags") + "." + flag.key();
+        if (written != null && !written.equals(check.getString(flagPath))) {
+            throw new IllegalStateException("editing the file did not give the expected result, nothing was written");
+        }
+        Files.writeString(source.file(), edited);
+    }
+
+    public Set<String> regionNames(final String worldName) {
+        return this.sources.getOrDefault(worldName, Map.of()).keySet();
+    }
+
+    public @Nullable Path sourceFile(final String worldName, final String regionName) {
+        final RegionSource source = this.sources.getOrDefault(worldName, Map.of()).get(regionName);
+        return source == null ? null : source.file();
+    }
+
+    private static WorldRegions parseWorld(final String worldName, final List<RegionFile> files, final Map<String, RegionSource> sources, final List<String> warnings) {
         RegionImpl global = null;
         String globalFile = null;
         final List<RegionImpl> regions = new ArrayList<>();
         final List<RegionImpl> templates = new ArrayList<>();
-        for (final Map.Entry<String, ConfigurationSection> file : files.entrySet()) {
-            final ConfigurationSection globalSection = file.getValue().getConfigurationSection(GLOBAL_REGION);
+        for (final RegionFile file : files) {
+            final ConfigurationSection globalSection = file.config().getConfigurationSection(GLOBAL_REGION);
             if (globalSection != null) {
                 if (global != null) {
-                    warnings.add(file.getKey() + "." + GLOBAL_REGION + ": global is already set in " + globalFile + ", skipped");
+                    warnings.add(file.label() + "." + GLOBAL_REGION + ": global is already set in " + globalFile + ", skipped");
                 } else {
-                    global = parseRegion(GLOBAL_REGION, worldName, Integer.MIN_VALUE, null, null, null, globalSection, globalSection.getConfigurationSection(SETTINGS), file.getKey() + "." + GLOBAL_REGION, warnings);
-                    globalFile = file.getKey();
+                    global = parseRegion(GLOBAL_REGION, worldName, Integer.MIN_VALUE, null, null, null, globalSection, globalSection.getConfigurationSection(SETTINGS), file.label() + "." + GLOBAL_REGION, warnings);
+                    globalFile = file.label();
+                    sources.put(GLOBAL_REGION, new RegionSource(file.path(), GLOBAL_REGION));
                 }
             }
-            parseRegions(worldName, file.getValue().getConfigurationSection("regions"), file.getKey() + ".regions", null, regions, templates, warnings);
+            parseRegions(worldName, file, file.config().getConfigurationSection("regions"), file.label() + ".regions", null, regions, templates, sources, warnings);
         }
 
         regions.sort(Comparator.comparingInt(RegionImpl::priority).reversed());
         return new WorldRegions(List.copyOf(regions), List.copyOf(templates), global);
     }
 
+    /**
+     * @param label path relative to the regions folder without extension, used in warnings
+     */
+    private record RegionFile(String label, Path path, ConfigurationSection config) {
+    }
+
+    private record RegionSource(Path file, String sectionPath) {
+    }
+
     private static void parseRegions(
-        final String worldName, final @Nullable ConfigurationSection section, final String path,
-        final @Nullable RegionImpl parent, final List<RegionImpl> regions, final List<RegionImpl> templates, final List<String> warnings
+        final String worldName, final RegionFile file, final @Nullable ConfigurationSection section, final String path, final @Nullable RegionImpl parent,
+        final List<RegionImpl> regions, final List<RegionImpl> templates, final Map<String, RegionSource> sources, final List<String> warnings
     ) {
         if (section == null) return;
         for (final String name : section.getKeys(false)) {
@@ -258,7 +299,8 @@ public final class CartridgeRegions implements Regions {
                 regionSection.getConfigurationSection("flags"), regionSection.getConfigurationSection(SETTINGS), regionPath, warnings
             ).withBypass(bypassPermission == null || bypassPermission.isBlank() ? null : bypassPermission.trim(), Collections.unmodifiableSet(bypassFlags));
             (template ? templates : regions).add(region);
-            parseRegions(worldName, regionSection.getConfigurationSection("children"), regionPath + ".children", region, regions, templates, warnings);
+            sources.put(name, new RegionSource(file.path(), regionSection.getCurrentPath()));
+            parseRegions(worldName, file, regionSection.getConfigurationSection("children"), regionPath + ".children", region, regions, templates, sources, warnings);
         }
     }
 
