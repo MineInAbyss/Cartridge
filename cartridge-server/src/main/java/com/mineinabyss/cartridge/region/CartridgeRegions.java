@@ -109,6 +109,7 @@ public final class CartridgeRegions implements Regions {
             Texts use & or section sign colour codes. spawnOverride: true is read by Geary spawning and drops spawns of lower priority regions.
             Players with cartridge.region.bypass.<flag> ignore a denied flag, ops have every bypass permission by default.
             A region can name a bypassPermission, players holding it are members of the region and its children and ignore the region's own bypassable flags, or only those listed in bypassFlags.
+            Inside a region they are members of, those flags are allowed for them even when lower priority regions or global deny them, like WorldGuard membership.
             A child without its own bypassFlags uses the list of its nearest parent that has one.
             Bypassable flags: %s
 
@@ -413,7 +414,8 @@ public final class CartridgeRegions implements Regions {
     }
 
     /**
-     * Same walk as state(), with the entries the player ignores as a member of a region left out
+     * Same walk as state(), with the entries the player ignores as a member of a region left out.
+     * Like WorldGuard membership, a member region that leaves the flag to its members allows it at its priority, so lower regions and global no longer apply
      */
     private static byte memberState(final WorldRegions world, final int x, final int y, final int z, final RegionFlag flag, final Player player) {
         byte result = RegionImpl.UNSET;
@@ -421,7 +423,7 @@ public final class CartridgeRegions implements Regions {
         for (final RegionImpl region : world.candidates(x, z)) {
             if (result != RegionImpl.UNSET && region.priority() < resultPriority) break;
             if (!region.contains(x, y, z)) continue;
-            final byte value = region.isMember(player) ? region.resolveAsMember(flag) : region.resolved[flag.ordinal()];
+            final byte value = region.isMember(player) ? region.resolveForMember(flag) : region.resolved[flag.ordinal()];
             if (value == RegionImpl.UNSET) continue;
             if (value == RegionImpl.DENY) return RegionImpl.DENY;
             result = RegionImpl.ALLOW;
@@ -778,6 +780,15 @@ public final class CartridgeRegions implements Regions {
                     final Boolean value = current.flags.get(key);
                     if (value != null && !current.membersIgnore(key)) return value ? ALLOW : DENY;
                 }
+            }
+            return UNSET;
+        }
+
+        byte resolveForMember(final RegionFlag flag) {
+            final byte value = resolveAsMember(flag);
+            if (value != UNSET) return value;
+            for (RegionFlag key = flag; key != null; key = key.parent()) {
+                if (membersIgnore(key)) return ALLOW;
             }
             return UNSET;
         }
