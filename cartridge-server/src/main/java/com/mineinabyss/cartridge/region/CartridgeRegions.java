@@ -104,6 +104,7 @@ public final class CartridgeRegions implements Regions {
             denySpawn takes a list of entity types and blocks them from spawning, like mobSpawning it ignores plugin and command spawns.
             A settings section next to flags holds values read by Cartridge or plugins, inherited by children like flags. On global it goes inside the global section.
             Cartridge reads timeLock (player time in ticks while inside), greeting and farewell (chat on entry and exit), greetingTitle and farewellTitle (title on entry and exit, \\n starts the subtitle).
+            playerCollision: deny stops players inside from pushing or being pushed, for clients too, by putting them in the cartridge_nocollide team. A player already on another team keeps it and keeps colliding.
             Texts use & or section sign colour codes. spawnOverride: true is read by Geary spawning and drops spawns of lower priority regions.
             Players with cartridge.region.bypass.<flag> ignore a denied flag, ops have every bypass permission by default.
             A region can name a bypassPermission, players holding it are members of the region and its children and ignore the region's own bypassable flags, or only those listed in bypassFlags.
@@ -535,7 +536,8 @@ public final class CartridgeRegions implements Regions {
             }
             this.byName = Map.copyOf(byName);
             this.settingKeys = Set.copyOf(settingKeys);
-            this.usesPlayerSettings = Stream.of(RegionSetting.TIME_LOCK, RegionSetting.GREETING, RegionSetting.FAREWELL, RegionSetting.GREETING_TITLE, RegionSetting.FAREWELL_TITLE)
+            this.usesPlayerSettings = usedFlags.contains(RegionFlag.PLAYER_COLLISION)
+                || Stream.of(RegionSetting.TIME_LOCK, RegionSetting.GREETING, RegionSetting.FAREWELL, RegionSetting.GREETING_TITLE, RegionSetting.FAREWELL_TITLE)
                 .anyMatch(setting -> settingKeys.contains(setting.key()));
 
             for (final RegionFlag flag : RegionFlag.values()) {

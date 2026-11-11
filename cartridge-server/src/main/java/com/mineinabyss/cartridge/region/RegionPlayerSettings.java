@@ -7,25 +7,30 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.title.Title;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Applies timeLock, greeting, farewell, greetingTitle and farewellTitle as players move between regions, like the WorldGuard flags of the same names
+ * Applies timeLock, greeting, farewell, greetingTitle, farewellTitle and the playerCollision flag as players move between regions, like the WorldGuard flags of the same names
  */
 @NullMarked
 public final class RegionPlayerSettings {
 
-    private static final State EMPTY = new State(null, null, null, null, null);
+    private static final State EMPTY = new State(null, null, null, null, null, false);
+    private static final String NO_COLLIDE_TEAM = "cartridge_nocollide";
     private static final Map<UUID, State> STATES = new ConcurrentHashMap<>();
 
     private RegionPlayerSettings() {
     }
 
     private record State(
-        @Nullable Long timeLock, @Nullable String greeting, @Nullable String farewell, @Nullable String greetingTitle, @Nullable String farewellTitle
+        @Nullable Long timeLock, @Nullable String greeting, @Nullable String farewell, @Nullable String greetingTitle, @Nullable String farewellTitle,
+        boolean noCollision
     ) {
     }
 
@@ -37,11 +42,17 @@ public final class RegionPlayerSettings {
      * Applies the time lock without showing greetings, as WorldGuard does when a session starts
      */
     public static void refresh(final CartridgeRegions regions, final Player player, final Location location) {
+        if (!STATES.getOrDefault(player.getUniqueId(), EMPTY).noCollision()) {
+            // The main scoreboard is saved with the world, so a crash can leave a player in the team
+            final Team team = Bukkit.getScoreboardManager().getMainScoreboard().getTeam(NO_COLLIDE_TEAM);
+            if (team != null) team.removeEntry(player.getName());
+        }
         update(regions, player, location, false);
     }
 
     static void quit(final Player player) {
-        STATES.remove(player.getUniqueId());
+        final State previous = STATES.remove(player.getUniqueId());
+        if (previous != null && previous.noCollision()) setNoCollision(player, false);
     }
 
     private static void update(final CartridgeRegions regions, final Player player, final Location location, final boolean announce) {
@@ -54,7 +65,8 @@ public final class RegionPlayerSettings {
             regions.setting(location, RegionSetting.GREETING),
             regions.setting(location, RegionSetting.FAREWELL),
             regions.setting(location, RegionSetting.GREETING_TITLE),
-            regions.setting(location, RegionSetting.FAREWELL_TITLE)
+            regions.setting(location, RegionSetting.FAREWELL_TITLE),
+            regions.isDenied(location, RegionFlag.PLAYER_COLLISION)
         );
         if (current.equals(previous)) return;
         if (current == EMPTY) {
@@ -70,12 +82,28 @@ public final class RegionPlayerSettings {
                 player.resetPlayerTime();
             }
         }
+        if (previous.noCollision() != current.noCollision()) setNoCollision(player, current.noCollision());
         if (!announce) return;
 
         if (previous.farewell() != null && !previous.farewell().equals(current.farewell())) player.sendMessage(text(previous.farewell()));
         if (previous.farewellTitle() != null && !previous.farewellTitle().equals(current.farewellTitle())) player.showTitle(title(previous.farewellTitle()));
         if (current.greeting() != null && !current.greeting().equals(previous.greeting())) player.sendMessage(text(current.greeting()));
         if (current.greetingTitle() != null && !current.greetingTitle().equals(previous.greetingTitle())) player.showTitle(title(current.greetingTitle()));
+    }
+
+    private static void setNoCollision(final Player player, final boolean noCollision) {
+        final Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+        Team team = scoreboard.getTeam(NO_COLLIDE_TEAM);
+        if (team == null) {
+            team = scoreboard.registerNewTeam(NO_COLLIDE_TEAM);
+            team.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.NEVER);
+        }
+        final Team current = scoreboard.getEntryTeam(player.getName());
+        if (noCollision) {
+            if (current == null) team.addEntry(player.getName());
+        } else if (team.equals(current)) {
+            team.removeEntry(player.getName());
+        }
     }
 
     private static Component text(final String value) {

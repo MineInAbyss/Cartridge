@@ -55,6 +55,7 @@ public enum RegionFlag {
     NATURAL_HEALTH_REGEN(null, false),
     NATURAL_HUNGER_DRAIN(null, false),
     EXP_DROPS(null, false),
+    PLAYER_COLLISION(null, false),
 
     TNT(null, false),
     CREEPER_EXPLOSION(null, false),
