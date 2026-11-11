@@ -60,7 +60,7 @@ public interface Region {
     @Nullable String bypassPermission();
 
     /**
-     * Empty means every bypassable flag
+     * Empty means the list of the nearest parent that has one, or every bypassable flag when none has
      */
     Set<RegionFlag> bypassFlags();
 

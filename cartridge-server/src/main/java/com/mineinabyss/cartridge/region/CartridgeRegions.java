@@ -13,6 +13,7 @@ import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -108,6 +109,7 @@ public final class CartridgeRegions implements Regions {
             Texts use & or section sign colour codes. spawnOverride: true is read by Geary spawning and drops spawns of lower priority regions.
             Players with cartridge.region.bypass.<flag> ignore a denied flag, ops have every bypass permission by default.
             A region can name a bypassPermission, players holding it are members of the region and its children and ignore the region's own bypassable flags, or only those listed in bypassFlags.
+            A child without its own bypassFlags uses the list of its nearest parent that has one.
             Bypassable flags: %s
 
             Example world.yml:
@@ -529,7 +531,7 @@ public final class CartridgeRegions implements Regions {
             if (global != null) all.add(global);
             this.all = List.copyOf(all);
             final Map<String, RegionImpl> byName = new HashMap<>();
-            final Set<String> settingKeys = new java.util.HashSet<>();
+            final Set<String> settingKeys = new HashSet<>();
             for (final Region region : all) {
                 byName.put(region.name(), (RegionImpl) region);
                 settingKeys.addAll(region.settings().keySet());
@@ -665,6 +667,8 @@ public final class CartridgeRegions implements Regions {
         private final Map<String, Object> settings;
         private final @Nullable String bypassPermission;
         private final Set<RegionFlag> bypassFlags;
+        // Own bypassFlags, or the nearest parent's when this region lists none
+        private final Set<RegionFlag> effectiveBypassFlags;
         // Own bypass permission first, then those of the parents
         final List<String> memberPermissions;
         // Indexed by RegionFlag ordinal, the value resolve() would give through parent flags and parent regions
@@ -691,6 +695,7 @@ public final class CartridgeRegions implements Regions {
             this.settings = settings;
             this.bypassPermission = bypassPermission;
             this.bypassFlags = bypassFlags;
+            this.effectiveBypassFlags = bypassFlags.isEmpty() && parent != null ? parent.effectiveBypassFlags : bypassFlags;
             final List<String> memberPermissions = new ArrayList<>();
             if (bypassPermission != null) memberPermissions.add(bypassPermission);
             for (RegionImpl current = parent; current != null; current = current.parent) {
@@ -778,7 +783,7 @@ public final class CartridgeRegions implements Regions {
         }
 
         private boolean membersIgnore(final RegionFlag flag) {
-            return this.bypassFlags.isEmpty() ? flag.bypassable() : this.bypassFlags.contains(flag);
+            return this.effectiveBypassFlags.isEmpty() ? flag.bypassable() : this.effectiveBypassFlags.contains(flag);
         }
 
         @Override
