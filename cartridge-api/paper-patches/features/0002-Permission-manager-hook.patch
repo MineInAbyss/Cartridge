@@ -5,10 +5,10 @@ Subject: [PATCH] Permission manager hook
 
 
 diff --git a/src/main/java/io/papermc/paper/plugin/PermissionManager.java b/src/main/java/io/papermc/paper/plugin/PermissionManager.java
-index c6363e5c54d9128c41ff1b832c6c4c2624cce3c4..69f993a2d931477c2334c10f14b0708501eb9efe 100644
+index b13eb7391d942dc411fadaa044baa095274ffde6..110f2848b8ff24ed498e3943b267e2475c0c561e 100644
 --- a/src/main/java/io/papermc/paper/plugin/PermissionManager.java
 +++ b/src/main/java/io/papermc/paper/plugin/PermissionManager.java
-@@ -1,10 +1,15 @@
+@@ -1,9 +1,13 @@
  package io.papermc.paper.plugin;
  
  import java.util.List;
@@ -20,11 +20,9 @@ index c6363e5c54d9128c41ff1b832c6c4c2624cce3c4..69f993a2d931477c2334c10f14b07085
  import org.bukkit.permissions.Permission;
 +import org.bukkit.permissions.ServerOperator;
  import org.jetbrains.annotations.ApiStatus;
-+import org.jetbrains.annotations.NotNull;
- import org.jspecify.annotations.NullMarked;
  import org.jspecify.annotations.Nullable;
  
-@@ -163,4 +168,41 @@ public interface PermissionManager {
+@@ -161,4 +165,41 @@ public interface PermissionManager {
       */
      void clearPermissions();
  
@@ -34,7 +32,7 @@ index c6363e5c54d9128c41ff1b832c6c4c2624cce3c4..69f993a2d931477c2334c10f14b07085
 +     * Entities are created often, so other entities should share one permissible unless they need their own
 +     */
 +    @ApiStatus.Experimental
-+    default Permissible createPermissible(@NotNull ServerOperator operator) {
++    default Permissible createPermissible(ServerOperator operator) {
 +        if (operator instanceof org.bukkit.entity.Player) return new org.bukkit.permissions.PermissibleBase(operator);
 +        return SharedEntityPermissible.INSTANCE;
 +    }
@@ -44,7 +42,7 @@ index c6363e5c54d9128c41ff1b832c6c4c2624cce3c4..69f993a2d931477c2334c10f14b07085
 +     * The returned permissible must not be kept around, it is not updated when the player's permissions change
 +     */
 +    @ApiStatus.Experimental
-+    default CompletableFuture<Optional<Permissible>> loadPlayerPermissible(@NotNull UUID playerUuid) {
++    default CompletableFuture<Optional<Permissible>> loadPlayerPermissible(UUID playerUuid) {
 +        return CompletableFuture.completedFuture(Optional.empty());
 +    }
 +

@@ -18,7 +18,7 @@ index 7a5b68b0e5c20eaa9609ef6280867380ffcded2c..2a5666d22d1d816b81b6e458eb0ee9d4
  
      @Override
 diff --git a/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index 724ef4ad364d253e2066c6c7e61e3d80d14b3d91..1bfc36f9888cd1f1c18dda3b0c9b2b13662b3bf3 100644
+index 17d046adbab6e4fdaec878a3c024a171216140a9..9a0641e84afba5331d154f8ab8c959d4d34bff85 100644
 --- a/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 @@ -1775,7 +1775,7 @@ public class ServerGamePacketListenerImpl
@@ -31,7 +31,7 @@ index 724ef4ad364d253e2066c6c7e61e3d80d14b3d91..1bfc36f9888cd1f1c18dda3b0c9b2b13
  
                      if (isOnGround
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index 24c458f226aadd8cbb3d440dc22cdfb94f0a8a0a..69ccd975b45e2722846900a2856e71d4b8f96824 100644
+index 1fcc1b8a099e2e0400ccdd8e9947e31ff21839e6..01a8817c7b244f048a433930a174fa0c56a25e5a 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
 @@ -95,6 +95,7 @@ import net.minecraft.world.Nameable;
@@ -42,7 +42,7 @@ index 24c458f226aadd8cbb3d440dc22cdfb94f0a8a0a..69ccd975b45e2722846900a2856e71d4
  import net.minecraft.world.entity.item.ItemEntity;
  import net.minecraft.world.entity.player.Player;
  import net.minecraft.world.entity.projectile.Projectile;
-@@ -2145,13 +2146,14 @@ public abstract class Entity
+@@ -2150,13 +2151,14 @@ public abstract class Entity
          }
  
          this.propagateFallToPassengers(fallDistance, damageModifier, damageSource);
@@ -59,7 +59,7 @@ index 24c458f226aadd8cbb3d440dc22cdfb94f0a8a0a..69ccd975b45e2722846900a2856e71d4
              }
          }
      }
-@@ -3474,10 +3476,26 @@ public abstract class Entity
+@@ -3479,10 +3481,26 @@ public abstract class Entity
                  return false;
              }
              // CraftBukkit end
@@ -86,7 +86,7 @@ index 24c458f226aadd8cbb3d440dc22cdfb94f0a8a0a..69ccd975b45e2722846900a2856e71d4
              this.setPose(Pose.STANDING);
              this.vehicle = entityToRide;
              this.vehicle.addPassenger(this);
-@@ -3494,9 +3512,12 @@ public abstract class Entity
+@@ -3499,9 +3517,12 @@ public abstract class Entity
          }
      }
  
@@ -100,7 +100,7 @@ index 24c458f226aadd8cbb3d440dc22cdfb94f0a8a0a..69ccd975b45e2722846900a2856e71d4
  
      public void ejectPassengers() {
          for (int i = this.passengers.size() - 1; i >= 0; i--) {
-@@ -3521,6 +3542,7 @@ public abstract class Entity
+@@ -3526,6 +3547,7 @@ public abstract class Entity
              Entity oldVehicle = this.vehicle;
              this.vehicle = null;
              if (!oldVehicle.removePassenger(this, suppressCancellation)) this.vehicle = oldVehicle; // CraftBukkit // Paper - Force entity dismount during teleportation
@@ -109,10 +109,10 @@ index 24c458f226aadd8cbb3d440dc22cdfb94f0a8a0a..69ccd975b45e2722846900a2856e71d4
              if (removalReason == null || removalReason.shouldDestroy()) {
                  this.level().gameEvent(this, GameEvent.ENTITY_DISMOUNT, oldVehicle.position);
 diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
-index 0fa7078277afe3982f9eb48c5a7a196a900b361f..aa989bb022e66050136c55735eea209069e93b31 100644
+index f4034b868531f2ccc080f7c8b2f604592b0c0289..257d46688f1dc3756c77b13d2250bf0f1150b2ef 100644
 --- a/net/minecraft/world/entity/LivingEntity.java
 +++ b/net/minecraft/world/entity/LivingEntity.java
-@@ -3776,7 +3776,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+@@ -3787,7 +3787,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
          AABB beforeTravelBox = this.getBoundingBox();
          Vec3 input = new Vec3(this.xxa, this.yya, this.zza);
          if (this.hasEffect(MobEffects.SLOW_FALLING) || this.hasEffect(MobEffects.LEVITATION)) {
@@ -121,7 +121,7 @@ index 0fa7078277afe3982f9eb48c5a7a196a900b361f..aa989bb022e66050136c55735eea2090
          }
  
          if (this.getControllingPassenger() instanceof Player controller && this.isAlive()) {
-@@ -4001,7 +4001,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+@@ -4012,7 +4012,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
      @Override
      public void rideTick() {
          super.rideTick();

@@ -84,7 +84,7 @@ index 1137be30f125cb79f05f3e5c104cdf8cca979ff1..b27ba3266c586f46b40948808c8ca87e
          super(level, gameProfile);
          this.server = server;
 diff --git a/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index 8178922f5ecc7f6709335c7fbeb6dca505b044bb..724ef4ad364d253e2066c6c7e61e3d80d14b3d91 100644
+index 528c22872f793e58bd6dbf8195a2f6b72ef61037..17d046adbab6e4fdaec878a3c024a171216140a9 100644
 --- a/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 @@ -149,6 +149,7 @@ import net.minecraft.server.level.ServerLevel;
@@ -116,7 +116,7 @@ index 8178922f5ecc7f6709335c7fbeb6dca505b044bb..724ef4ad364d253e2066c6c7e61e3d80
                  vehicle.move(MoverType.PLAYER, new Vec3(xDist, yDist, zDist));
                  final boolean didCollide = targetX != vehicle.getX() || targetY != vehicle.getY() || targetZ != vehicle.getZ(); // Paper - needed here as the difference in Y can be reset - also note: this is only a guess at whether collisions took place, floating point errors can make this true when it shouldn't be...
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index 267be9e775b8bb8c816c79fb4357a3ef23317b40..aa94662abb937dd49f2ca0a8db0d629adbeb17c0 100644
+index bea975af0b8be42883bac92d0366cf93ebadc0fc..37cfdd064fd791d598392c05cf556b912382d538 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
 @@ -937,7 +937,7 @@ public abstract class Entity
@@ -144,9 +144,9 @@ index 267be9e775b8bb8c816c79fb4357a3ef23317b40..aa94662abb937dd49f2ca0a8db0d629a
 -        if (onGround) {
 +        if (onGround || (onState.is(BlockTags.CLIMBABLE) && this instanceof ServerPlayer serverPlayer && serverPlayer.hasClientSideClimbable)) { // Cartridge
              if (this.fallDistance > 0.0) {
-                 onState.getBlock().fallOn(this.level(), onState, pos, this, this.fallDistance);
-                 this.level()
-@@ -4068,7 +4068,7 @@ public abstract class Entity
+                 // Paper start - Add EntityLandEvent
+                 double distance = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityLandEvent(this.level(), pos, this, this.fallDistance);
+@@ -4073,7 +4073,7 @@ public abstract class Entity
      }
  
      public void makeStuckInBlock(final BlockState blockState, final Vec3 speedMultiplier) {
@@ -156,10 +156,10 @@ index 267be9e775b8bb8c816c79fb4357a3ef23317b40..aa94662abb937dd49f2ca0a8db0d629a
      }
  
 diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
-index 23297b54c74684765f90e9e599d051a44357e9a5..c067c8d2f59774686fd2eb8dc586797f09be837c 100644
+index a0d10e4c3f78128029125bae8e8e476208f28d42..5f6563f4046f75c3f94a52238a10f040f0fbe0be 100644
 --- a/net/minecraft/world/entity/LivingEntity.java
 +++ b/net/minecraft/world/entity/LivingEntity.java
-@@ -2158,11 +2158,18 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+@@ -2169,11 +2169,18 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
      }
  
      public Optional<BlockPos> getLastClimbablePos() {

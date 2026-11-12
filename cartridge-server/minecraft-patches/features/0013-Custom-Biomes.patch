@@ -28,10 +28,10 @@ index 3f713afa1677eadccca1a9dd14021d94412efeda..fdb9a8fefd5bf53970500a9672efe1bf
                                      contents = Optional.of(encodedElement);
                                  }
 diff --git a/net/minecraft/resources/ResourceManagerRegistryLoadTask.java b/net/minecraft/resources/ResourceManagerRegistryLoadTask.java
-index 80e24dae92712a9ce5ec7f5d5a762d6d8d10bfbf..c4933920ce972759461e51b575efe8e5e16d941f 100644
+index 65830af7d88dfe4db7a20ead28aff8e06a319615..5081d29eab45ba08919e3559f597adaaeb0b46a1 100644
 --- a/net/minecraft/resources/ResourceManagerRegistryLoadTask.java
 +++ b/net/minecraft/resources/ResourceManagerRegistryLoadTask.java
-@@ -45,6 +45,7 @@ public class ResourceManagerRegistryLoadTask<T> extends RegistryLoadTask<T> {
+@@ -48,6 +48,7 @@ public class ResourceManagerRegistryLoadTask<T> extends RegistryLoadTask<T> {
              .thenCompose(
                  registryResources -> {
                      RegistryOps<JsonElement> ops = RegistryOps.create(JsonOps.INSTANCE, context);
@@ -39,7 +39,7 @@ index 80e24dae92712a9ce5ec7f5d5a762d6d8d10bfbf..c4933920ce972759461e51b575efe8e5
                      return ParallelMapTransform.schedule(
                          (Map<Identifier, Resource>)registryResources,
                          (resourceId, thunk) -> {
-@@ -57,7 +58,12 @@ public class ResourceManagerRegistryLoadTask<T> extends RegistryLoadTask<T> {
+@@ -60,7 +61,12 @@ public class ResourceManagerRegistryLoadTask<T> extends RegistryLoadTask<T> {
                              );
                          },
                          executor
@@ -53,7 +53,7 @@ index 80e24dae92712a9ce5ec7f5d5a762d6d8d10bfbf..c4933920ce972759461e51b575efe8e5
                  }
              )
              .thenAcceptAsync(
-@@ -74,4 +80,39 @@ public class ResourceManagerRegistryLoadTask<T> extends RegistryLoadTask<T> {
+@@ -77,4 +83,39 @@ public class ResourceManagerRegistryLoadTask<T> extends RegistryLoadTask<T> {
                  executor
              );
      }
@@ -144,7 +144,7 @@ index 6baa9d2a8af7901d47964e6d7ad53ea7963ceeef..5966c8b9fe5d4c9636cb314946d22ba0
      public void returnToWorld() {
          this.prepareSpawnTask = new PrepareSpawnTask(this.server, this.gameProfile, this); // Paper - pass full GameProfile & listener for events
 diff --git a/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index 1bfc36f9888cd1f1c18dda3b0c9b2b13662b3bf3..a667c1f8c466958859adbbb0a55f0eefc720576f 100644
+index 9a0641e84afba5331d154f8ab8c959d4d34bff85..e428d177b7fe4338032cb0e7c6263e62c1c511d0 100644
 --- a/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 @@ -3755,6 +3755,7 @@ public class ServerGamePacketListenerImpl

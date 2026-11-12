@@ -5,7 +5,7 @@ Subject: [PATCH] Dimension Changes
 
 
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index 8389d812b2d80a122fd1945b3182c08cdeda7d1c..b84756bbfa55aee92cb918b87bfeeccde956aadd 100644
+index ea4cc487002a0edc54cc49bfbecf72be156b6af7..90826b1011aca1ace5d81ab977be2f62dfa93990 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
 @@ -3058,7 +3058,7 @@ public class ServerLevel extends Level implements WorldGenLevel, ServerEntityGet
@@ -89,10 +89,10 @@ index 322c9e416d7fa3b567be8e67b8fa0b8995a78a16..e5bdcf69b181894fe29e06970ee83915
              }
          );
 diff --git a/net/minecraft/world/level/block/BaseFireBlock.java b/net/minecraft/world/level/block/BaseFireBlock.java
-index 580fac7e521e635fa1177652a2e6a287585589d2..46c602dd4223b74c71df756b5f64890be372c183 100644
+index d90d1ab4ef150bd4e493246a4f97cab75de59b11..cce7c44a21d3082d59f79082f16bf7e6a1ae53f8 100644
 --- a/net/minecraft/world/level/block/BaseFireBlock.java
 +++ b/net/minecraft/world/level/block/BaseFireBlock.java
-@@ -183,7 +183,7 @@ public abstract class BaseFireBlock extends Block {
+@@ -184,7 +184,7 @@ public abstract class BaseFireBlock extends Block {
      }
  
      private static boolean inPortalDimension(final Level level) {

@@ -5,10 +5,10 @@ Subject: [PATCH] Tripwire inside event states
 
 
 diff --git a/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java b/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
-index 0b35a293f3436bcf8a39c4f07a88340cd9d33bcb..89d3bb1f8adb7801fb9202c00412f672ad71bdd9 100644
+index 014f8488af19ba4c95365d6867784e76406c9165..d68fde4f77a0432a2b36360ed12aa9ba276f83ed 100644
 --- a/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
 +++ b/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
-@@ -346,8 +346,37 @@ public class GlobalConfiguration extends ConfigurationPart {
+@@ -349,8 +349,37 @@ public class GlobalConfiguration extends ConfigurationPart {
      public class BlockUpdates extends ConfigurationPart {
          public boolean disableNoteblockUpdates = false;
          public boolean disableTripwireUpdates = false;
