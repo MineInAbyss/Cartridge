@@ -5,10 +5,10 @@ Subject: [PATCH] Dimension Changes
 
 
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index ea4cc487002a0edc54cc49bfbecf72be156b6af7..90826b1011aca1ace5d81ab977be2f62dfa93990 100644
+index 78a90480c02a09c63b745c3dd0c9159509532193..f0a1705dbd3a0b1dde759f76b6187fc5b7100dbd 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
-@@ -3058,7 +3058,7 @@ public class ServerLevel extends Level implements WorldGenLevel, ServerEntityGet
+@@ -3059,7 +3059,7 @@ public class ServerLevel extends Level implements WorldGenLevel, ServerEntityGet
      // Paper end - optimize redstone (Alternate Current)
  
      public boolean isAllowedToEnterPortal(final Level toLevel) {

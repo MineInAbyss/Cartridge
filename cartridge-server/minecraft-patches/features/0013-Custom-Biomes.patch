@@ -144,10 +144,10 @@ index 6baa9d2a8af7901d47964e6d7ad53ea7963ceeef..5966c8b9fe5d4c9636cb314946d22ba0
      public void returnToWorld() {
          this.prepareSpawnTask = new PrepareSpawnTask(this.server, this.gameProfile, this); // Paper - pass full GameProfile & listener for events
 diff --git a/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index 9a0641e84afba5331d154f8ab8c959d4d34bff85..e428d177b7fe4338032cb0e7c6263e62c1c511d0 100644
+index 734d0c18f6cf8bdae749f2496f3be1bb82b0636f..70e37aa42d8b80c8c0fb30f36d2480d0315aa825 100644
 --- a/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-@@ -3755,6 +3755,7 @@ public class ServerGamePacketListenerImpl
+@@ -3757,6 +3757,7 @@ public class ServerGamePacketListenerImpl
                  listener // Paper
              );
          new io.papermc.paper.event.connection.configuration.PlayerConnectionReconfigureEvent(listener.paperConnection).callEvent(); // Paper
