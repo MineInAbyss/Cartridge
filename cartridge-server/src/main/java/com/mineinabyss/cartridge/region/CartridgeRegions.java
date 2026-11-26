@@ -14,6 +14,7 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -50,6 +51,7 @@ public final class CartridgeRegions implements Regions {
     public static final String SETTINGS = "settings";
     public static final String BYPASS_PERMISSION = "bypassPermission";
     public static final String BYPASS_FLAGS = "bypassFlags";
+    public static final String INHERIT = "inherit";
     private static final List<RegionSetting<?>> BUILT_IN_SETTINGS = List.of(
         RegionSetting.TIME_LOCK, RegionSetting.WEATHER_LOCK, RegionSetting.GREETING, RegionSetting.FAREWELL,
         RegionSetting.GREETING_TITLE, RegionSetting.FAREWELL_TITLE, RegionSetting.SPAWN_OVERRIDE
@@ -105,6 +107,8 @@ public final class CartridgeRegions implements Regions {
             Flags: %s
             A region without from and to is a template, it never applies by itself but its children inherit its flags.
             Children inherit every flag of their parent region and override only what they set, their priority defaults to one above the parent.
+            inherit: <region> copies the flags, settings and denySpawn of any region in the world, in any file, without making it a parent.
+            Own values win over inherited ones, which win over the parent's. Priority, bounds and bypassPermission are not copied.
             denySpawn takes a list of entity types and blocks them from spawning, like mobSpawning it ignores plugin and command spawns.
             A settings section next to flags holds values read by Cartridge or plugins, inherited by children like flags. On global it goes inside the global section.
             Cartridge reads timeLock (player time in ticks while inside), weatherLock (clear or rain while inside), greeting and farewell (chat on entry and exit), greetingTitle and farewellTitle (title on entry and exit, \\n starts the subtitle).
@@ -225,20 +229,43 @@ public final class CartridgeRegions implements Regions {
     private static WorldRegions parseWorld(final String worldName, final List<RegionFile> files, final Map<String, RegionSource> sources, final List<String> warnings) {
         RegionImpl global = null;
         String globalFile = null;
-        final List<RegionImpl> regions = new ArrayList<>();
-        final List<RegionImpl> templates = new ArrayList<>();
+        final Map<String, RegionSpec> specs = new LinkedHashMap<>();
         for (final RegionFile file : files) {
             final ConfigurationSection globalSection = file.config().getConfigurationSection(GLOBAL_REGION);
             if (globalSection != null) {
                 if (global != null) {
                     warnings.add(file.label() + "." + GLOBAL_REGION + ": global is already set in " + globalFile + ", skipped");
                 } else {
-                    global = parseRegion(GLOBAL_REGION, worldName, Integer.MIN_VALUE, null, null, null, globalSection, globalSection.getConfigurationSection(SETTINGS), file.label() + "." + GLOBAL_REGION, warnings);
+                    global = parseRegion(GLOBAL_REGION, worldName, Integer.MIN_VALUE, null, null, null, null, globalSection, globalSection.getConfigurationSection(SETTINGS), file.label() + "." + GLOBAL_REGION, warnings);
                     globalFile = file.label();
                     sources.put(GLOBAL_REGION, new RegionSource(file.path(), GLOBAL_REGION));
                 }
             }
-            parseRegions(worldName, file, file.config().getConfigurationSection("regions"), file.label() + ".regions", null, regions, templates, sources, warnings);
+            collectRegions(file, file.config().getConfigurationSection("regions"), file.label() + ".regions", null, specs, sources, warnings);
+        }
+
+        final Map<String, String> inherits = new HashMap<>();
+        for (final RegionSpec spec : specs.values()) {
+            final String target = spec.section().getString(INHERIT);
+            if (target == null || target.isBlank()) continue;
+            final String inheritPath = spec.path() + "." + INHERIT;
+            if (target.equals(GLOBAL_REGION)) {
+                warnings.add(inheritPath + ": every region already falls back to global, ignored");
+            } else if (!specs.containsKey(target)) {
+                warnings.add(inheritPath + ": no region named '" + target + "' in this world, ignored");
+            } else if (dependsOn(target, spec.name(), specs, inherits)) {
+                warnings.add(inheritPath + ": '" + target + "' already depends on " + spec.name() + ", ignored");
+            } else {
+                inherits.put(spec.name(), target);
+            }
+        }
+
+        final Map<String, RegionImpl> built = new HashMap<>();
+        final List<RegionImpl> regions = new ArrayList<>();
+        final List<RegionImpl> templates = new ArrayList<>();
+        for (final RegionSpec spec : specs.values()) {
+            final RegionImpl region = build(worldName, spec, specs, inherits, built, warnings);
+            (region.bounds() == null ? templates : regions).add(region);
         }
 
         regions.sort(Comparator.comparingInt(RegionImpl::priority).reversed());
@@ -254,27 +281,29 @@ public final class CartridgeRegions implements Regions {
     private record RegionSource(Path file, String sectionPath) {
     }
 
-    private static void parseRegions(
-        final String worldName, final RegionFile file, final @Nullable ConfigurationSection section, final String path, final @Nullable RegionImpl parent,
-        final List<RegionImpl> regions, final List<RegionImpl> templates, final Map<String, RegionSource> sources, final List<String> warnings
+    /**
+     * @param from null together with to for a template
+     */
+    private record RegionSpec(String name, String path, ConfigurationSection section, @Nullable String parent, int @Nullable [] from, int @Nullable [] to) {
+    }
+
+    private static void collectRegions(
+        final RegionFile file, final @Nullable ConfigurationSection section, final String path, final @Nullable String parent,
+        final Map<String, RegionSpec> specs, final Map<String, RegionSource> sources, final List<String> warnings
     ) {
         if (section == null) return;
         for (final String name : section.getKeys(false)) {
             final String regionPath = path + "." + name;
             final ConfigurationSection regionSection = section.getConfigurationSection(name);
             if (regionSection == null) continue;
-            if (name.equals(GLOBAL_REGION) || Stream.concat(regions.stream(), templates.stream()).anyMatch(region -> region.name().equals(name))) {
+            if (name.equals(GLOBAL_REGION) || specs.containsKey(name)) {
                 warnings.add(regionPath + ": region name '" + name + "' is reserved or already used in this world, skipped");
                 continue;
             }
 
-            final boolean template = !regionSection.contains("from") && !regionSection.contains("to");
-            final int[] from;
-            final int[] to;
-            if (template) {
-                from = null;
-                to = null;
-            } else {
+            int[] from = null;
+            int[] to = null;
+            if (regionSection.contains("from") || regionSection.contains("to")) {
                 from = parseCorner(regionSection.getString("from"));
                 to = parseCorner(regionSection.getString("to"));
                 if (from == null || to == null) {
@@ -283,25 +312,56 @@ public final class CartridgeRegions implements Regions {
                 }
             }
 
-            final int priority = regionSection.getInt("priority", parent == null ? 0 : parent.priority() + 1);
-            final String bypassPermission = regionSection.getString(BYPASS_PERMISSION);
-            final Set<RegionFlag> bypassFlags = EnumSet.noneOf(RegionFlag.class);
-            for (final String key : regionSection.getStringList(BYPASS_FLAGS)) {
-                final RegionFlag flag = RegionFlag.byKey(key);
-                if (flag == null || !flag.bypassable()) {
-                    warnings.add(regionPath + "." + BYPASS_FLAGS + ": '" + key + "' is not a bypassable flag");
-                } else {
-                    bypassFlags.add(flag);
-                }
-            }
-            final RegionImpl region = parseRegion(
-                name, worldName, priority, from, to, parent,
-                regionSection.getConfigurationSection("flags"), regionSection.getConfigurationSection(SETTINGS), regionPath, warnings
-            ).withBypass(bypassPermission == null || bypassPermission.isBlank() ? null : bypassPermission.trim(), Collections.unmodifiableSet(bypassFlags));
-            (template ? templates : regions).add(region);
+            specs.put(name, new RegionSpec(name, regionPath, regionSection, parent, from, to));
             sources.put(name, new RegionSource(file.path(), regionSection.getCurrentPath()));
-            parseRegions(worldName, file, regionSection.getConfigurationSection("children"), regionPath + ".children", region, regions, templates, sources, warnings);
+            collectRegions(file, regionSection.getConfigurationSection("children"), regionPath + ".children", name, specs, sources, warnings);
         }
+    }
+
+    private static boolean dependsOn(final String start, final String target, final Map<String, RegionSpec> specs, final Map<String, String> inherits) {
+        final Set<String> visited = new HashSet<>();
+        final List<String> pending = new ArrayList<>(List.of(start));
+        while (!pending.isEmpty()) {
+            final String name = pending.removeLast();
+            if (name.equals(target)) return true;
+            if (!visited.add(name)) continue;
+            final RegionSpec spec = specs.get(name);
+            if (spec.parent() != null) pending.add(spec.parent());
+            final String inherit = inherits.get(name);
+            if (inherit != null) pending.add(inherit);
+        }
+        return false;
+    }
+
+    private static RegionImpl build(
+        final String worldName, final RegionSpec spec, final Map<String, RegionSpec> specs, final Map<String, String> inherits,
+        final Map<String, RegionImpl> built, final List<String> warnings
+    ) {
+        final RegionImpl existing = built.get(spec.name());
+        if (existing != null) return existing;
+
+        final RegionImpl parent = spec.parent() == null ? null : build(worldName, specs.get(spec.parent()), specs, inherits, built, warnings);
+        final String inheritName = inherits.get(spec.name());
+        final RegionImpl inherit = inheritName == null ? null : build(worldName, specs.get(inheritName), specs, inherits, built, warnings);
+
+        final ConfigurationSection section = spec.section();
+        final int priority = section.getInt("priority", parent == null ? 0 : parent.priority() + 1);
+        final String bypassPermission = section.getString(BYPASS_PERMISSION);
+        final Set<RegionFlag> bypassFlags = EnumSet.noneOf(RegionFlag.class);
+        for (final String key : section.getStringList(BYPASS_FLAGS)) {
+            final RegionFlag flag = RegionFlag.byKey(key);
+            if (flag == null || !flag.bypassable()) {
+                warnings.add(spec.path() + "." + BYPASS_FLAGS + ": '" + key + "' is not a bypassable flag");
+            } else {
+                bypassFlags.add(flag);
+            }
+        }
+        final RegionImpl region = parseRegion(
+            spec.name(), worldName, priority, spec.from(), spec.to(), parent, inherit,
+            section.getConfigurationSection("flags"), section.getConfigurationSection(SETTINGS), spec.path(), warnings
+        ).withBypass(bypassPermission == null || bypassPermission.isBlank() ? null : bypassPermission.trim(), Collections.unmodifiableSet(bypassFlags));
+        built.put(spec.name(), region);
+        return region;
     }
 
     private static int @Nullable [] parseCorner(final @Nullable String value) {
@@ -317,8 +377,8 @@ public final class CartridgeRegions implements Regions {
 
     private static RegionImpl parseRegion(
         final String name, final String worldName, final int priority, final int @Nullable [] from, final int @Nullable [] to,
-        final @Nullable RegionImpl parent, final @Nullable ConfigurationSection section, final @Nullable ConfigurationSection settingsSection,
-        final String regionPath, final List<String> warnings
+        final @Nullable RegionImpl parent, final @Nullable RegionImpl inherit, final @Nullable ConfigurationSection section,
+        final @Nullable ConfigurationSection settingsSection, final String regionPath, final List<String> warnings
     ) {
         final Map<RegionFlag, Boolean> flags = new EnumMap<>(RegionFlag.class);
         Set<EntityType> denySpawn = null;
@@ -345,7 +405,7 @@ public final class CartridgeRegions implements Regions {
                 }
             }
         }
-        return new RegionImpl(name, worldName, priority, from, to, parent, Collections.unmodifiableMap(flags), denySpawn, parseSettings(settingsSection, regionPath + "." + SETTINGS, warnings), null, Set.of());
+        return new RegionImpl(name, worldName, priority, from, to, parent, inherit, Collections.unmodifiableMap(flags), denySpawn, parseSettings(settingsSection, regionPath + "." + SETTINGS, warnings), null, Set.of());
     }
 
     private static Map<String, Object> parseSettings(final @Nullable ConfigurationSection section, final String path, final List<String> warnings) {
@@ -738,6 +798,7 @@ public final class CartridgeRegions implements Regions {
         final int maxY;
         final int maxZ;
         private final @Nullable RegionImpl parent;
+        private final @Nullable RegionImpl inherit;
         private final Map<RegionFlag, Boolean> flags;
         private final @Nullable Set<EntityType> denySpawn;
         private final Map<String, Object> settings;
@@ -752,7 +813,7 @@ public final class CartridgeRegions implements Regions {
 
         RegionImpl(
             final String name, final String worldName, final int priority, final int @Nullable [] from, final int @Nullable [] to,
-            final @Nullable RegionImpl parent, final Map<RegionFlag, Boolean> flags, final @Nullable Set<EntityType> denySpawn,
+            final @Nullable RegionImpl parent, final @Nullable RegionImpl inherit, final Map<RegionFlag, Boolean> flags, final @Nullable Set<EntityType> denySpawn,
             final Map<String, Object> settings, final @Nullable String bypassPermission, final Set<RegionFlag> bypassFlags
         ) {
             this.name = name;
@@ -766,6 +827,7 @@ public final class CartridgeRegions implements Regions {
             this.maxY = this.hasBounds ? Math.max(from[1], to[1]) : 0;
             this.maxZ = this.hasBounds ? Math.max(from[2], to[2]) : 0;
             this.parent = parent;
+            this.inherit = inherit;
             this.flags = flags;
             this.denySpawn = denySpawn;
             this.settings = settings;
@@ -791,6 +853,8 @@ public final class CartridgeRegions implements Regions {
                 final Boolean value = this.flags.get(current);
                 if (value != null) return value ? ALLOW : DENY;
             }
+            final byte inherited = this.inherit == null ? UNSET : this.inherit.resolved[flag.ordinal()];
+            if (inherited != UNSET) return inherited;
             return this.parent == null ? UNSET : this.parent.resolved[flag.ordinal()];
         }
 
@@ -824,20 +888,28 @@ public final class CartridgeRegions implements Regions {
         }
 
         @Override
+        public @Nullable RegionImpl inherit() {
+            return this.inherit;
+        }
+
+        @Override
         public Map<RegionFlag, Boolean> flags() {
             return this.flags;
         }
 
         @Override
         public @Nullable Set<EntityType> denySpawn() {
-            return this.denySpawn != null || this.parent == null ? this.denySpawn : this.parent.denySpawn();
+            if (this.denySpawn != null) return this.denySpawn;
+            final Set<EntityType> inherited = this.inherit == null ? null : this.inherit.denySpawn();
+            if (inherited != null) return inherited;
+            return this.parent == null ? null : this.parent.denySpawn();
         }
 
         RegionImpl withBypass(final @Nullable String bypassPermission, final Set<RegionFlag> bypassFlags) {
             if (bypassPermission == null && bypassFlags.isEmpty()) return this;
             return new RegionImpl(
                 this.name, this.worldName, this.priority, this.hasBounds ? new int[]{this.minX, this.minY, this.minZ} : null,
-                this.hasBounds ? new int[]{this.maxX, this.maxY, this.maxZ} : null, this.parent, this.flags, this.denySpawn, this.settings, bypassPermission, bypassFlags
+                this.hasBounds ? new int[]{this.maxX, this.maxY, this.maxZ} : null, this.parent, this.inherit, this.flags, this.denySpawn, this.settings, bypassPermission, bypassFlags
             );
         }
 
@@ -850,10 +922,23 @@ public final class CartridgeRegions implements Regions {
 
         byte resolveAsMember(final RegionFlag flag) {
             for (RegionImpl current = this; current != null; current = current.parent) {
-                for (RegionFlag key = flag; key != null; key = key.parent()) {
-                    final Boolean value = current.flags.get(key);
-                    if (value != null && !current.membersIgnore(key)) return value ? ALLOW : DENY;
-                }
+                final byte value = current.ownAsMember(flag, current);
+                if (value != UNSET) return value;
+            }
+            return UNSET;
+        }
+
+        /**
+         * Inherited flags count as the owner's own, so the owner's bypassFlags decide which of them members ignore
+         */
+        private byte ownAsMember(final RegionFlag flag, final RegionImpl owner) {
+            for (RegionFlag key = flag; key != null; key = key.parent()) {
+                final Boolean value = this.flags.get(key);
+                if (value != null && !owner.membersIgnore(key)) return value ? ALLOW : DENY;
+            }
+            for (RegionImpl current = this.inherit; current != null; current = current.parent) {
+                final byte value = current.ownAsMember(flag, owner);
+                if (value != UNSET) return value;
             }
             return UNSET;
         }

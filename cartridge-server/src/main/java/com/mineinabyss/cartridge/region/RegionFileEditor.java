@@ -13,13 +13,11 @@ import org.yaml.snakeyaml.nodes.NodeTuple;
 import org.yaml.snakeyaml.nodes.ScalarNode;
 
 /**
- * Edits a single flag as text so the rest of the file, including anchors, merge keys and comments, stays as written.
- * Bukkit would rewrite the whole file and expand every alias
+ * Edits a single flag as text so the rest of the file, including comments, stays as written
  */
 @NullMarked
 final class RegionFileEditor {
 
-    private static final String MERGE_KEY = "<<";
     private static final String CHILDREN = "children";
 
     private RegionFileEditor() {
@@ -47,24 +45,10 @@ final class RegionFileEditor {
                 return join(lines, text);
             }
 
-            final Node valueNode = flagsTuple.getValueNode();
-            if (isAlias(flagsTuple)) {
-                if (value == null) throw notLocal(flag, valueNode);
-                final int line = flagsTuple.getKeyNode().getStartMark().getLine();
-                final String indent = " ".repeat(flagsTuple.getKeyNode().getStartMark().getColumn());
-                lines.set(line, indent + "flags:");
-                lines.add(line + 1, indent + "  " + MERGE_KEY + ": *" + valueNode.getAnchor());
-                lines.add(line + 2, indent + "  " + flag + ": " + value);
-                return join(lines, text);
-            }
-            if (!(valueNode instanceof MappingNode mapping) || mapping.getFlowStyle() == DumperOptions.FlowStyle.FLOW) {
+            if (!(flagsTuple.getValueNode() instanceof MappingNode mapping) || mapping.getFlowStyle() == DumperOptions.FlowStyle.FLOW) {
                 throw new IllegalArgumentException("flags of this region are written inline, edit the file instead");
             }
             flags = mapping;
-        }
-
-        if (flags.getAnchor() != null) {
-            throw new IllegalArgumentException("flags of this region are shared as &" + flags.getAnchor() + " with other regions, edit the file instead");
         }
 
         final NodeTuple existing = tuple(flags, flag);
@@ -84,11 +68,7 @@ final class RegionFileEditor {
             return join(lines, text);
         }
 
-        if (value == null) {
-            final NodeTuple merge = tuple(flags, MERGE_KEY);
-            if (merge != null && merge.getValueNode() instanceof MappingNode shared && tuple(shared, flag) != null) throw notLocal(flag, shared);
-            throw new IllegalArgumentException(flag + " is not set on this region");
-        }
+        if (value == null) throw new IllegalArgumentException(flag + " is not set on this region");
         lines.add(insertionLine(flags, flag), " ".repeat(flags.getValue().getFirst().getKeyNode().getStartMark().getColumn()) + flag + ": " + value);
         return join(lines, text);
     }
@@ -115,30 +95,22 @@ final class RegionFileEditor {
         return node instanceof ScalarNode scalar && scalar.getValue().isEmpty();
     }
 
-    /**
-     * The composer hands out the anchored node itself for an alias, so an alias is a value that starts before its own key
-     */
-    private static boolean isAlias(final NodeTuple tuple) {
-        return tuple.getValueNode().getStartMark().getIndex() < tuple.getKeyNode().getStartMark().getIndex();
-    }
-
     private static int endLine(final NodeTuple tuple) {
-        if (isAlias(tuple)) return tuple.getKeyNode().getStartMark().getLine();
         final int startLine = tuple.getKeyNode().getStartMark().getLine();
         final int endLine = tuple.getValueNode().getEndMark().getLine();
         return endLine > startLine && tuple.getValueNode().getEndMark().getColumn() == 0 ? endLine - 1 : endLine;
     }
 
     /**
-     * Keeps flags sorted when the mapping already is, after any merge key, otherwise appends
+     * Keeps flags sorted when the mapping already is, otherwise appends
      */
     private static int insertionLine(final MappingNode flags, final String flag) {
         int after = -1;
         for (final NodeTuple tuple : flags.getValue()) {
             if (!(tuple.getKeyNode() instanceof ScalarNode scalar)) continue;
             final String key = scalar.getValue();
-            if (!key.equals(MERGE_KEY) && RegionFlag.byKey(key) == null) continue;
-            if (!key.equals(MERGE_KEY) && key.compareTo(flag) > 0) return tuple.getKeyNode().getStartMark().getLine();
+            if (RegionFlag.byKey(key) == null) continue;
+            if (key.compareTo(flag) > 0) return tuple.getKeyNode().getStartMark().getLine();
             after = endLine(tuple);
         }
         return after == -1 ? flags.getValue().getFirst().getKeyNode().getStartMark().getLine() : after + 1;
@@ -171,10 +143,6 @@ final class RegionFileEditor {
 
     private static void removeLines(final List<String> lines, final int from, final int to) {
         lines.subList(from, to + 1).clear();
-    }
-
-    private static IllegalArgumentException notLocal(final String flag, final Node shared) {
-        return new IllegalArgumentException(flag + " comes from the shared block &" + shared.getAnchor() + ", edit the file instead");
     }
 
     private static String join(final List<String> lines, final String original) {

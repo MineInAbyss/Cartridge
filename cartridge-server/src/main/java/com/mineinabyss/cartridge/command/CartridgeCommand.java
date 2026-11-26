@@ -192,6 +192,10 @@ public final class CartridgeCommand {
         return Command.SINGLE_SUCCESS;
     }
 
+    private static String lineage(final Region region) {
+        return (region.parent() == null ? "" : ", child of " + region.parent().name()) + (region.inherit() == null ? "" : ", inherits " + region.inherit().name());
+    }
+
     private static int list(final CommandContext<CommandSourceStack> context) {
         final CommandSender sender = context.getSource().getSender();
         CartridgeRegions.instance().worlds().forEach((worldName, world) -> {
@@ -200,11 +204,11 @@ public final class CartridgeCommand {
                 sender.sendMessage(text(" " + CartridgeRegions.GLOBAL_REGION + " " + flagsText(world.global()), GRAY));
             }
             for (final Region region : world.templates()) {
-                sender.sendMessage(text(" " + region.name() + " (template" + (region.parent() == null ? "" : ", child of " + region.parent().name()) + ") " + flagsText(region), GRAY));
+                sender.sendMessage(text(" " + region.name() + " (template" + lineage(region) + ") " + flagsText(region), GRAY));
             }
             for (final Region region : world.regions()) {
                 final BoundingBox box = region.bounds();
-                sender.sendMessage(text(" " + region.name() + " (" + region.priority() + (region.parent() == null ? "" : ", child of " + region.parent().name()) + ") ", YELLOW)
+                sender.sendMessage(text(" " + region.name() + " (" + region.priority() + lineage(region) + ") ", YELLOW)
                     .append(text("%d %d %d -> %d %d %d %s".formatted(
                         (int) box.getMinX(), (int) box.getMinY(), (int) box.getMinZ(),
                         (int) box.getMaxX() - 1, (int) box.getMaxY() - 1, (int) box.getMaxZ() - 1,

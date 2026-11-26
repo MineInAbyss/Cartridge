@@ -38,13 +38,19 @@ public interface Region {
     @Nullable Region parent();
 
     /**
+     * The region named by inherit, checked before the parent for flags, settings and denySpawn left unset here.
+     * Only those are copied, priority, bounds and membership stay with this region
+     */
+    @Nullable Region inherit();
+
+    /**
      * Only the flags set on this region itself, true for allow, false for deny, absent when unset
      */
     Map<RegionFlag, Boolean> flags();
 
     /**
-     * Includes the parent's list when unset here.
-     * Null when unset on the whole parent chain, so lower priority regions decide
+     * Includes the inherited or parent list when unset here.
+     * Null when unset on every inherited and parent region, so lower priority regions decide
      */
     @Nullable Set<EntityType> denySpawn();
 
@@ -69,10 +75,10 @@ public interface Region {
     }
 
     default <T> @Nullable T setting(final RegionSetting<T> setting) {
-        for (Region current = this; current != null; current = current.parent()) {
-            final T value = current.ownSetting(setting);
-            if (value != null) return value;
-        }
-        return null;
+        final T own = this.ownSetting(setting);
+        if (own != null) return own;
+        final T inherited = this.inherit() == null ? null : this.inherit().setting(setting);
+        if (inherited != null) return inherited;
+        return this.parent() == null ? null : this.parent().setting(setting);
     }
 }
