@@ -1,0 +1,109 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Boy0000 <sivertpaulsen2@gmail.com>
+Date: Sat, 14 Nov 2026 16:46:28 +0100
+Subject: [PATCH] Combat Tweaks
+
+
+diff --git a/net/minecraft/data/tags/DamageTypeTagsProvider.java b/net/minecraft/data/tags/DamageTypeTagsProvider.java
+index 137aa98da2fb05f1a8b469ec4739c2feb056d116..3b7018c2c446c95b1a1939a11eaaecbc997f51c8 100644
+--- a/net/minecraft/data/tags/DamageTypeTagsProvider.java
++++ b/net/minecraft/data/tags/DamageTypeTagsProvider.java
+@@ -210,6 +210,6 @@ public class DamageTypeTagsProvider extends TagsProvider<DamageType> {
+             )
+             .addTag(DamageTypeTags.IS_PLAYER_ATTACK);
+         this.tag(DamageTypeTags.IS_MACE_SMASH).add(DamageTypes.MACE_SMASH);
+-        this.tag(DamageTypeTags.BYPASSES_COOLDOWN);
++        this.tag(DamageTypeTags.BYPASSES_COOLDOWN).add(DamageTypes.MAGIC, DamageTypes.INDIRECT_MAGIC, DamageTypes.WITHER); // Cartridge - effect damage ignores i-frames
+     }
+ }
+diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
+index 257d46688f1dc3756c77b13d2250bf0f1150b2ef..653592c840b48de5370ff5f2ef2f044b98b30796 100644
+--- a/net/minecraft/world/entity/LivingEntity.java
++++ b/net/minecraft/world/entity/LivingEntity.java
+@@ -1512,8 +1512,14 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+                 return false;
+             }
+             if (this instanceof ServerPlayer && event.getDamage() == 0 && originalDamage == 0) return false; // Paper - revert to vanilla damage - players are not affected by damage that is 0 - skip damage if the vanilla damage is 0 and was not modified by plugins in the event.
++            // Cartridge start - damage cooldown bypasses
++            if (this.clearsDamageCooldown(source, event)) {
++                this.damageCooldownTime = 0;
++            } else if (!source.is(DamageTypeTags.BYPASSES_COOLDOWN)) {
+             this.lastHurt = damage;
+             this.damageCooldownTime = this.invulnerableDuration; // CraftBukkit - restore use of maxNoDamageTicks
++            }
++            // Cartridge end - damage cooldown bypasses
+             // this.actuallyHurt(level, source, damage);
+             // CraftBukkit end
+             this.hurtDuration = 10;
+@@ -2380,6 +2386,12 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+         return damage;
+     }
+ 
++    // Cartridge start - damage cooldown bypasses
++    protected boolean clearsDamageCooldown(final DamageSource source, final EntityDamageEvent event) {
++        return false;
++    }
++    // Cartridge end - damage cooldown bypasses
++
+     protected float getDamageAfterMagicAbsorb(final DamageSource damageSource, float damage) {
+         if (damageSource.is(DamageTypeTags.BYPASSES_EFFECTS)) {
+             return damage;
+diff --git a/net/minecraft/world/entity/player/Player.java b/net/minecraft/world/entity/player/Player.java
+index 4ba3fb85b0473b4e7aa237701034d25f84e955cd..197b7a8ecec3b646f142747cea912585f9bce260 100644
+--- a/net/minecraft/world/entity/player/Player.java
++++ b/net/minecraft/world/entity/player/Player.java
+@@ -797,6 +797,7 @@ public abstract class Player extends Avatar implements ContainerUser {
+ 
+     @Override
+     protected void hurtArmor(final DamageSource damageSource, final float damage) {
++        if (!this.isReducedByArmor(damageSource)) return; // Cartridge - flat armor reduction
+         this.doHurtEquipment(damageSource, damage, EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD);
+     }
+ 
+@@ -805,6 +806,46 @@ public abstract class Player extends Avatar implements ContainerUser {
+         this.doHurtEquipment(damageSource, damage, EquipmentSlot.HEAD);
+     }
+ 
++    // Cartridge start - flat armor reduction
++    private static final float MIN_ARMORED_DAMAGE = 1.0F;
++
++    @Override
++    protected float getDamageAfterArmorAbsorb(final DamageSource damageSource, final float damage) {
++        if (!this.isReducedByArmor(damageSource)) {
++            return damage;
++        }
++        return Math.max(damage - this.getEffectiveArmor(damageSource), Math.min(damage, MIN_ARMORED_DAMAGE));
++    }
++
++    private boolean isReducedByArmor(final DamageSource damageSource) {
++        return (damageSource.getEntity() != null || damageSource.getDirectEntity() != null) && !damageSource.is(DamageTypeTags.BYPASSES_ARMOR);
++    }
++
++    // Breach and other armor_effectiveness enchantments scale the armor points instead of the vanilla armor fraction
++    private float getEffectiveArmor(final DamageSource damageSource) {
++        float armor = this.getArmorValue();
++        ItemStack weapon = damageSource.getWeaponItem();
++        if (weapon != null && this.level() instanceof ServerLevel level) {
++            armor *= Mth.clamp(EnchantmentHelper.modifyArmorEffectiveness(level, weapon, this, damageSource, 1.0F), 0.0F, 1.0F);
++        }
++        return armor;
++    }
++
++    // An attacker landing only the minimum damage, such as a fist, must not grant i-frames against stronger attacks
++    @Override
++    protected boolean clearsDamageCooldown(final DamageSource source, final org.bukkit.event.entity.EntityDamageEvent event) {
++        if (!this.isReducedByArmor(source)) {
++            return false;
++        }
++        float armorInput = (float) (event.getDamage()
++            + event.getDamage(org.bukkit.event.entity.EntityDamageEvent.DamageModifier.INVULNERABILITY_REDUCTION)
++            + event.getDamage(org.bukkit.event.entity.EntityDamageEvent.DamageModifier.FREEZING)
++            + event.getDamage(org.bukkit.event.entity.EntityDamageEvent.DamageModifier.HARD_HAT)
++            + event.getDamage(org.bukkit.event.entity.EntityDamageEvent.DamageModifier.BLOCKING));
++        return armorInput > 0.0F && armorInput - this.getEffectiveArmor(source) <= MIN_ARMORED_DAMAGE;
++    }
++    // Cartridge end - flat armor reduction
++
+     @Override
+     // CraftBukkit start
+     protected boolean actuallyHurt(final ServerLevel level, final DamageSource source, float dmg, org.bukkit.event.entity.EntityDamageEvent event) { // void -> boolean

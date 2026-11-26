@@ -1,0 +1,11 @@
+--- a/data/minecraft/tags/damage_type/bypasses_cooldown.json
++++ b/data/minecraft/tags/damage_type/bypasses_cooldown.json
+@@ -1,3 +_,7 @@
+ {
+-  "values": []
++  "values": [
++    "minecraft:magic",
++    "minecraft:indirect_magic",
++    "minecraft:wither"
++  ]
+ }
