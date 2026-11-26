@@ -1,5 +1,13 @@
 --- a/paper-server/build.gradle.kts
 +++ b/paper-server/build.gradle.kts
+@@ -8,7 +_,6 @@
+     `maven-publish`
+     idea
+     id("io.papermc.paperweight.core")
+-    id("io.papermc.paperweight.paper-checkstyle")
+     id("io.papermc.fill.gradle") version "1.0.14"
+ }
+ 
 @@ -22,6 +_,17 @@
      minecraftVersion = providers.gradleProperty("mcVersion")
      gitFilePatches = false
@@ -18,6 +26,17 @@
      updatingMinecraft {
          //oldPaperCommit = "e5fe71723e2ffde7cc9fafc085ac3bb73e63175e"
      }
+@@ -28,10 +_,6 @@
+     }
+ }
+ 
+-paperCheckstyle {
+-    directoriesToSkipFile = layout.projectDirectory.file(".checkstyle/ignored_directories.txt")
+-}
+-
+ tasks.generateDevelopmentBundle {
+     libraryRepositories.addAll(
+         "https://repo.maven.apache.org/maven2/",
 @@ -86,7 +_,20 @@
      }
  }
